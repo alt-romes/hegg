@@ -69,8 +69,19 @@ canonicalize (ENode i x ls) (eUnionFind -> uf) = ENode i x (map (unsafeUnpack . 
         unsafeUnpack Nothing  = error "The impossible happened: Couldn't find representation of e-node child"
         unsafeUnpack (Just x) = x
 
--- singletonEClass :: ENode s id -> EGraph s cid -> (EGraph s id)
--- singletonEClass = EClass . S.singleton
+-- | Add a singleton e-class with the e-node (first arg) to the e-graph
+singletonEClass :: Ord nid => ENode s nid -> EGraph s nid -> (ClassId, EGraph s nid)
+singletonEClass e egraph = (new_id, new_egraph)
+    where
+        new_id     = (sizeUF . eUnionFind) egraph
+        node_id    = eNodeId e
+        -- New e-class stores the e-node id of the e-node
+        new_eclass = EClass new_id (S.singleton node_id) []
+        -- Add new e-class to existing e-classes
+        new_eclasses = IM.insert new_id new_eclass (eClasses egraph)
+        -- New e-node is added with its id to the e-graphs e-nodes map
+        new_enodes = M.insert node_id e (eNodes egraph)
+        new_egraph = egraph { eClasses = new_eclasses, eNodes = new_enodes }
 
 -- | A union find in which the elements are the same as the keys, meaning we
 -- keep only track of the representation of the @id@
@@ -90,6 +101,9 @@ data Repr
 
 emptyUF :: ReprUnionFind
 emptyUF = RUF IM.empty
+
+sizeUF :: ReprUnionFind -> Int
+sizeUF (RUF im) = IM.size im
 
 -- | Find the canonical representation of an id
 findRepr :: ClassId -> ReprUnionFind -> Maybe ClassId

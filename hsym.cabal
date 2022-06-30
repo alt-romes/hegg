@@ -1,0 +1,39 @@
+cabal-version:      2.4
+name:               hsym
+version:            0.1.0.0
+synopsis:
+
+-- A longer description of the package.
+-- description:
+homepage:
+
+-- A URL where users can report bugs.
+-- bug-reports:
+license:            NONE
+author:             romes
+maintainer:         rodrigo.m.mesquita@gmail.com
+
+-- A copyright notice.
+-- copyright:
+category:           Math
+extra-source-files: CHANGELOG.md
+
+library
+    exposed-modules:  EGraph
+
+    -- Modules included in this library but not exported.
+    -- other-modules:
+
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+    build-depends:    base ^>=4.14.3.0,
+                      containers
+    hs-source-dirs:   src
+    default-language: Haskell2010
+
+test-suite hsym-test
+    default-language: Haskell2010
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          MyLibTest.hs
+    build-depends:    base ^>=4.14.3.0

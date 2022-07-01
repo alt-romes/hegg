@@ -19,7 +19,8 @@ category:           Math
 extra-source-files: CHANGELOG.md
 
 library
-    exposed-modules:  EGraph
+    exposed-modules:  EGraph,
+                      Sym
 
     -- Modules included in this library but not exported.
     -- other-modules:

@@ -230,6 +230,12 @@ modifyNodes f = modify (\egraph -> egraph { eNodes = f (eNodes egraph) })
 emptyEGraph :: EGraph s nid
 emptyEGraph = EGraph emptyUF IM.empty M.empty M.empty []
 
+getSize :: EGS s nid Int
+getSize = sizeEGraph <$> get
+
+sizeEGraph :: EGraph s nid -> Int
+sizeEGraph (EGraph { eUnionFind = (RUF im) }) = IM.size im
+
 -- | A union find in which the elements are the same as the keys, meaning we
 -- keep only track of the representation of the @id@
 --

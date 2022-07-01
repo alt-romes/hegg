@@ -12,12 +12,12 @@ type ClassIdMap = IM.IntMap
 --
 -- @cid@ type of e-class ids
 -- @nid@ type of e-node ids
-data EClass nid = EClass
+data EClass s = EClass
     { eClassId :: {-# UNPACK #-} !ClassId -- ^ E-class Id
-    , eClassNodes :: S.Set nid -- ^ E-nodes in this class
-    , eClassParents :: [(nid, ClassId)] -- ^ E-nodes which are parents of (reference) this e-class and their e-class ids
+    , eClassNodes :: S.Set s -- ^ E-nodes in this class
+    , eClassParents :: [(s, ClassId)] -- ^ E-nodes which are parents of (reference) this e-class and their e-class ids
     }
 
-instance Show nid => Show (EClass nid) where
+instance Show s => Show (EClass s) where
     show (EClass a b c) = "Id: " <> show a <> "\nNodes: " <> show b <> "\nParents: " <> show c
 

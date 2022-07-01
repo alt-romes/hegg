@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -8,6 +9,7 @@ module EGraph
     , module EGraph
     ) where
 
+import Debug.Trace
 import Data.Bifunctor
 
 import Control.Monad
@@ -23,24 +25,24 @@ import EGraph.EClass
 import EGraph.ENode
 
 -- | E-graph stateful computation
-type EGS s i = State (EGraph s i)
+type EGS s = State (EGraph s)
 
-runEGS :: EGraph s i -> EGS s i a -> (a, EGraph s i)
+runEGS :: EGraph s -> EGS s a -> (a, EGraph s)
 runEGS = flip runState
 
 -- | E-graph
 --
 -- @s@ for the e-node term
 -- @nid@ type of e-node ids
-data EGraph s nid = EGraph
+data EGraph s = EGraph
     { eUnionFind    :: ReprUnionFind -- ^ Union find like structure to find canonical representation of an e-class id
-    , eClasses      :: ClassIdMap (EClass nid) -- ^ Map (canonical?) e-class ids to their e-classes
-    , eNodesClasses :: Map nid ClassId -- ^ Hashcons maps ids of all canonical e-nodes to their e-class ids
-    , eNodes        :: Map nid (ENode s nid) -- ^ Map e-node ids to e-nodes
+    , eClasses      :: ClassIdMap (EClass s) -- ^ Map (canonical?) e-class ids to their e-classes
+    , eNodesClasses :: Map s ClassId -- ^ Hashcons maps ids of all canonical e-nodes to their e-class ids
+    , eNodes        :: Map s (ENode s) -- ^ Map e-node ids to e-nodes
     , worklist      :: [ClassId] -- ^ e-class ids that need to be upward merged
     }
 
-instance (Show s, Show nid) => Show (EGraph s nid) where
+instance Show s => Show (EGraph s) where
     show (EGraph a b c d e) =
         "UnionFind: " <> show a <>
             "\n\nE-Classes: " <> show b <>
@@ -49,13 +51,14 @@ instance (Show s, Show nid) => Show (EGraph s nid) where
                         "\n\nWorklist: " <> show e
 
 -- | Add an e-node to the e-graph
-add :: Ord nid => ENode s nid -> EGS s nid ClassId
+add :: (Ord s, Show s) => ENode s -> EGS s ClassId
 add uncanon_e = do
     egraph@(EGraph { eNodesClasses = encls }) <- get
-    let new_en@(ENode enode_id t children) = canonicalize uncanon_e egraph
+    let new_en@(ENode enode_id children) = canonicalize uncanon_e egraph
+    -- ROMES:TODO Lookup is wrong?, not considering canonical children
     case M.lookup enode_id encls of
       Just canon_enode_id -> return canon_enode_id
-      Nothing -> do
+      Nothing -> trace ("didn't find " <> show enode_id <> " in " <> show encls) $ do
         -- Add new singleton e-class with the e-node
         new_eclass_id <- singletonClass new_en
         -- Update e-classes by going through all e-node children and adding
@@ -70,7 +73,7 @@ add uncanon_e = do
 
 
 -- | Merge 2 e-classes by id
-merge :: ClassId -> ClassId -> EGS s i ClassId
+merge :: ClassId -> ClassId -> EGS s ClassId
 merge a b = do
     eg <- get
     if find a eg == find b eg
@@ -90,25 +93,25 @@ merge a b = do
 -- that their e-class ids are represented by the same e-class canonical ids
 --
 -- canonicalize(f(a,b,c,...)) = f((find a), (find b), (find c),...)
-canonicalize :: ENode s nid -> EGraph s nid -> ENode s nid
-canonicalize (ENode i x ls) egraph = ENode i x (map (flip find egraph) ls)
+canonicalize :: ENode s -> EGraph s -> ENode s
+canonicalize (ENode x ls) egraph = ENode x (map (flip find egraph) ls)
 
 -- | Find the canonical representation of an e-class id in the e-graph
 -- Invariant: The e-class id always exists.
-find :: ClassId -> EGraph s nid -> ClassId
+find :: ClassId -> EGraph s -> ClassId
 find cid = unsafeUnpack . findRepr cid . eUnionFind
     where
         unsafeUnpack Nothing  = error $ "The impossible happened: Couldn't find representation of e-node " <> show cid
         unsafeUnpack (Just x) = x
 
-rebuild :: (Eq s, Ord i) => EGS s i ()
+rebuild :: Ord s => EGS s ()
 rebuild = do
     eg <- get
     wl <- clearWorkList
     let todo = S.fromList $ map (flip find eg) wl
     forM_ todo repair
 
-repair :: (Eq s, Ord i) => ClassId -> EGS s i ()
+repair :: Ord s => ClassId -> EGS s ()
 repair repair_id = do
     (j, EClass ei nodes parents) <- getClass repair_id <$> get
     -- Sanity check
@@ -128,7 +131,7 @@ repair repair_id = do
     new_parents <- fmap (first eNodeId) . M.toList <$> go parents M.empty
     modifyClasses (IM.update (\eclass -> Just $ eclass { eClassParents = new_parents }) repair_id)
         where
-            go :: (Eq s, Ord i) => [(i, ClassId)] -> Map (ENode s i) ClassId -> EGS s i (Map (ENode s i) ClassId)
+            go :: Ord s => [(s, ClassId)] -> Map (ENode s) ClassId -> EGS s (Map (ENode s) ClassId)
             go [] s = return s
             go ((node_id, eclass_id):xs) s = do
                 -- Deduplicate the parents, noting that equal parents get merged and put on
@@ -141,10 +144,14 @@ repair repair_id = do
                 eg <- get
                 go xs (M.insert node (find eclass_id eg) s)
 
-
+class ERepr a r where
+    -- | Represent an expression with an e-graph computation that returns the
+    -- e-class id that represents the expression
+    represent :: a -> EGS r ClassId
+    extract   :: ENode r -> EGraph r -> a
 
 -- | Add a singleton e-class with the e-node (first arg) to the e-graph
-singletonClass :: Ord nid => ENode s nid -> EGS s nid ClassId
+singletonClass :: Ord s => ENode s -> EGS s ClassId
 singletonClass en = do
     -- Make new equivalence class with a new id in the union-find
     new_id <- createUnionFindClass
@@ -157,18 +164,18 @@ singletonClass en = do
     -- Return created e-class id
     return new_id
 
-addToWorklist :: ClassId -> EGS s nid ()
+addToWorklist :: ClassId -> EGS s ()
 addToWorklist i =
     modify (\egraph -> egraph { worklist = i:worklist egraph })
 
 -- | Clear the e-graph worklist and return the existing work items
-clearWorkList :: EGS s nid [ClassId]
+clearWorkList :: EGS s [ClassId]
 clearWorkList = do
     wl <- gets worklist
     modify (\egraph -> egraph { worklist = [] })
     return wl
 
-getNode :: Ord nid => nid -> EGraph s nid -> ENode s nid
+getNode :: Ord s => s -> EGraph s -> ENode s
 getNode i = (M.! i) . eNodes
 
 -- | Get an e-class from an e-graph given its e-class id
@@ -178,14 +185,14 @@ getNode i = (M.! i) . eNodes
 -- We'll find its canonical representation and then get it from the e-classes map
 --
 -- Invariant: The e-class always exists.
-getClass :: ClassId -> EGraph s nid -> (ClassId, EClass nid)
+getClass :: ClassId -> EGraph s -> (ClassId, EClass s)
 getClass cid egraph =
     let canon_id = find cid egraph
      in (canon_id, eClasses egraph IM.! canon_id)
 
 -- | Extend the existing UnionFind equivalence classes with a new one and
 -- return the new id
-createUnionFindClass :: EGS s i ClassId
+createUnionFindClass :: EGS s ClassId
 createUnionFindClass = do
     uf <- gets eUnionFind
     let (new_id, new_uf) = makeNewSet uf
@@ -193,7 +200,7 @@ createUnionFindClass = do
     return new_id
 
 -- | Merge two equivalent classes in the union find
-mergeUnionFindClasses :: ClassId -> ClassId -> EGS s i ClassId
+mergeUnionFindClasses :: ClassId -> ClassId -> EGS s ClassId
 mergeUnionFindClasses a b = do
     uf <- gets eUnionFind
     let (new_id, new_uf) = unionSets a b uf
@@ -201,21 +208,21 @@ mergeUnionFindClasses a b = do
     return new_id
 
 
-modifyClasses :: (ClassIdMap (EClass nid) -> ClassIdMap (EClass nid)) -> EGS s nid ()
+modifyClasses :: (ClassIdMap (EClass s) -> ClassIdMap (EClass s)) -> EGS s ()
 modifyClasses f = modify (\egraph -> egraph { eClasses = f (eClasses egraph) })
 
-modifyNodesClasses :: (Map nid ClassId -> Map nid ClassId) -> EGS s nid ()
+modifyNodesClasses :: (Map s ClassId -> Map s ClassId) -> EGS s ()
 modifyNodesClasses f = modify (\egraph -> egraph { eNodesClasses = f (eNodesClasses egraph) })
 
-modifyNodes :: (Map nid (ENode s nid) -> Map nid (ENode s nid)) -> EGS s nid ()
+modifyNodes :: (Map s (ENode s) -> Map s (ENode s)) -> EGS s ()
 modifyNodes f = modify (\egraph -> egraph { eNodes = f (eNodes egraph) })
 
-emptyEGraph :: EGraph s nid
+emptyEGraph :: EGraph s
 emptyEGraph = EGraph emptyUF IM.empty M.empty M.empty []
 
-getSize :: EGS s nid Int
+getSize :: EGS s Int
 getSize = sizeEGraph <$> get
 
-sizeEGraph :: EGraph s nid -> Int
+sizeEGraph :: EGraph s -> Int
 sizeEGraph (EGraph { eUnionFind = (RUF im) }) = IM.size im
 

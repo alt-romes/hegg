@@ -1,3 +1,5 @@
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -19,15 +21,19 @@ data Expr = Sym String
           | Integer Integer
           | Rational Rational
           | BinOp Op Expr Expr
-          deriving Show
+          deriving (Show, Eq, Ord)
 
 data Op = Add
         | Sub
         | Mul
         | Div
-        deriving Show
+        deriving (Show, Eq, Ord)
 
 makeBaseFunctor ''Expr
+
+deriving instance Eq (ExprF ())
+deriving instance Ord (ExprF ())
+deriving instance Show (ExprF ())
 
 -- instance ENode (ExprF ClassId) where
 --     children = \case
@@ -49,22 +55,23 @@ instance Fractional Expr where
     (/) = BinOp Div
     fromRational = Rational
 
-reprExpr :: Expr -> EGS String Int ClassId
-reprExpr = cata go
-    where
-        go :: ExprF (EGS String Int ClassId) -> EGS String Int ClassId
-        go e = do
-            i <- getSize
-            case e of
-              SymF x ->
-                  add (ENode i x [])
-              IntegerF int ->
-                  add (ENode i (show int) [])
-              RationalF f ->
-                  add (ENode i (show f) [])
+instance ERepr Expr (ExprF ()) where
+    represent = cata go
+        where
+            go :: ExprF (EGS (ExprF ()) ClassId) -> EGS (ExprF ()) ClassId
+            go e = case e of
               BinOpF op e1 e2 -> do
                   e1id <- e1
                   e2id <- e2
-                  i <- getSize
-                  add (ENode i (show op) [e1id, e2id])
+                  add (ENode (BinOpF op () ()) [e1id, e2id])
+              SymF x ->
+                  add (ENode (SymF x) [])
+              IntegerF i ->
+                  add (ENode (IntegerF i) [])
+              RationalF f ->
+                  add (ENode (RationalF f) [])
 
+    extract = error "extract not yet implemented"
+
+reprExpr :: Expr -> EGS (ExprF ()) ClassId
+reprExpr = represent

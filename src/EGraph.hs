@@ -3,7 +3,10 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
-module EGraph where
+module EGraph
+    ( ClassId, ENode(..)
+    , module EGraph
+    ) where
 
 import Data.Bifunctor
 
@@ -15,14 +18,15 @@ import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 import qualified Data.Set    as S
 
+import EGraph.ReprUnionFind
+import EGraph.EClass
+import EGraph.ENode
+
 -- | E-graph stateful computation
 type EGS s i = State (EGraph s i)
 
 runEGS :: EGraph s i -> EGS s i a -> (a, EGraph s i)
 runEGS = flip runState
-
-type ClassId = Int
-type ClassIdMap = IM.IntMap
 
 -- | E-graph
 --
@@ -43,38 +47,6 @@ instance (Show s, Show nid) => Show (EGraph s nid) where
                 "\n\nHashcons: " <> show c <>
                     "\n\nNodes: " <> show d <>
                         "\n\nWorklist: " <> show e
-
--- | E-graph
---
--- @cid@ type of e-class ids
--- @nid@ type of e-node ids
-data EClass nid = EClass
-    { eClassId :: {-# UNPACK #-} !ClassId -- ^ E-class Id
-    , eClassNodes :: S.Set nid -- ^ E-nodes in this class
-    , eClassParents :: [(nid, ClassId)] -- ^ E-nodes which are parents of (reference) this e-class and their e-class ids
-    }
-
-instance Show nid => Show (EClass nid) where
-    show (EClass a b c) = "Id: " <> show a <> "\nNodes: " <> show b <> "\nParents: " <> show c
-
--- | E-node
---
--- @s@ type of e-node term
--- @nid@ type of e-node ids
-data ENode s nid = ENode
-    { eNodeId :: !nid
-    , eNodeTerm :: s
-    , eNodeChildren :: [ClassId]
-    }
-
-instance (Show s, Show nid) => Show (ENode s nid) where
-    show (ENode i t c) = "Id: " <> show i <> "\nTerm: " <> show t <> "\nChildren: " <> show c
-
-instance Eq s => Eq (ENode s nid) where
-    (ENode _ s xs) == (ENode _ s' xs') = s == s' && xs == xs'
-
-instance (Eq s, Ord nid) => Ord (ENode s nid) where
-    (ENode nid _ _) <= (ENode nid' _ _) = nid <= nid'
 
 -- | Add an e-node to the e-graph
 add :: Ord nid => ENode s nid -> EGS s nid ClassId
@@ -246,44 +218,4 @@ getSize = sizeEGraph <$> get
 
 sizeEGraph :: EGraph s nid -> Int
 sizeEGraph (EGraph { eUnionFind = (RUF im) }) = IM.size im
-
--- | A union find in which the elements are the same as the keys, meaning we
--- keep only track of the representation of the @id@
---
--- e.g. @WUF $ fromList [(y, Canonical), (x, Represented y)]@
-newtype ReprUnionFind = RUF (ClassIdMap Repr)
-    deriving Show
-
--- | An @id@ can be represented by another @id@ or be canonical, meaning it
--- represents itself.
---
--- @(x, Represented y)@ would mean x is represented by y
--- @(x, Canonical)@ would mean x is canonical -- represents itself
-data Repr
-  = Represented {-# UNPACK #-} !ClassId -- ^ @Represented x@ is represented by @x@
-  | Canonical -- ^ @Canonical x@ is the canonical representation, meaning @find(x) == x@
-  deriving Show
-
-emptyUF :: ReprUnionFind
-emptyUF = RUF IM.empty
-
-makeNewSet :: ReprUnionFind -> (ClassId, ReprUnionFind)
-makeNewSet (RUF im) = (new_id, RUF $ IM.insert new_id Canonical im)
-    where
-        new_id = IM.size im
-
--- | Union operation of the union find.
---
--- Given two leader ids, unions the two eclasses making root1 the leader.
-unionSets :: ClassId -> ClassId -> ReprUnionFind -> (ClassId, ReprUnionFind)
-unionSets a b (RUF im) = (a, RUF $ IM.update (\Canonical -> Just $ Represented a) b im)
-
--- | Find the canonical representation of an id
-findRepr :: ClassId -> ReprUnionFind -> Maybe ClassId
-findRepr v (RUF m) =
-    -- ROMES:TODO: Path compression in immutable data structure? Is it worth
-    -- the copy + threading?
-    IM.lookup v m >>= \case
-        Represented x -> findRepr x (RUF m)
-        Canonical     -> Just v
 

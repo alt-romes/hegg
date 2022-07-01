@@ -1,7 +1,17 @@
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LambdaCase #-}
 module Sym where
 
 import Data.String
+
+import Data.Functor.Foldable.TH
+import Data.Functor.Foldable
 
 import EGraph
 
@@ -16,6 +26,13 @@ data Op = Add
         | Mul
         | Div
         deriving Show
+
+makeBaseFunctor ''Expr
+
+-- instance ENode (ExprF ClassId) where
+--     children = \case
+--         BinOp _ a b -> [a, b]
+--         _ -> []
 
 instance IsString Expr where
     fromString = Sym
@@ -33,14 +50,21 @@ instance Fractional Expr where
     fromRational = Rational
 
 reprExpr :: Expr -> EGS String Int ClassId
-reprExpr e = do
-    i <- getSize
-    case e of
-      Sym x -> add (ENode i x [])
-      Integer int -> add (ENode i (show int) [])
-      Rational f -> add (ENode i (show f) [])
-      BinOp op e1 e2 -> do
-          e1id <- reprExpr e1
-          e2id <- reprExpr e2
-          add (ENode i (show op) [e1id, e2id])
+reprExpr = cata go
+    where
+        go :: ExprF (EGS String Int ClassId) -> EGS String Int ClassId
+        go e = do
+            i <- getSize
+            case e of
+              SymF x ->
+                  add (ENode i x [])
+              IntegerF int ->
+                  add (ENode i (show int) [])
+              RationalF f ->
+                  add (ENode i (show f) [])
+              BinOpF op e1 e2 -> do
+                  e1id <- e1
+                  e2id <- e2
+                  i <- getSize
+                  add (ENode i (show op) [e1id, e2id])
 

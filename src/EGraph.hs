@@ -35,7 +35,14 @@ data EGraph s nid = EGraph
     , eNodes        :: Map nid (ENode s nid) -- ^ Map e-node ids to e-nodes
     , worklist      :: [ClassId] -- ^ e-class ids that need to be upward merged
     }
-    deriving Show
+
+instance (Show s, Show nid) => Show (EGraph s nid) where
+    show (EGraph a b c d e) =
+        "UnionFind: " <> show a <>
+            "\n\nE-Classes: " <> show b <>
+                "\n\nHashcons: " <> show c <>
+                    "\n\nNodes: " <> show d <>
+                        "\n\nWorklist: " <> show e
 
 -- | E-graph
 --
@@ -46,7 +53,9 @@ data EClass nid = EClass
     , eClassNodes :: S.Set nid -- ^ E-nodes in this class
     , eClassParents :: [(nid, ClassId)] -- ^ E-nodes which are parents of (reference) this e-class and their e-class ids
     }
-    deriving Show
+
+instance Show nid => Show (EClass nid) where
+    show (EClass a b c) = "Id: " <> show a <> "\nNodes: " <> show b <> "\nParents: " <> show c
 
 -- | E-node
 --
@@ -57,7 +66,9 @@ data ENode s nid = ENode
     , eNodeTerm :: s
     , eNodeChildren :: [ClassId]
     }
-    deriving Show
+
+instance (Show s, Show nid) => Show (ENode s nid) where
+    show (ENode i t c) = "Id: " <> show i <> "\nTerm: " <> show t <> "\nChildren: " <> show c
 
 instance Eq s => Eq (ENode s nid) where
     (ENode _ s xs) == (ENode _ s' xs') = s == s' && xs == xs'

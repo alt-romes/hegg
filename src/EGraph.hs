@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
@@ -10,7 +11,7 @@ import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 import qualified Data.Set    as S
 
-type EG s = State (EGraph s Int, Int)
+type SEG s i = State (EGraph s i)
 
 type ClassId = Int
 type ClassIdMap = IM.IntMap
@@ -46,14 +47,26 @@ data ENode s nid = ENode
     , eNodeChildren :: [ClassId]
     }
 
--- add :: Ord cid => ENode s cid -> EGraph s cid nid -> (cid, EGraph s cid)
--- add (canonicalize -> e@(ENode i t ls)) egraph = do
---     case lookup i (eNodeClasses egraph) of
---       Just x -> (x, egraph)
---       Nothing ->
---           singletonEClass e
-
-
+-- | Add an e-node to the e-graph
+add :: Ord nid => ENode s nid -> EGraph s nid -> (ClassId, EGraph s nid)
+add uncanon_e egraph@(EGraph _ ecls encls _) = do
+    let new_en@(ENode enode_id t children) = canonicalize uncanon_e egraph
+    case M.lookup enode_id encls of
+      Just canon_enode_id -> (canon_enode_id, egraph)
+      Nothing ->
+        let
+            -- | Add new singleton e-class with the e-node
+            (new_eclass_id, new_egraph) = singletonEClass new_en egraph
+            -- Update e-classes by going through all e-node children and adding
+            -- to the e-class parents the new e-node and its e-class id
+            new_ecls = foldr updateChild ecls children
+            -- | Update canonical e-class of child e-class
+            updateChild eclass_id im = IM.update (\e_class -> Just $ e_class { eClassParents = (enode_id, new_eclass_id):(eClassParents e_class) }) (find eclass_id new_egraph) im
+            new_enodesclasses = M.insert enode_id new_eclass_id (eNodesClasses new_egraph)
+         in
+            (new_eclass_id, new_egraph { eClasses = new_ecls
+                                       , eNodesClasses = new_enodesclasses })
+            
 
 -- | Canonicalize an E-Node
 --
@@ -64,24 +77,41 @@ data ENode s nid = ENode
 --
 -- canonicalize(f(a,b,c,...)) = f((find a), (find b), (find c),...)
 canonicalize :: ENode s nid -> EGraph s nid -> ENode s nid
-canonicalize (ENode i x ls) (eUnionFind -> uf) = ENode i x (map (unsafeUnpack . flip findRepr uf) ls)
-    where
-        unsafeUnpack Nothing  = error "The impossible happened: Couldn't find representation of e-node child"
-        unsafeUnpack (Just x) = x
+canonicalize (ENode i x ls) egraph = ENode i x (map (flip find egraph) ls)
 
 -- | Add a singleton e-class with the e-node (first arg) to the e-graph
 singletonEClass :: Ord nid => ENode s nid -> EGraph s nid -> (ClassId, EGraph s nid)
-singletonEClass e egraph = (new_id, new_egraph)
+singletonEClass en (EGraph uf ecls encls ens) = (new_id, new_egraph)
     where
-        new_id     = (sizeUF . eUnionFind) egraph
-        node_id    = eNodeId e
+        node_id          = eNodeId en
+        (new_id, new_uf) = makeNewSet uf
         -- New e-class stores the e-node id of the e-node
         new_eclass = EClass new_id (S.singleton node_id) []
         -- Add new e-class to existing e-classes
-        new_eclasses = IM.insert new_id new_eclass (eClasses egraph)
-        -- New e-node is added with its id to the e-graphs e-nodes map
-        new_enodes = M.insert node_id e (eNodes egraph)
-        new_egraph = egraph { eClasses = new_eclasses, eNodes = new_enodes }
+        new_eclasses = IM.insert new_id new_eclass ecls
+        -- New e-node is added at its id to the e-nodes map
+        new_enodes = M.insert node_id en ens
+        new_egraph = EGraph new_uf new_eclasses encls new_enodes
+
+-- | Get an e-class from an e-graph given its e-class id
+--
+-- Returns the canonical id of the class and the class itself
+--
+-- We'll find its canonical representation and then get it from the e-classes map
+--
+-- Invariant: The e-class always exists.
+getEClass :: ClassId -> EGraph s nid -> (ClassId, EClass nid)
+getEClass cid egraph =
+    let canon_id = find cid egraph
+     in (canon_id, eClasses egraph IM.! canon_id)
+
+-- | Find the canonical representation of an e-class id in the e-graph
+-- Invariant: The e-class id always exists.
+find :: ClassId -> EGraph s nid -> ClassId
+find cid = unsafeUnpack . findRepr cid . eUnionFind
+    where
+        unsafeUnpack Nothing  = error "The impossible happened: Couldn't find representation of e-node child"
+        unsafeUnpack (Just x) = x
 
 -- | A union find in which the elements are the same as the keys, meaning we
 -- keep only track of the representation of the @id@
@@ -102,8 +132,10 @@ data Repr
 emptyUF :: ReprUnionFind
 emptyUF = RUF IM.empty
 
-sizeUF :: ReprUnionFind -> Int
-sizeUF (RUF im) = IM.size im
+makeNewSet :: ReprUnionFind -> (ClassId, ReprUnionFind)
+makeNewSet (RUF im) = (new_id, RUF $ IM.insert new_id Canonical im)
+    where
+        new_id = IM.size im
 
 -- | Find the canonical representation of an id
 findRepr :: ClassId -> ReprUnionFind -> Maybe ClassId

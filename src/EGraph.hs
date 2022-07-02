@@ -62,7 +62,6 @@ add uncanon_e = do
     let new_en = canonicalize uncanon_e egraph
     case M.lookup new_en encls of
       Just canon_enode_id -> return canon_enode_id
-      -- Nothing -> trace ("didn't find " <> show enode_id <> " in " <> show encls) $ do
       Nothing -> do
         -- Add new singleton e-class with the e-node
         new_eclass_id <- singletonClass new_en
@@ -78,15 +77,31 @@ add uncanon_e = do
 
 
 -- | Merge 2 e-classes by id
-merge :: ClassId -> ClassId -> EGS s ClassId
+merge :: Ord (ENode s) => ClassId -> ClassId -> EGS s ClassId
 merge a b = do
     eg <- get
-    if find a eg == find b eg
-       then return (find a eg)
+    -- Use canonical ids
+    let a' = find a eg
+        b' = find b eg
+    if a' == b'
+       then return a'
        else do
-           new_id <- mergeUnionFindClasses a b
-           -- ROMES:TODO: Upward merge parents
-           -- ROMES:TODO: Remove b from eClasses?
+           let class_a@(EClass _ _ pa) = snd $ getClass a' eg
+               class_b@(EClass _ _ pb) = snd $ getClass b' eg
+
+           -- Leader is the class with more parents
+           let (leader, sub, sub_class) =
+                   if length pa < length pb
+                      then (b', a', class_a) -- b is leader
+                      else (a', b', class_b) -- a is leader
+
+           new_id <- mergeUnionFindClasses leader sub
+
+           modifyClasses (IM.delete sub)
+           let updateLeader (EClass i ns ps) =
+                   Just (EClass i (eClassNodes sub_class <> ns) (eClassParents sub_class <> ps))
+           modifyClasses (IM.update updateLeader leader)
+
            addToWorklist new_id
            return new_id
             
@@ -116,20 +131,26 @@ rebuild = do
     wl <- clearWorkList
     let todo = S.fromList $ map (flip find eg) wl
     forM_ todo repair
+    -- Loop when worklist isn't empty
+    wl <- gets worklist
+    unless (null wl) rebuild
+
 
 repair :: (Functor s, Ord (ENode s)) => ClassId -> EGS s ()
 repair repair_id = do
-    (j, EClass ei nodes parents) <- getClass repair_id <$> get
-    -- Sanity check
-    unless (repair_id == j) (error "repair should only be called on canonical ids")
+    (_, EClass ei nodes parents) <- getClass repair_id <$> get
+
+    -- Sanity check -- this is a wrong check, because before rebuilding this won't always be true, i think
+    -- unless (repair_id == j) (error $ "repair should only be called on canonical ids but was called on " <> show repair_id <> " rather than " <> show j)
+
     -- Update the hashcons so it always points
     -- canonical enodes to canonical eclasses
     forM_ parents $ \(node, eclass_id) -> do
         modifyMemo (M.delete node)
         -- Get canonicalized node from id|->node map
-        node <- canonicalize node <$> get
+        node' <- canonicalize node <$> get
         eg <- get
-        modifyMemo (M.insert node (find eclass_id eg))
+        modifyMemo (M.insert node' (find eclass_id eg))
 
     new_parents <- M.toList <$> go parents M.empty
     modifyClasses (IM.update (\eclass -> Just $ eclass { eClassParents = new_parents }) repair_id)
@@ -139,12 +160,12 @@ repair repair_id = do
             go ((node, eclass_id):xs) s = do
                 -- Deduplicate the parents, noting that equal parents get merged and put on
                 -- the worklist 
-                node <- canonicalize node <$> get
-                case M.lookup node s of
+                node' <- canonicalize node <$> get
+                case M.lookup node' s of
                   Nothing -> return ()
                   Just ci -> void $ merge eclass_id ci
                 eg <- get
-                go xs (M.insert node (find eclass_id eg) s)
+                go xs (M.insert node' (find eclass_id eg) s)
 
 class ERepr a r where
     -- | Represent an expression with an e-graph computation that returns the

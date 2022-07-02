@@ -31,14 +31,9 @@ data Op = Add
 
 makeBaseFunctor ''Expr
 
-deriving instance Eq (ExprF ())
-deriving instance Ord (ExprF ())
-deriving instance Show (ExprF ())
-
--- instance ENode (ExprF ClassId) where
---     children = \case
---         BinOp _ a b -> [a, b]
---         _ -> []
+deriving instance Eq   (ExprF ClassId)
+deriving instance Ord  (ExprF ClassId)
+deriving instance Show (ExprF ClassId)
 
 instance IsString Expr where
     fromString = Sym
@@ -55,23 +50,24 @@ instance Fractional Expr where
     (/) = BinOp Div
     fromRational = Rational
 
-instance ERepr Expr (ExprF ()) where
+instance ERepr Expr ExprF where
     represent = cata go
         where
-            go :: ExprF (EGS (ExprF ()) ClassId) -> EGS (ExprF ()) ClassId
+            go :: ExprF (EGS ExprF ClassId) -> EGS ExprF ClassId
             go e = case e of
               BinOpF op e1 e2 -> do
                   e1id <- e1
                   e2id <- e2
-                  add (ENode (BinOpF op () ()) [e1id, e2id])
+                  add (BinOpF op e1id e2id)
               SymF x ->
-                  add (ENode (SymF x) [])
+                  add (SymF x)
               IntegerF i ->
-                  add (ENode (IntegerF i) [])
+                  add (IntegerF i)
               RationalF f ->
-                  add (ENode (RationalF f) [])
+                  add (RationalF f)
 
     extract = error "extract not yet implemented"
 
-reprExpr :: Expr -> EGS (ExprF ()) ClassId
+reprExpr :: Expr -> EGS ExprF ClassId
 reprExpr = represent
+

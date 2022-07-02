@@ -1,3 +1,4 @@
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE LambdaCase #-}
 module EGraph.EClass where
 
@@ -14,10 +15,10 @@ type ClassIdMap = IM.IntMap
 -- @nid@ type of e-node ids
 data EClass s = EClass
     { eClassId :: {-# UNPACK #-} !ClassId -- ^ E-class Id
-    , eClassNodes :: S.Set s -- ^ E-nodes in this class
-    , eClassParents :: [(s, ClassId)] -- ^ E-nodes which are parents of (reference) this e-class and their e-class ids
+    , eClassNodes :: S.Set (s ClassId) -- ^ E-nodes in this class
+    , eClassParents :: [(s ClassId, ClassId)] -- ^ E-nodes which are parents of (reference) this e-class and their e-class ids. (See EGraph.ENode for why @s ClassId@)
     }
 
-instance Show s => Show (EClass s) where
+instance Show (s ClassId) => Show (EClass s) where
     show (EClass a b c) = "Id: " <> show a <> "\nNodes: " <> show b <> "\nParents: " <> show c
 

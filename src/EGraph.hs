@@ -77,7 +77,7 @@ add uncanon_e = do
 
 
 -- | Merge 2 e-classes by id
-merge :: Ord (ENode s) => ClassId -> ClassId -> EGS s ClassId
+merge :: (Functor s, Ord (ENode s)) => ClassId -> ClassId -> EGS s ClassId
 merge a b = do
     eg <- get
     -- Use canonical ids
@@ -99,7 +99,10 @@ merge a b = do
 
            modifyClasses (IM.delete sub)
            let updateLeader (EClass i ns ps) =
-                   Just (EClass i (eClassNodes sub_class <> ns) (eClassParents sub_class <> ps))
+                   -- ROMES:TODO I must @map canonicalize@ and @map (bimap canonicalize (flip find eg) here to correct the
+                   -- result, but the original implementation doesn't do it
+                   -- quite here, if I saw correctly
+                   Just (EClass i (S.fromList $ map (flip canonicalize eg) $ S.toList (eClassNodes sub_class) <> S.toList ns) (map (bimap (flip canonicalize eg) (flip find eg)) $ eClassParents sub_class <> ps))
            modifyClasses (IM.update updateLeader leader)
 
            addToWorklist new_id

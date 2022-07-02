@@ -6,4 +6,5 @@ egraph.gv:
 
 .PHONY=clean
 clean:
-	rm egraph.gv
+	rm -f egraph.gv
+	rm -f egraph.png

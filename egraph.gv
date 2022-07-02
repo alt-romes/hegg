@@ -1,0 +1,46 @@
+digraph egraph {
+    graph [compound=true
+          ,clusterrank=local];
+    subgraph cluster_0 {
+        graph [style=dotted];
+        0.0 [label=a];
+        0.1 [label="+"];
+        0.2 [label="*"];
+        0.3 [label="/"];
+    }
+    subgraph cluster_1 {
+        graph [style=dotted];
+        1.0 [label=2];
+    }
+    subgraph cluster_2 {
+        graph [style=dotted];
+        2.0 [label="*"];
+    }
+    subgraph cluster_4 {
+        graph [style=dotted];
+        4.0 [label=0];
+    }
+    subgraph cluster_7 {
+        graph [style=dotted];
+        7.0 [label=1];
+        7.1 [label="/"];
+    }
+    0.1 -> 0.1 [label=0];
+    0.1 -> 4.0 [lhead=cluster_4
+               ,label=1];
+    0.2 -> 0.2 [label=0];
+    0.2 -> 7.0 [lhead=cluster_7
+               ,label=1];
+    0.3 -> 2.0 [lhead=cluster_2
+               ,label=0];
+    0.3 -> 1.0 [lhead=cluster_1
+               ,label=1];
+    2.0 -> 0.0 [lhead=cluster_0
+               ,label=0];
+    2.0 -> 1.0 [lhead=cluster_1
+               ,label=1];
+    7.1 -> 1.0 [lhead=cluster_1
+               ,label=0];
+    7.1 -> 1.0 [lhead=cluster_1
+               ,label=1];
+}

@@ -44,12 +44,12 @@ toDotGraph eg = digraph (Str "egraph") $ do
 
         forM_ (zip (S.toList nodes) [0..]) $ \(n, i_in_class) -> do
 
-            forM_ (children n) $ \child -> do
+            forM_ (zip (children n) [0..]) $ \(child, arg_i) -> do
                 -- TODO: On anchors and labels...?
                 let child_leader = find child eg
                 if child_leader == class_id
-                   then edge (txt class_id <> "." <> txt i_in_class) (txt class_id <> "." <> txt i_in_class <> ":n") [LHead ("cluster_" <> txt class_id)]
-                   else edge (txt class_id <> "." <> txt i_in_class) (txt child <> ".0") [LHead ("cluster_" <> txt child_leader)]
+                   then edge (txt class_id <> "." <> txt i_in_class) (txt class_id <> "." <> txt i_in_class) [textLabel (txt arg_i)] -- LHead ("cluster_" <> txt class_id), 
+                   else edge (txt class_id <> "." <> txt i_in_class) (txt child <> ".0") [LHead ("cluster_" <> txt child_leader), textLabel (txt arg_i)]
     
 
 main = writeDotFile "egraph.gv" (toDotGraph graph1)

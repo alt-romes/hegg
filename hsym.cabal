@@ -18,6 +18,16 @@ maintainer:         rodrigo.m.mesquita@gmail.com
 category:           Math
 extra-source-files: CHANGELOG.md
 
+executable vizdot
+    main-is: VizDot.hs
+    build-depends:    base,
+                      hsym,
+                      graphviz,
+                      containers,
+                      text
+    hs-source-dirs:   app
+    default-language: Haskell2010
+
 library
     exposed-modules:  EGraph, EGraph.ENode, EGraph.EClass, EGraph.ReprUnionFind, Sym
 
@@ -26,10 +36,10 @@ library
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>=4.14.3.0,
+    build-depends:    base,
                       containers,
                       mtl,
-                      recursion-schemes
+                      recursion-schemes,
     hs-source-dirs:   src
     default-language: Haskell2010
 
@@ -38,4 +48,4 @@ test-suite hsym-test
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          MyLibTest.hs
-    build-depends:    base ^>=4.14.3.0
+    build-depends:    base

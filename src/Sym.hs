@@ -27,13 +27,26 @@ data Op = Add
         | Sub
         | Mul
         | Div
-        deriving (Show, Eq, Ord)
+        deriving (Eq, Ord)
+
+instance Show Op where
+    show = \case
+        Add -> "+"
+        Sub -> "-"
+        Mul -> "*"
+        Div -> "/"
 
 makeBaseFunctor ''Expr
 
 deriving instance Eq   (ExprF ClassId)
 deriving instance Ord  (ExprF ClassId)
-deriving instance Show (ExprF ClassId)
+
+instance Show (ExprF ClassId) where
+    show = \case
+        BinOpF op _ _ -> show op
+        RationalF x -> show x
+        IntegerF x -> show x
+        SymF x -> x
 
 instance IsString Expr where
     fromString = Sym

@@ -1,12 +1,9 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LambdaCase #-}
 module Sym where
 
@@ -40,6 +37,9 @@ makeBaseFunctor ''Expr
 
 deriving instance Eq   (ExprF ClassId)
 deriving instance Ord  (ExprF ClassId)
+
+-- For Pattern Var
+deriving instance Show (ExprF String)
 
 instance Show (ExprF ClassId) where
     show = \case

@@ -50,8 +50,6 @@ instance Show (ENode s) => Show (EGraph s) where
                         "\n\nWorklist: " <> show e
 
 
--- equalitySaturation :: 
-
 
 -- | Add an e-node to the e-graph
 --
@@ -142,9 +140,6 @@ rebuild = do
 repair :: (Functor s, Ord (ENode s)) => ClassId -> EGS s ()
 repair repair_id = do
     (_, EClass ei nodes parents) <- getClass repair_id <$> get
-
-    -- Sanity check -- this is a wrong check, because before rebuilding this won't always be true, i think
-    -- unless (repair_id == j) (error $ "repair should only be called on canonical ids but was called on " <> show repair_id <> " rather than " <> show j)
 
     -- Update the hashcons so it always points
     -- canonical enodes to canonical eclasses

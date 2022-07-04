@@ -23,10 +23,28 @@ import EGraph.EClass
 import EGraph
 import Sym
 
+graph2 :: EGraph ExprF
+graph2 = snd $ runEGS emptyEGraph $ do
+    id1 <- reprExpr ("a" + 0)
+    id2 <- reprExpr "a"
+    merge id1 id2
+    rebuild
+
 txt = pack . show
 
 graph1 :: EGraph ExprF
-graph1 = snd $ runEGS emptyEGraph $ reprExpr (("a"*2)/2+0) >> reprExpr (2/2) >>= \idiv -> reprExpr 1 >>= \i1 -> reprExpr ("a"*1) >>= \imul1 -> reprExpr "a" >>= \ia -> reprExpr ("a"*(2/2)) >>= \i -> merge imul1 ia >> merge 3 i >> merge i1 idiv >> merge 3 5 >> rebuild
+graph1 = snd $ runEGS emptyEGraph $ do
+    reprExpr (("a"*2)/2+0)
+    idiv <- reprExpr (2/2)
+    i1 <- reprExpr 1
+    imul1 <- reprExpr ("a"*1)
+    ia <- reprExpr "a"
+    i <- reprExpr ("a"*(2/2))
+    -- merge imul1 ia
+    -- merge 3 i
+    -- merge i1 idiv
+    -- merge 3 5
+    rebuild
 
 toDotGraph :: (Foldable f, Show (ENode f)) => EGraph f -> DotGraph Text
 toDotGraph eg = digraph (Str "egraph") $ do

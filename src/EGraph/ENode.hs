@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 module EGraph.ENode where
 
 import qualified Data.Map    as M
@@ -22,3 +23,12 @@ type ENode l = l ClassId
 
 children :: Foldable l => ENode l -> [ClassId]
 children = toList
+
+-- TODO: type class with associated type family "Operator" for the token that identifies the operator ...
+-- Maybe use it instead of the functors? aber the functors look so natural..
+class ELang lang where
+
+    -- | Token that uniquely identifies operator
+    type Operator lang
+
+

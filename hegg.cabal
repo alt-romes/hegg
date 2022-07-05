@@ -30,7 +30,7 @@ executable vizdot
 
 library
     exposed-modules:  EGraph, EGraph.ENode, EGraph.EClass, EGraph.ReprUnionFind,
-                      Sym, EMatching
+                      Sym, EMatching, Database
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -38,9 +38,10 @@ library
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
     build-depends:    base,
+                      ghc,
                       containers,
                       mtl,
-                      recursion-schemes,
+                      recursion-schemes
     hs-source-dirs:   src
     default-language: Haskell2010
 

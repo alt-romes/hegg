@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -11,11 +12,53 @@ import Data.Foldable (toList)
 import Control.Monad
 import Control.Monad.State
 
+import qualified Data.Map as M
+import qualified Data.IntMap as IM
+
 import EGraph.ENode
 import EGraph.EClass
 import EGraph
 
-type Var = String
+import Database
+
+
+-- newtype Database lang = DB (Map (lang ()) (Fix ClassIdMap))
+--
+-- data EGraph s = EGraph
+--     { ...
+--     , memo      :: Map (ENode s) ClassId
+--     }
+
+-- | Convert an e-graph into a database in which we do the conjunctive queries
+eGraphToDatabase :: (Ord (lang ()), Functor lang, Foldable lang) => EGraph lang -> Database lang
+eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB M.empty) memo
+  where
+
+    -- Add an enode in an e-graph, given its class, to a database
+    addENodeToDB :: (Ord (lang ()), Functor lang, Foldable lang) => EGraph lang -> ENode lang -> ClassId -> Database lang -> Database lang
+    addENodeToDB eg enode classid (DB m) =
+        -- ROMES:TODO map find
+        -- Insert or create a relation R_f(i1,i2,...,in) for lang in which 
+        DB $ M.alter (populate (classid:toList enode)) (void enode) m
+
+    -- Populate or create a triemap given the population D_x (ClassIds)
+    populate :: [ClassId] -> Maybe (Fix ClassIdMap) -> Maybe (Fix ClassIdMap)
+    populate ids Nothing = Just $ populate' ids (In IM.empty)
+    populate ids (Just f) = Just $ populate' ids f
+
+    -- Populate a triemap given the population D_x (ClassIds)
+    populate' :: [ClassId] -> Fix ClassIdMap -> Fix ClassIdMap
+    populate' [] (In m) = In m
+    populate' (x:xs) (In m) = In $ IM.alter (alterPopulation xs) x m
+      where
+        -- Insert remaining ids population doesn't exist, recursively merge tries with remaining ids
+        alterPopulation :: [ClassId] -> Maybe (Fix ClassIdMap) -> Maybe (Fix ClassIdMap)
+        -- If trie map entry doesn't exist yet, populate an empty map with the remaining ids
+        alterPopulation ids Nothing = Just $ populate' ids (In IM.empty)
+        -- If trie map entry already exists, populate the existing map with the remaining ids
+        alterPopulation ids (Just f) = Just $ populate' ids f
+
+
 
 -- | @(~x + 0) --> BinOp Add (Var "~x") (ENode (Integer 0))@
 -- @~x --> VariablePattern "~x"@
@@ -24,14 +67,6 @@ deriving instance Show (lang (PatternAST lang)) => Show (PatternAST lang)
 
 instance IsString (PatternAST lang) where
     fromString = VariablePattern
-
--- | An Atom ... in pattern ... is R_f(v, v1, ..., vk), so we define it as a
--- functor ast over pattern variables + the additional var for the e-class id
-data Atom lang = Atom Var (lang Var)
-deriving instance Show (lang Var) => Show (Atom lang)
-
-data Query lang = Query [Var] [Atom lang]
-deriving instance Show (lang Var) => Show (Query lang)
 
 data AuxResult lang = Var :~ [Atom lang]
 

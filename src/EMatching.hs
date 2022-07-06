@@ -21,6 +21,15 @@ import EGraph
 
 import Database
 
+ematch :: (Ord (lang ()), Traversable lang)
+       => PatternAST lang
+       -> EGraph lang
+       -> [(Var, ClassId)]
+ematch pat eg =
+    let db = eGraphToDatabase eg
+        q  = compileToQuery pat
+     in genericJoin db q
+    
 
 -- newtype Database lang = DB (Map (lang ()) (Fix ClassIdMap))
 --

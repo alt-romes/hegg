@@ -93,7 +93,7 @@ compileToQuery = flip evalState 0 . compile_to_query'
                 -- lang. We can traverse the pattern and replace sub-patterns with
                 -- their corresponding bound variable
                 p' = evalState (subPatsToVars p boundVars) 0
-            return (v :~ (Atom v p':atoms))
+            return (v :~ (Atom (Var v) (fmap Var p'):atoms))
                 where
                     -- State keeps track of the index of the variable we're
                     -- taking from the bound vars array

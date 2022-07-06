@@ -2,7 +2,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
-module EMatching where
+module EMatching
+    ( module EMatching
+    , Subst
+    )
+    where
 
 import Data.String
 import Data.Maybe
@@ -21,20 +25,44 @@ import EGraph
 
 import Database
 
+-- | EGS version of 'ematch'
 ematchM :: (Ord (lang ()), Traversable lang)
        => PatternAST lang
-       -> EGS lang [(Var, ClassId)]
+       -> EGS lang [(Subst, ClassId)]
 ematchM pat = gets (ematch pat)
 
+-- | Match a pattern against an AST, returnin a list of equivalence classes
+-- that match the pattern and the corresponding substitution
 ematch :: (Ord (lang ()), Traversable lang)
        => PatternAST lang
        -> EGraph lang
-       -> [(Var, ClassId)]
+       -> [(Subst, ClassId)]
 ematch pat eg =
     let db = eGraphToDatabase eg
-        q  = compileToQuery pat
-     in genericJoin db q
-    
+        q@(Query (root:_) _) = compileToQuery pat
+    -- genericJoin folds all matches, so, starting with the root variable, we group a level of the query by the root variable to get the substitutions for each e-class
+     in mapMaybe floatOutEClass (unjoinAtRoot root (genericJoin db q))
+    where
+        -- Given a substitution in which the first element is the pair
+        -- (root_var,root_class), float the root_class out and return it with
+        -- the substitution
+        floatOutEClass [] = Nothing
+        floatOutEClass ((_,root_class):xs) = Just (xs, root_class)
+        -- A function that can probably be much clearer.
+        --
+        -- "Unjoins" a list @[a,b,c,a,d,e]@ into @[[a,b,c],[a,d,e]]@ in which
+        -- @a@ is the root and always the head of every sublist
+        unjoinAtRoot root xs =
+            case break ((== root) . fst) xs of
+              ([], []) -> []
+              (xs, []) -> [xs]
+              ([], y:ys) -> case unjoinAtRoot root ys of
+                              [] -> [[y]]
+                              l:ls -> (y:l):ls -- add root back to list where it was split from
+              (zs, y:ys) -> case unjoinAtRoot root ys of
+                              [] -> [zs, [y]]
+                              l:ls -> zs:((y:l):ls)
+
 
 -- newtype Database lang = DB (Map (lang ()) (Fix ClassIdMap))
 --

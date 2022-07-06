@@ -25,6 +25,8 @@ deriving instance Show (f (Fix f)) => Show (Fix f)
 -- | Query variable
 type Var = String
 
+type Subst = [(Var, ClassId)]
+
 data ClassIdOrVar = ClassId ClassId | Var Var
     deriving (Show, Eq)
 

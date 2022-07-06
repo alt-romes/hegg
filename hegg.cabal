@@ -30,7 +30,7 @@ executable vizdot
 
 library
     exposed-modules:  EGraph, EGraph.ENode, EGraph.EClass, EGraph.ReprUnionFind,
-                      Sym, EMatching, Database
+                      Sym, EMatching, Database, EqualitySaturation
 
     -- Modules included in this library but not exported.
     -- other-modules:

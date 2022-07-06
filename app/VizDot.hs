@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE TypeApplications          #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE TypeFamilies              #-}
@@ -18,6 +19,8 @@ import Data.GraphViz.Types.Monadic
 import Data.GraphViz.Attributes (style, dotted, textLabel)
 import Data.GraphViz.Attributes.Complete
 
+-- TODO: Move modules to Equality.Graph.Node, Equality.Saturation, etc...
+import EqualitySaturation
 import EGraph.ENode
 import EGraph.EClass
 import EGraph
@@ -25,10 +28,12 @@ import EMatching
 import Database
 import Sym
 
-graphM :: ([(Var, ClassId)], EGraph ExprF)
-graphM = runEGS emptyEGraph $ do
-    reprExpr ("a" + 0)
-    ematchM $ NonVariablePattern (BinOpF Add "~x" (NonVariablePattern (IntegerF 0)))
+graph4 :: EGraph ExprF
+graph4 = equalitySaturation @ExprF @Expr (("a" + 0) * ("b" + 0)) ["~x"+0 := "~x"]
+
+graph3 :: EGraph ExprF
+graph3 = snd $ runEGS emptyEGraph $ do
+    reprExpr ("a" + 0 + "b" + 0)
 
 graph2 :: EGraph ExprF
 graph2 = snd $ runEGS emptyEGraph $ do
@@ -77,7 +82,5 @@ toDotGraph eg = digraph (Str "egraph") $ do
                    else edge (txt class_id <> "." <> txt i_in_class) (txt child <> ".0") [LHead ("cluster_" <> txt child_leader), textLabel (txt arg_i)]
     
 
--- main = writeDotFile "egraph.gv" (toDotGraph graph1)
-
-main = print graphM
+main = writeDotFile "egraph.gv" (toDotGraph graph4)
 

@@ -1,10 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-} -- Show (EGraph s) constraints
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE LambdaCase #-}
 module EGraph
     ( ClassId, ENode(..)
     , module EGraph
@@ -54,7 +50,7 @@ instance Show (ENode s) => Show (EGraph s) where
 -- | Add an e-node to the e-graph
 --
 -- E-node lookup depends on e-node correctly defining equality
-add :: (Foldable s, Functor s, Ord (ENode s), Show (ENode s)) => ENode s -> EGS s ClassId
+add :: (Foldable s, Functor s, Ord (ENode s)) => ENode s -> EGS s ClassId
 add uncanon_e = do
     egraph@(EGraph { memo = encls }) <- get
     let new_en = canonicalize uncanon_e egraph
@@ -68,7 +64,7 @@ add uncanon_e = do
         forM_ (children new_en) $ \eclass_id -> do
             -- Update canonical e-class of child e-class
             -- ROMES:TODO: does the find operation need to take into consideration the new e_class?
-            modifyClasses (IM.update (\e_class -> Just $ e_class { eClassParents = (new_en, new_eclass_id):(eClassParents e_class) }) (find eclass_id egraph))
+            modifyClasses (IM.update (\e_class -> Just $ e_class { eClassParents = (new_en, new_eclass_id):eClassParents e_class }) (find eclass_id egraph))
         -- Add the e-node's e-class id at the e-node's id
         modifyMemo (M.insert new_en new_eclass_id)
         return new_eclass_id
@@ -100,7 +96,7 @@ merge a b = do
                    -- ROMES:TODO I must @map canonicalize@ and @map (bimap canonicalize (flip find eg) here to correct the
                    -- result, but the original implementation doesn't do it
                    -- quite here, if I saw correctly
-                   Just (EClass i (S.fromList $ map (flip canonicalize eg) $ S.toList (eClassNodes sub_class) <> S.toList ns) (map (bimap (flip canonicalize eg) (flip find eg)) $ eClassParents sub_class <> ps))
+                   Just (EClass i (S.fromList $ map (`canonicalize` eg) $ S.toList (eClassNodes sub_class) <> S.toList ns) (map (bimap (`canonicalize` eg) (`find` eg)) $ eClassParents sub_class <> ps))
            modifyClasses (IM.update updateLeader leader)
 
            addToWorklist new_id
@@ -116,7 +112,7 @@ merge a b = do
 --
 -- canonicalize(f(a,b,c,...)) = f((find a), (find b), (find c),...)
 canonicalize :: Functor s => ENode s -> EGraph s -> ENode s
-canonicalize enode egraph = fmap (flip find egraph) enode
+canonicalize enode egraph = fmap (`find` egraph) enode
 
 -- | Find the canonical representation of an e-class id in the e-graph
 -- Invariant: The e-class id always exists.
@@ -130,7 +126,7 @@ rebuild :: (Functor s, Ord (ENode s)) => EGS s ()
 rebuild = do
     eg <- get
     wl <- clearWorkList
-    let todo = S.fromList $ map (flip find eg) wl
+    let todo = S.fromList $ map (`find` eg) wl
     forM_ todo repair
     -- Loop when worklist isn't empty
     wl <- gets worklist
@@ -139,14 +135,14 @@ rebuild = do
 
 repair :: (Functor s, Ord (ENode s)) => ClassId -> EGS s ()
 repair repair_id = do
-    (_, EClass ei nodes parents) <- getClass repair_id <$> get
+    (_, EClass ei nodes parents) <- gets (getClass repair_id)
 
     -- Update the hashcons so it always points
     -- canonical enodes to canonical eclasses
     forM_ parents $ \(node, eclass_id) -> do
         modifyMemo (M.delete node)
         -- Get canonicalized node from id|->node map
-        node' <- canonicalize node <$> get
+        node' <- gets (canonicalize node)
         eg <- get
         modifyMemo (M.insert node' (find eclass_id eg))
 
@@ -158,7 +154,7 @@ repair repair_id = do
             go ((node, eclass_id):xs) s = do
                 -- Deduplicate the parents, noting that equal parents get merged and put on
                 -- the worklist 
-                node' <- canonicalize node <$> get
+                node' <- gets (canonicalize node)
                 case M.lookup node' s of
                   Nothing -> return ()
                   Just ci -> void $ merge eclass_id ci
@@ -228,7 +224,7 @@ emptyEGraph :: EGraph s
 emptyEGraph = EGraph emptyUF IM.empty M.empty []
 
 getSize :: EGS s Int
-getSize = sizeEGraph <$> get
+getSize = gets sizeEGraph
 
 sizeEGraph :: EGraph s -> Int
 sizeEGraph (EGraph { unionFind = (RUF im) }) = IM.size im

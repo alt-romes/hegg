@@ -12,6 +12,7 @@ import Data.String
 import Data.Functor.Foldable.TH
 import Data.Functor.Foldable
 
+import EMatching
 import EGraph
 
 data Expr = Sym String
@@ -35,15 +36,12 @@ instance Show Op where
 
 makeBaseFunctor ''Expr
 
-deriving instance Eq   (ExprF ClassId)
-deriving instance Ord  (ExprF ClassId)
+deriving instance Eq a => Eq   (ExprF a)
+deriving instance Ord a => Ord  (ExprF a)
 
--- For Pattern Var
-deriving instance Show (ExprF String)
-
-instance Show (ExprF ClassId) where
+instance Show a => Show (ExprF a) where
     show = \case
-        BinOpF op _ _ -> show op
+        BinOpF op a b -> show a <> " " <> show op <> " " <> show b
         RationalF x -> show x
         IntegerF x -> show x
         SymF x -> x
@@ -84,3 +82,14 @@ instance ERepr Expr ExprF where
 reprExpr :: Expr -> EGS ExprF ClassId
 reprExpr = represent
 
+instance Num (PatternAST ExprF) where
+    (+) a b = NonVariablePattern $ BinOpF Add a b
+    (-) a b = NonVariablePattern $ BinOpF Sub a b
+    (*) a b = NonVariablePattern $ BinOpF Mul a b
+    fromInteger = NonVariablePattern . IntegerF
+    abs = error "abs"
+    signum = error "signum"
+
+instance Fractional (PatternAST ExprF) where
+    (/) a b = NonVariablePattern $ BinOpF Div a b
+    fromRational = NonVariablePattern . RationalF

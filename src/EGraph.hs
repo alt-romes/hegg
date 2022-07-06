@@ -165,12 +165,6 @@ repair repair_id = do
                 eg <- get
                 go xs (M.insert node' (find eclass_id eg) s)
 
-class ERepr a r where
-    -- | Represent an expression with an e-graph computation that returns the
-    -- e-class id that represents the expression
-    represent :: a -> EGS r ClassId
-    extract   :: ENode r -> EGraph r -> a 
-
 -- | Add a singleton e-class with the e-node (first arg) to the e-graph
 singletonClass :: Ord (ENode s) => ENode s -> EGS s ClassId
 singletonClass en = do
@@ -238,4 +232,10 @@ getSize = sizeEGraph <$> get
 
 sizeEGraph :: EGraph s -> Int
 sizeEGraph (EGraph { unionFind = (RUF im) }) = IM.size im
+
+class ERepr a r where
+    -- | Represent an expression with an e-graph computation that returns the
+    -- e-class id that represents the expression
+    represent :: a -> EGS r ClassId
+    extract   :: ENode r -> EGraph r -> a 
 

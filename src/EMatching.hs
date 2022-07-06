@@ -21,6 +21,11 @@ import EGraph
 
 import Database
 
+ematchM :: (Ord (lang ()), Traversable lang)
+       => PatternAST lang
+       -> EGS lang [(Var, ClassId)]
+ematchM pat = gets (ematch pat)
+
 ematch :: (Ord (lang ()), Traversable lang)
        => PatternAST lang
        -> EGraph lang
@@ -87,6 +92,7 @@ compileToQuery :: (Traversable lang) => PatternAST lang -> Query lang
 compileToQuery = flip evalState 0 . compile_to_query'
     where
         compile_to_query' :: (Traversable lang) => PatternAST lang -> State Int (Query lang)
+        compile_to_query' (VariablePattern _) = error "sole variable pattern doesn't generate any atoms"
         compile_to_query' p = do
             root :~ atoms <- aux p
             return (Query (root:vars p) atoms)
@@ -110,12 +116,9 @@ compileToQuery = flip evalState 0 . compile_to_query'
                     subPatsToVars p boundVars = traverse (const $ (boundVars !!) <$> next) p
 
 fresh :: State Int String
-fresh = (letters !!) <$> next
+fresh = ('~':) . (letters !!) <$> next
     where letters :: [String]
           letters = [1..] >>= flip replicateM ['a'..'z']
-
-          genName :: Int -> String
-          genName i = if i < 0 then '-' : letters !! (-i) else letters !! i
 
 next :: State Int Int
 next = do

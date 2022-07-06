@@ -21,7 +21,14 @@ import Data.GraphViz.Attributes.Complete
 import EGraph.ENode
 import EGraph.EClass
 import EGraph
+import EMatching
+import Database
 import Sym
+
+graphM :: ([(Var, ClassId)], EGraph ExprF)
+graphM = runEGS emptyEGraph $ do
+    reprExpr ("a" + 0)
+    ematchM $ NonVariablePattern (BinOpF Add "~x" (NonVariablePattern (IntegerF 0)))
 
 graph2 :: EGraph ExprF
 graph2 = snd $ runEGS emptyEGraph $ do
@@ -70,4 +77,7 @@ toDotGraph eg = digraph (Str "egraph") $ do
                    else edge (txt class_id <> "." <> txt i_in_class) (txt child <> ".0") [LHead ("cluster_" <> txt child_leader), textLabel (txt arg_i)]
     
 
-main = writeDotFile "egraph.gv" (toDotGraph graph1)
+-- main = writeDotFile "egraph.gv" (toDotGraph graph1)
+
+main = print graphM
+

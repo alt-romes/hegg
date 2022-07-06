@@ -3,6 +3,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 module Database where
 
+import Data.Maybe (catMaybes, mapMaybe)
 import Data.List (intersect)
 import Control.Monad
 
@@ -70,8 +71,12 @@ elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
 -- | Given a database and a list of Atoms with an occurring var @x@, find
 -- @D_x@, the domain of variable x, that is, the values x can take
 intersectAtoms :: (Ord (lang ()), Foldable lang, Functor lang) => Database lang -> [Atom lang] -> [ClassId]
-intersectAtoms (DB m) atoms = foldr1 intersect (map (\(Atom v l) -> intersectInTrie (relation l) (v:toList l)) atoms)
--- intersectAtoms (DB m) (Atom (ClassId i) l@(toList -> x:xs):atoms) = out (out (m M.! void l) IM.! i)
+-- lookup ... >>= ... to make sure non-existing patterns don't crash
+intersectAtoms (DB m) atoms =
+    case mapMaybe (\(Atom v l) -> M.lookup (void l) m >>= \r -> pure $ intersectInTrie r (v:toList l)) atoms of
+      [] -> []
+      ls -> foldr1 intersect ls
+
     where 
         relation l = m M.! void l
 

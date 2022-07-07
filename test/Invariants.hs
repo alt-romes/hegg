@@ -1,8 +1,10 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 module Main (main) where
+
+import Debug.Trace
 
 import Control.Monad
 import qualified Data.IntMap as IM
@@ -12,12 +14,17 @@ import EGraph
 import EGraph.EClass
 import EqualitySaturation
 import Sym
+import Dot
 
 -- The equivalence relation over e-nodes must be closed over congruence
 -- congruenceInvariant :: Testable m (EGraph lang) => Property m
 
+
 -- The hashcons 𝐻  must map all canonical e-nodes to their e-class ids
-hashConsInvariant :: forall s. (Ord (ENode s), Functor s) => EGraph s -> Bool
+--
+-- Note: the e-graph argument must have been rebuilt -- checking the property
+-- when invariants are broken for sure doesn't make much sense
+hashConsInvariant :: forall s. (Show (ENode s), Ord (ENode s), Functor s, Foldable s) => EGraph s -> Bool
 hashConsInvariant eg@(EGraph {..}) =
     all f (IM.toList classes)
     where
@@ -27,8 +34,10 @@ hashConsInvariant eg@(EGraph {..}) =
             where
                 g :: (Ord (ENode s), Functor s) => ENode s -> Bool
                 g en = case M.lookup (canonicalize en eg) memo of
-                    Nothing -> False
+                    Nothing -> error "how can we not find canonical thing in map? :)" -- False
                     Just i' -> i' == find i eg 
+
+-- ROMES:TODO: Property: Extract expression after equality saturation is always better or equal to the original expression
 
 
 hciSym :: EGraph ExprF -> Bool

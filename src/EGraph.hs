@@ -74,7 +74,7 @@ add uncanon_e = do
 
 
 -- | Merge 2 e-classes by id
-merge :: (Functor s, Ord (ENode s)) => ClassId -> ClassId -> EGS s ClassId
+merge :: forall s. (Functor s, Ord (ENode s)) => ClassId -> ClassId -> EGS s ClassId
 merge a b = do
     eg <- get
     -- Use canonical ids
@@ -94,13 +94,31 @@ merge a b = do
 
            new_id <- mergeUnionFindClasses leader sub
 
+           eg' <- get
+
+           -- Delete subsumed? class
            modifyClasses (IM.delete sub)
-           let updateLeader (EClass i ns ps) =
-                   -- ROMES:TODO I must @map canonicalize@ and @map (bimap canonicalize (flip find eg) here to correct the
-                   -- result, but the original implementation doesn't do it
-                   -- quite here, if I saw correctly
-                   Just (EClass i (S.fromList $ map (`canonicalize` eg) $ S.toList (eClassNodes sub_class) <> S.toList ns) (map (bimap (`canonicalize` eg) (`find` eg)) $ eClassParents sub_class <> ps))
+
+           -- Update leader class with all e-nodes and parents from the
+           -- subsumed class
+           let updateLeader (EClass i ns ps) = Just $ EClass i new_nodes new_parents where
+                   new_nodes = eClassNodes sub_class <> ns
+                   -- ROMES:TODO I must @map (second (`find` eg)) here to
+                   -- correct the result, but the original implementation
+                   -- doesn't do it quite here, if I saw correctly
+                   new_parents = map (second (`find` eg')) $ eClassParents sub_class <> ps
            modifyClasses (IM.update updateLeader leader)
+
+           -- Recanonize all leader nodes in memo (also didn't see this in
+           -- their implementation...)
+           eg'' <- get
+           let EClass _ ns _ = snd $ getClass leader eg'' :: EClass s
+           forM_ (S.toList ns) $ \l -> do
+               -- Remove stale term
+               modifyMemo (M.delete l)
+               -- Insert canonicalized term
+               modifyMemo (M.insert (l `canonicalize` eg) leader)
+
 
            addToWorklist new_id
            return new_id
@@ -128,10 +146,17 @@ find cid = unsafeUnpack . findRepr cid . unionFind
 rebuild :: (Functor s, Ord (ENode s)) => EGS s ()
 rebuild = do
     eg <- get
+
+    -- empty the worklist into a local variable
     wl <- clearWorkList
+
+    -- canonicalize and deduplicate the class refs to save calls to repair
     let todo = S.fromList $ map (`find` eg) wl
+
+    -- repair deduplicated eclasses
     forM_ todo repair
-    -- Loop when worklist isn't empty
+
+    -- Loop until worklist is completely empty
     wl <- gets worklist
     unless (null wl) rebuild
 
@@ -144,10 +169,8 @@ repair repair_id = do
     -- canonical enodes to canonical eclasses
     forM_ parents $ \(node, eclass_id) -> do
         modifyMemo (M.delete node)
-        -- Get canonicalized node from id|->node map
-        node' <- gets (canonicalize node)
         eg <- get
-        modifyMemo (M.insert node' (find eclass_id eg))
+        modifyMemo (M.insert (canonicalize node eg) (find eclass_id eg))
 
     new_parents <- M.toList <$> go parents M.empty
     modifyClasses (IM.update (\eclass -> Just $ eclass { eClassParents = new_parents }) repair_id)

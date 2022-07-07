@@ -22,7 +22,6 @@ executable vizdot
     main-is: VizDot.hs
     build-depends:    base,
                       hegg,
-                      graphviz,
                       containers,
                       text
     hs-source-dirs:   app
@@ -30,7 +29,7 @@ executable vizdot
 
 library
     exposed-modules:  EGraph, EGraph.ENode, EGraph.EClass, EGraph.ReprUnionFind,
-                      Sym, EMatching, Database, EqualitySaturation
+                      Sym, EMatching, Database, EqualitySaturation, Dot
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -42,6 +41,8 @@ library
                       containers,
                       mtl,
                       recursion-schemes,
+                      graphviz,
+                      text
     hs-source-dirs:   src
     default-language: Haskell2010
 

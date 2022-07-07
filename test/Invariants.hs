@@ -3,10 +3,13 @@
 {-# LANGUAGE RecordWildCards #-}
 module Main (main) where
 
+import Test.Tasty
+import Test.Tasty.QuickCheck as QC
+import Test.Tasty.HUnit
+
 import Control.Monad
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
-import Test.QuickCheck
 import EGraph
 import EGraph.EClass
 import EqualitySaturation
@@ -71,11 +74,18 @@ instance Arbitrary Expr where
                 subexpr = expr' (n `div` 2)
             expr' _ = error "size is negative?"
 
+
+tests :: TestTree
+tests = testGroup "Tests"
+  [ QC.testProperty "Hash Cons Invariant" hciSym
+  -- , testCase "2+2=4" $
+  --     2+2 @?= 4
+  -- , testCase "7 is even" $
+  --     assertBool "Oops, 7 is odd" (even 7)
+  ]
+
 main :: IO ()
-main = do
-    quickCheck hciSym
-
-
+main = defaultMain tests
 
 -- Test for 
 -- equalitySaturation @ExprF @Expr (("a"*(2/2))) ["~g"/"~g" := 1]

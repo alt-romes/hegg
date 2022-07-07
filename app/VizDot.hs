@@ -24,7 +24,7 @@ import Sym
 import Dot
 
 graph4 :: EGraph ExprF
-graph4 = equalitySaturation @ExprF @Expr (("a" + 0) * ("b" + 0)) ["~x"+0 := "~x"]
+graph4 = equalitySaturation @Expr @ExprF (("a" + 0) * ("b" + 0)) ["~x"+0 := "~x"]
 
 graph3 :: EGraph ExprF
 graph3 = snd $ runEGS emptyEGraph $ do

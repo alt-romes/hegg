@@ -41,7 +41,6 @@ library
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
     build-depends:    base >= 4.4 && < 5,
-                      -- ghc,
                       containers,
                       mtl,
                       recursion-schemes,
@@ -51,6 +50,7 @@ library
     default-language: Haskell2010
 
 test-suite hegg-test
+    ghc-options:      -threaded
     default-language: Haskell2010
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
@@ -58,6 +58,6 @@ test-suite hegg-test
     build-depends:    base,
                       hegg,
                       containers,
-                      QuickCheck
-                      -- tasty,
-                      -- tasty-quickcheck
+                      tasty,
+                      tasty-quickcheck,
+                      tasty-hunit

@@ -17,7 +17,7 @@ infix 3 :=
 equalitySaturation :: (Ord (lang ()), Ord (ENode lang), Traversable lang)
                    => ERepr exp lang
                    => exp -> [Rewrite lang] -> EGraph lang
-equalitySaturation exp rewrites = snd $ runEGS emptyEGraph $ do
+equalitySaturation exp rewrites = egraph $ do
 
     -- Represent expression as an e-graph
     represent exp

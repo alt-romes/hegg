@@ -64,6 +64,7 @@ instance Fractional Expr where
 instance ERepr Expr ExprF where
     represent = cata go
         where
+            -- ROMES:TODO: Could simplify with traverse somehow?
             go :: ExprF (EGS ExprF ClassId) -> EGS ExprF ClassId
             go e = case e of
               BinOpF op e1 e2 -> do

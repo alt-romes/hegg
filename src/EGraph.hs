@@ -27,6 +27,9 @@ type EGS s = State (EGraph s)
 runEGS :: EGraph s -> EGS s a -> (a, EGraph s)
 runEGS = flip runState
 
+egraph :: EGS s a -> EGraph s
+egraph = snd . runEGS emptyEGraph
+
 -- | E-graph
 --
 -- @s@ for the e-node term

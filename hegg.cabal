@@ -2,15 +2,14 @@ cabal-version:      2.4
 name:               hegg
 version:            0.1.0.0
 Tested-With: GHC ==9.2.2 || ==9.0.2 || ==8.10.7
-synopsis:
+synopsis: Fast equality saturation in Haskell
 
--- A longer description of the package.
--- description:
-homepage:
+description:        Fast equality saturation and equality graphs based on `egg:
+                    Fast and Extensible Equality Saturation` and `Relational E-matching`
+homepage:           https://github.com/alt-romes/hegg 
 
--- A URL where users can report bugs.
--- bug-reports:
-license:            NONE
+bug-reports:        https://github.com/alt-romes/hegg/issues
+license:            BSD-3-Clause
 author:             romes
 maintainer:         rodrigo.m.mesquita@gmail.com
 
@@ -18,6 +17,10 @@ maintainer:         rodrigo.m.mesquita@gmail.com
 -- copyright:
 category:           Data
 extra-source-files: CHANGELOG.md
+
+source-repository head
+    type: git
+    location: https://github.com/alt-romes/hegg
 
 executable vizdot
     main-is: VizDot.hs
@@ -37,7 +40,7 @@ library
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base,
+    build-depends:    base >= 4.4 && < 5,
                       -- ghc,
                       containers,
                       mtl,

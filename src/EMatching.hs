@@ -39,29 +39,30 @@ ematch :: (Ord (lang ()), Traversable lang)
        -> [(Subst, ClassId)]
 ematch pat eg =
     let db = eGraphToDatabase eg
-        q@(Query (root:_) _) = compileToQuery pat
+        q = compileToQuery pat
     -- genericJoin folds all matches, so, starting with the root variable, we group a level of the query by the root variable to get the substitutions for each e-class
-     in mapMaybe floatOutEClass (unjoinAtRoot root (genericJoin db q))
+     in mapMaybe floatOutEClass (genericJoin db q)
     where
         -- Given a substitution in which the first element is the pair
         -- (root_var,root_class), float the root_class out and return it with
         -- the substitution
         floatOutEClass [] = Nothing
         floatOutEClass ((_,root_class):xs) = Just (xs, root_class)
+
         -- A function that can probably be much clearer.
         --
         -- "Unjoins" a list @[a,b,c,a,d,e]@ into @[[a,b,c],[a,d,e]]@ in which
         -- @a@ is the root and always the head of every sublist
-        unjoinAtRoot root xs =
-            case break ((== root) . fst) xs of
-              ([], []) -> []
-              (xs, []) -> [xs]
-              ([], y:ys) -> case unjoinAtRoot root ys of
-                              [] -> [[y]]
-                              l:ls -> (y:l):ls -- add root back to list where it was split from
-              (zs, y:ys) -> case unjoinAtRoot root ys of
-                              [] -> [zs, [y]]
-                              l:ls -> zs:((y:l):ls)
+        -- unjoinAtRoot root xs =
+        --     case break ((== root) . fst) xs of
+        --       ([], []) -> []
+        --       (xs, []) -> [xs]
+        --       ([], y:ys) -> case unjoinAtRoot root ys of
+        --                       [] -> [[y]]
+        --                       l:ls -> (y:l):ls -- add root back to list where it was split from
+        --       (zs, y:ys) -> case unjoinAtRoot root ys of
+        --                       [] -> [zs, [y]]
+        --                       l:ls -> zs:((y:l):ls)
 
 
 -- newtype Database lang = DB (Map (lang ()) (Fix ClassIdMap))

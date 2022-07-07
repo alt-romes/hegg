@@ -82,5 +82,7 @@ toDotGraph eg = digraph (Str "egraph") $ do
                    else edge (txt class_id <> "." <> txt i_in_class) (txt child <> ".0") [LHead ("cluster_" <> txt child_leader), textLabel (txt arg_i)]
     
 
-main = writeDotFile "egraph.gv" (toDotGraph graph4)
+main = do
+    print graph4
+    writeDotFile "egraph.gv" (toDotGraph graph4)
 

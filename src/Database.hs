@@ -1,10 +1,13 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
 module Database where
 
+import Debug.Trace
 import Data.Maybe (catMaybes, mapMaybe)
-import Data.List (intersect)
+import Data.List (intersect, union)
 import Control.Monad
 
 import Data.Foldable (toList)
@@ -30,6 +33,10 @@ type Subst = [(Var, ClassId)]
 data ClassIdOrVar = ClassId ClassId | Var Var
     deriving (Show, Eq)
 
+toVar :: ClassIdOrVar -> Maybe Var
+toVar (Var v) = Just v
+toVar (ClassId _) = Nothing
+
 -- | An Atom ... in pattern ... is R_f(v, v1, ..., vk), so we define it as a
 -- functor ast over pattern variables + the additional var for the e-class id
 data Atom lang = Atom ClassIdOrVar (lang ClassIdOrVar)
@@ -43,19 +50,38 @@ deriving instance (Show (lang ClassIdOrVar), Show (lang Var)) => Show (Query lan
 newtype Database lang = DB (Map (lang ()) (Fix ClassIdMap))
 deriving instance (Show (Fix ClassIdMap), Show (lang ())) => Show (Database lang)
 
--- insert :: Ord (ENode lang) => (ClassId, ENode lang) -> Database lang -> Database lang
--- insert (c,e) (DB m) = DB $ M.insert e (c,e) m
+varsInQuery :: Foldable lang => Query lang -> [Var]
+varsInQuery (Query _ atoms) =
+    case map (\case Atom (Var v) (toList -> l) -> v:mapMaybe toVar l; Atom _ (toList -> l) -> mapMaybe toVar l) atoms of
+        [] -> []
+        xs -> foldr1 union xs
 
--- | Take a query and produce substitutions from query variables to actual
--- classid
-genericJoin :: (Ord (lang ()), Foldable lang, Functor lang) => Database lang -> Query lang -> [(Var, ClassId)]
-genericJoin _ (Query [] _) = []
-genericJoin d (Query (x:xs) atoms) = concatMap (\d_x -> (x,d_x):genericJoin d (Query xs (substitute x d_x atoms))) domainX
+-- ROMES:TODO no longer so sure why the query needs [Var] (the free variables in
+-- the query, since the substitution includes ALL variables)... again, weird
+
+-- | Take a query and produce valid substitutions from query variables to actual
+-- classids
+genericJoin :: (Ord (lang ()), Foldable lang, Functor lang) => Database lang -> Query lang -> [Subst]
+genericJoin _ (varsInQuery -> []) = error "How did we get here?"
+-- This is the last variable, so we return a valid substitution for every
+-- possible value for the variable (hence, we prepend @x@ to each and make it
+-- its own substitution)
+genericJoin d q@(Query _ atoms)
+  | [x] <- varsInQuery q
+  = map ((:[]) . (x,)) (domainX x)
     where
-        atomsWithX = filter (x `elemOfAtom`) atoms
-
-        domainX :: [ClassId]
-        domainX = intersectAtoms d atomsWithX
+        atomsWithX x = filter (x `elemOfAtom`) atoms
+        domainX x = intersectAtoms d (atomsWithX x)
+-- ROMES:TODO the reverse order is probably faster bc people tend to put
+-- variables on the left of constants? e.g. (x + 0 = x)
+genericJoin d q@(Query qv atoms)
+  | x:xs <- varsInQuery q
+  = flip concatMap (domainX x) $ \x_in_D ->
+        -- Each valid sub-query assumed the x -> x_in_D substitution
+        map ((x,x_in_D):) $ genericJoin d (Query qv (substitute x x_in_D atoms))
+    where
+        atomsWithX x = filter (x `elemOfAtom`) atoms
+        domainX x = intersectAtoms d (atomsWithX x)
 
         substitute :: Functor lang => Var -> ClassId -> [Atom lang] -> [Atom lang]
         substitute r i = map $ \case
@@ -70,6 +96,7 @@ genericJoin d (Query (x:xs) atoms) = concatMap (\d_x -> (x,d_x):genericJoin d (Q
 elemOfAtom :: Foldable lang => Var -> Atom lang -> Bool
 elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
 
+-- ROMES:TODO Terrible name
 -- | Given a database and a list of Atoms with an occurring var @x@, find
 -- @D_x@, the domain of variable x, that is, the values x can take
 intersectAtoms :: (Ord (lang ()), Foldable lang, Functor lang) => Database lang -> [Atom lang] -> [ClassId]

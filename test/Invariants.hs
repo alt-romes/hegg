@@ -1,10 +1,7 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 module Main (main) where
-
-import Debug.Trace
 
 import Control.Monad
 import qualified Data.IntMap as IM
@@ -47,9 +44,8 @@ instance Arbitrary (EGraph ExprF) where
     arbitrary = sized $ \n -> do
         exps :: [Expr] <- forM [0..n] $ const arbitrary
         -- rws :: [Rewrite ExprF] <- forM [0..n] $ const arbitrary
-        (ids, eg) <- return $ runEGS emptyEGraph $ do
-            forM exps $ \exp -> do
-                represent exp
+        (ids, eg) <- return $ runEGS emptyEGraph $
+            mapM represent exps
         ids1 <- sublistOf ids
         ids2 <- sublistOf ids
         return $ snd $ runEGS eg $ do
@@ -81,6 +77,8 @@ main = do
 
 
 
+-- Test for 
+-- equalitySaturation @ExprF @Expr (("a"*(2/2))) ["~g"/"~g" := 1]
 
 
 -- putStrLn "runEGS emptyEGraph $ reprExpr (("a"*2)/2) >> merge 1 2"

@@ -7,14 +7,14 @@ module Database where
 
 import Debug.Trace
 import Data.Maybe (catMaybes, mapMaybe)
-import Data.List (intersect, union)
+import Data.List (intersect, union, nub)
 import Control.Monad
 
 import Data.Foldable (toList)
 import Data.Map (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.IntMap as IM
-import qualified Data.Tree as T
+import qualified Data.Set as S
 
 -- import GHC.Data.TrieMap
 
@@ -42,7 +42,7 @@ toVar (ClassId _) = Nothing
 data Atom lang = Atom ClassIdOrVar (lang ClassIdOrVar)
 deriving instance Show (lang ClassIdOrVar) => Show (Atom lang)
 
-data Query lang = Query [Var] [Atom lang]
+data Query lang = Query (S.Set Var) [Atom lang]
 deriving instance (Show (lang ClassIdOrVar), Show (lang Var)) => Show (Query lang)
 
 -- | Database made of trie maps for each relation. Each relation is uniquely
@@ -54,7 +54,7 @@ varsInQuery :: Foldable lang => Query lang -> [Var]
 varsInQuery (Query _ atoms) =
     case map (\case Atom (Var v) (toList -> l) -> v:mapMaybe toVar l; Atom _ (toList -> l) -> mapMaybe toVar l) atoms of
         [] -> []
-        xs -> foldr1 union xs
+        xs -> nub $ foldr1 union xs
 
 -- ROMES:TODO no longer so sure why the query needs [Var] (the free variables in
 -- the query, since the substitution includes ALL variables)... again, weird
@@ -102,15 +102,36 @@ elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
 intersectAtoms :: (Ord (lang ()), Foldable lang, Functor lang) => Database lang -> [Atom lang] -> [ClassId]
 -- lookup ... >>= ... to make sure non-existing patterns don't crash
 intersectAtoms (DB m) atoms =
-    case mapMaybe (\(Atom v l) -> M.lookup (void l) m >>= \r -> pure $ intersectInTrie r (v:toList l)) atoms of
+    case mapMaybe (\(Atom v l) -> M.lookup (void l) m >>= \r -> intersectInTrie r (v:toList l)) atoms of
       [] -> []
       ls -> foldr1 intersect ls
 
     where 
         relation l = m M.! void l
 
-        intersectInTrie :: Fix ClassIdMap -> [ClassIdOrVar] -> [ClassId]
+        -- Because ordering is left to right, first var observed is the
+        -- variable we're targeting
+        intersectInTrie :: Fix ClassIdMap -> [ClassIdOrVar] -> Maybe [ClassId]
         intersectInTrie (In m) [] = error "intersectInRelation should always be called in 'queries' that have at least one var... something went wrong"
-        intersectInTrie (In m) (Var x:xs) = map fst $ IM.toList m -- Return all possible values of var
+        -- Last variable is a var, so all possible values are possible
+        intersectInTrie (In m) [Var x] = Just (map fst $ IM.toList m)
+
+        -- Last variable is constant (lol), so the valid intersection value is itself if it exists in the map
+        intersectInTrie (In m) [ClassId x] = IM.lookup x m >> pure [x]
+
+        -- For all possible values of var see which result in a non-empty
+        -- intersection, in which its own occurence is replaced by the assumed value
+        intersectInTrie (In m) (Var x:xs) = Just $
+            flip mapMaybe (IM.toList m) $ \(k, ls) -> do
+                -- The resulting intersection for this value of var @x@ is
+                -- non-empty, meaning we can return it as a valid substitution
+                _ <- intersectInTrie ls (subst x k xs)
+                -- This will only happen if intersectInTrie returned @Just _@ (intersection was successful)
+                pure k
+
+
         intersectInTrie (In m) (ClassId x:xs) = intersectInTrie (m IM.! x) xs -- Recurse after descending one layer of the trie map
+
+        subst :: Var -> ClassId -> [ClassIdOrVar] -> [ClassIdOrVar]
+        subst v i = map (\case Var v' | v == v' -> ClassId i; x -> x)
 

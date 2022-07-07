@@ -11,6 +11,7 @@ module EMatching
 import Data.String
 import Data.Maybe
 
+import Data.List (nub)
 import Data.Foldable (toList)
 
 import Control.Monad
@@ -18,6 +19,7 @@ import Control.Monad.State
 
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
+import qualified Data.Set as S
 
 import EGraph.ENode
 import EGraph.EClass
@@ -115,7 +117,7 @@ data AuxResult lang = Var :~ [Atom lang]
 
 vars :: Foldable lang => PatternAST lang -> [Var]
 vars (VariablePattern x) = [x]
-vars (NonVariablePattern p) = join $ map vars $ toList p
+vars (NonVariablePattern p) = nub $ join $ map vars $ toList p
 
 compileToQuery :: (Traversable lang) => PatternAST lang -> Query lang
 compileToQuery = flip evalState 0 . compile_to_query'
@@ -124,7 +126,7 @@ compileToQuery = flip evalState 0 . compile_to_query'
         compile_to_query' (VariablePattern _) = error "sole variable pattern doesn't generate any atoms"
         compile_to_query' p = do
             root :~ atoms <- aux p
-            return (Query (root:vars p) atoms)
+            return (Query (S.fromList $ root:vars p) atoms)
 
         aux :: (Traversable lang) => PatternAST lang -> State Int (AuxResult lang)
         aux (VariablePattern x) = return (x :~ [])
@@ -145,7 +147,7 @@ compileToQuery = flip evalState 0 . compile_to_query'
                     subPatsToVars p boundVars = traverse (const $ (boundVars !!) <$> next) p
 
 fresh :: State Int String
-fresh = ('~':) . (letters !!) <$> next
+fresh = ('$':) . ('~':) . (letters !!) <$> next
     where letters :: [String]
           letters = [1..] >>= flip replicateM ['a'..'z']
 

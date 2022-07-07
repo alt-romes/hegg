@@ -102,7 +102,15 @@ elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
 intersectAtoms :: (Ord (lang ()), Foldable lang, Functor lang) => Database lang -> [Atom lang] -> [ClassId]
 -- lookup ... >>= ... to make sure non-existing patterns don't crash
 intersectAtoms (DB m) atoms =
-    case mapMaybe (\(Atom v l) -> M.lookup (void l) m >>= \r -> intersectInTrie r (v:toList l)) atoms of
+    case flip map atoms $ \(Atom v l) -> case M.lookup (void l) m of
+            -- If needed relation doesn't exist altogether, return the matching
+            -- class ids (none). When intersecting, nothing will be available
+            Nothing -> []
+            -- If needed relation does exist, find intersection in it
+            Just r  -> case intersectInTrie r (v:toList l) of
+                         Nothing -> error "intersectInTrie shouldn't return nothing outside of the recursion; failure here is denoted by an empty list of matching classes"
+                         Just rs -> rs
+                         of
       [] -> []
       ls -> foldr1 intersect ls
 

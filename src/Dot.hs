@@ -34,6 +34,9 @@ import Sym
 
 txt = pack . show
 
+writeDemo :: (Functor f, Foldable f, Show (ENode f)) => EGraph f -> IO ()
+writeDemo = writeDotFile "demo.gv" . toDotGraph
+
 toDotGraph :: (Functor f, Foldable f, Show (ENode f)) => EGraph f -> DotGraph Text
 toDotGraph eg = digraph (Str "egraph") $ do
 

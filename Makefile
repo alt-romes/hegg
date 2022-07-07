@@ -4,14 +4,10 @@ egraph.png: egraph.gv
 egraph.gv:
 	cabal run vizdot
 
-t: egraph-test.png
+.PHONY=demo
+demo demo.png: demo.gv
+	dot -Tpng $< > demo.png
 
-egraph-test.png: egraph-test.gv
-	dot -Tpng egraph-test.gv > egraph-test.png
-
-.PHONY=egraph-test.gv
-egraph-test.gv:
-	cabal run hegg-test
 
 .PHONY=clean viewtest
 clean:

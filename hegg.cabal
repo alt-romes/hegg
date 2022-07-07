@@ -1,6 +1,7 @@
 cabal-version:      2.4
 name:               hegg
 version:            0.1.0.0
+Tested-With: GHC ==9.2.2 || ==9.0.2 || ==8.10.7
 synopsis:
 
 -- A longer description of the package.

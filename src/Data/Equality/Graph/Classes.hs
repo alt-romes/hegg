@@ -1,6 +1,9 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE LambdaCase #-}
-module EGraph.EClass where
+{-|
+   Equivalence classes
+-}
+module Data.Equality.Graph.Classes where
 
 import qualified Data.Map    as M
 import qualified Data.IntMap as IM

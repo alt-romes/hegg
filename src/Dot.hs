@@ -23,12 +23,9 @@ import Data.GraphViz.Types.Monadic
 import Data.GraphViz.Attributes (style, dotted, textLabel)
 import Data.GraphViz.Attributes.Complete
 
--- TODO: Move modules to Equality.Graph.Node, Equality.Saturation, etc...
-import EqualitySaturation
-import EGraph.ENode
-import EGraph.EClass
-import EGraph
-import EMatching
+import Data.Equality.Saturation
+import Data.Equality.Graph
+import Data.Equality.Matching
 import Database
 import Sym
 

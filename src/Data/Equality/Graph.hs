@@ -1,9 +1,10 @@
 {-# LANGUAGE UndecidableInstances #-} -- Show (EGraph s) constraints
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module EGraph
-    ( ClassId, ENode(..)
-    , module EGraph
+module Data.Equality.Graph
+    ( module Data.Equality.Graph
+    , module Data.Equality.Graph.Classes
+    , module Data.Equality.Graph.Nodes
     ) where
 
 import Debug.Trace
@@ -17,9 +18,9 @@ import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 import qualified Data.Set    as S
 
-import EGraph.ReprUnionFind
-import EGraph.EClass
-import EGraph.ENode
+import Data.Equality.Graph.ReprUnionFind
+import Data.Equality.Graph.Classes
+import Data.Equality.Graph.Nodes
 
 -- | E-graph stateful computation
 type EGS s = State (EGraph s)

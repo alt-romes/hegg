@@ -3,7 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE BlockArguments #-}
-module EqualitySaturation where
+module Data.Equality.Saturation where
 
 import Data.Traversable
 import qualified Data.Map as M
@@ -11,9 +11,8 @@ import qualified Data.IntMap as IM
 import Control.Monad
 import Control.Monad.State
 
-import EGraph
-import EMatching
-import System.IO.Unsafe
+import Data.Equality.Graph
+import Data.Equality.Matching
 
 data Rewrite lang = PatternAST lang := PatternAST lang
 
@@ -74,4 +73,5 @@ equalitySaturation exp rewrites = egraph $ do
                     Nothing -> error "impossible: couldn't find v in subst?"
                     Just i  -> return i
             NonVariablePattern p -> reprPat subst p
+
 

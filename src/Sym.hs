@@ -12,8 +12,8 @@ import Data.String
 import Data.Functor.Foldable.TH
 import Data.Functor.Foldable
 
-import EMatching
-import EGraph
+import Data.Equality.Graph
+import Data.Equality.Matching
 
 data Expr = Sym String
           | Integer Integer

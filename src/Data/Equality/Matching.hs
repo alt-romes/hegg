@@ -2,8 +2,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
-module EMatching
-    ( module EMatching
+module Data.Equality.Matching
+    ( module Data.Equality.Matching
     , Subst
     )
     where
@@ -21,9 +21,7 @@ import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
 
-import EGraph.ENode
-import EGraph.EClass
-import EGraph
+import Data.Equality.Graph
 
 import Database
 
@@ -156,3 +154,4 @@ next = do
     i <- get
     put (i+1)
     return i
+

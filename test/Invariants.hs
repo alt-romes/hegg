@@ -8,11 +8,12 @@ import Test.Tasty.QuickCheck as QC
 import Test.Tasty.HUnit
 
 import Control.Monad
+
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
-import EGraph
-import EGraph.EClass
-import EqualitySaturation
+
+import Data.Equality.Graph
+import Data.Equality.Saturation
 import Sym
 import Dot
 

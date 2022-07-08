@@ -13,12 +13,9 @@ import Data.Text.Lazy (Text, pack)
 import qualified Data.Set as S
 import qualified Data.IntMap as IM
 
--- TODO: Move modules to Equality.Graph.Node, Equality.Saturation, etc...
-import EqualitySaturation
-import EGraph.ENode
-import EGraph.EClass
-import EGraph
-import EMatching
+import Data.Equality.Saturation
+import Data.Equality.Graph
+import Data.Equality.Matching
 import Database
 import Sym
 import Dot

@@ -18,9 +18,7 @@ import qualified Data.Set as S
 
 -- import GHC.Data.TrieMap
 
-import EGraph.EClass
-import EGraph.ENode
-import EGraph
+import Data.Equality.Graph
 
 newtype Fix f = In { out :: f (Fix f) }
 deriving instance Show (f (Fix f)) => Show (Fix f)

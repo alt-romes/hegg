@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeFamilies #-}
-module EGraph.ENode where
+module Data.Equality.Graph.Nodes where
 
 import qualified Data.Map    as M
 import qualified Data.IntMap as IM
@@ -7,7 +7,7 @@ import qualified Data.Set    as S
 
 import Data.Foldable
 
-import EGraph.EClass
+import Data.Equality.Graph.Classes
 
 -- | E-node
 --

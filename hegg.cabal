@@ -32,8 +32,13 @@ executable vizdot
     default-language: Haskell2010
 
 library
-    exposed-modules:  EGraph, EGraph.ENode, EGraph.EClass, EGraph.ReprUnionFind,
-                      Sym, EMatching, Database, EqualitySaturation, Dot
+    exposed-modules:  Data.Equality.Graph,
+                      Data.Equality.Graph.ReprUnionFind,
+                      Data.Equality.Graph.Classes,
+                      Data.Equality.Graph.Nodes,
+                      Data.Equality.Matching,
+                      Data.Equality.Saturation,
+                      Sym, Database, Dot
 
     -- Modules included in this library but not exported.
     -- other-modules:

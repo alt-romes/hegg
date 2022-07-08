@@ -22,15 +22,6 @@ source-repository head
     type: git
     location: https://github.com/alt-romes/hegg
 
-executable vizdot
-    main-is: VizDot.hs
-    build-depends:    base,
-                      hegg,
-                      containers,
-                      text
-    hs-source-dirs:   app
-    default-language: Haskell2010
-
 library
     exposed-modules:  Data.Equality.Graph,
                       Data.Equality.Graph.ReprUnionFind,
@@ -38,7 +29,7 @@ library
                       Data.Equality.Graph.Nodes,
                       Data.Equality.Matching,
                       Data.Equality.Saturation,
-                      Sym, Database, Dot
+                      Database, Dot
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -46,11 +37,10 @@ library
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
     build-depends:    base >= 4.4 && < 5,
-                      containers,
+                      text,
                       mtl,
-                      recursion-schemes,
-                      graphviz,
-                      text
+                      containers,
+                      graphviz
     hs-source-dirs:   src
     default-language: Haskell2010
 
@@ -59,10 +49,12 @@ test-suite hegg-test
     default-language: Haskell2010
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
-    main-is:          Invariants.hs
+    main-is:          Test.hs
+    other-modules:    Invariants, Sym
     build-depends:    base,
                       hegg,
                       containers,
+                      recursion-schemes,
                       tasty,
                       tasty-quickcheck,
                       tasty-hunit

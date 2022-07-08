@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
-module Main (main) where
+module Invariants where
 
 import Test.Tasty
 import Test.Tasty.QuickCheck as QC
@@ -75,18 +75,10 @@ instance Arbitrary Expr where
                 subexpr = expr' (n `div` 2)
             expr' _ = error "size is negative?"
 
-
-tests :: TestTree
-tests = testGroup "Tests"
+invariants :: TestTree
+invariants = testGroup "Invariants"
   [ QC.testProperty "Hash Cons Invariant" hciSym
-  -- , testCase "2+2=4" $
-  --     2+2 @?= 4
-  -- , testCase "7 is even" $
-  --     assertBool "Oops, 7 is odd" (even 7)
   ]
-
-main :: IO ()
-main = defaultMain tests
 
 -- Test for 
 -- equalitySaturation @ExprF @Expr (("a"*(2/2))) ["~g"/"~g" := 1]

@@ -34,20 +34,17 @@ equalitySaturation exp rewrites cost = runEGS emptyEGraph $ do
     origClass <- represent exp
 
     -- Run equality saturation
-    equalitySaturation'
+    equalitySaturation' 7 -- Stop after X iterations
 
     -- Extract best solution from the e-class of the original expression
     g <- get
     return $ extractBest g cost origClass
 
       where
-        represent :: Fix lang -> EGS lang ClassId
-        -- Represent each sub-expression and add the resulting e-node to the
-        -- e-graph
-        represent (Fix l) = traverse represent l >>= add
 
-        equalitySaturation' :: EGS lang ()
-        equalitySaturation' = do
+        equalitySaturation' :: Int -> EGS lang ()
+        equalitySaturation' 0 = return ()
+        equalitySaturation' i = do
 
             (EGraph { memo = beforeMemo, classes = beforeClasses }) <- get
 
@@ -77,9 +74,12 @@ equalitySaturation exp rewrites cost = runEGS emptyEGraph $ do
             
             (EGraph { memo = afterMemo, classes = afterClasses }) <- get
 
+            -- ROMES:TODO: Node limit...
+            -- ROMES:TODO: Actual Timeout... not just iteration timeout
             -- ROMES:TODO Better saturation (see Runner)
             -- Apply rewrites until saturated or ROMES:TODO: timeout
-            unless (M.size afterMemo == M.size beforeMemo && IM.size afterClasses == IM.size beforeClasses) equalitySaturation'
+            unless (M.size afterMemo == M.size beforeMemo && IM.size afterClasses == IM.size beforeClasses)
+                (equalitySaturation' (i-1))
 
 
         -- | Represent a pattern in the e-graph a pattern given substitions

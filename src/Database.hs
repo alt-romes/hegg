@@ -71,7 +71,7 @@ genericJoin d q@(Query _ atoms)
   = map ((:[]) . (x,)) (domainX x)
     where
         atomsWithX x = filter (x `elemOfAtom`) atoms
-        domainX x = intersectAtoms d (atomsWithX x)
+        domainX x = intersectAtoms x d (atomsWithX x)
 -- ROMES:TODO the reverse order is probably faster bc people tend to put
 -- variables on the left of constants? e.g. (x + 0 = x)
 genericJoin d q@(Query qv atoms)
@@ -81,7 +81,7 @@ genericJoin d q@(Query qv atoms)
         map ((x,x_in_D):) $ genericJoin d (Query qv (substitute x x_in_D atoms))
     where
         atomsWithX x = filter (x `elemOfAtom`) atoms
-        domainX x = intersectAtoms d (atomsWithX x)
+        domainX x = intersectAtoms x d (atomsWithX x)
 
         substitute :: Functor lang => Var -> ClassId -> [Atom lang] -> [Atom lang]
         substitute r i = map $ \case
@@ -99,9 +99,9 @@ elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
 -- ROMES:TODO Terrible name
 -- | Given a database and a list of Atoms with an occurring var @x@, find
 -- @D_x@, the domain of variable x, that is, the values x can take
-intersectAtoms :: (Ord (lang ()), Foldable lang, Functor lang) => Database lang -> [Atom lang] -> [ClassId]
+intersectAtoms :: (Ord (lang ()), Foldable lang, Functor lang) => Var -> Database lang -> [Atom lang] -> [ClassId]
 -- lookup ... >>= ... to make sure non-existing patterns don't crash
-intersectAtoms (DB m) atoms =
+intersectAtoms var (DB m) atoms =
     case flip map atoms $ \(Atom v l) -> case M.lookup (void l) m of
             -- If needed relation doesn't exist altogether, return the matching
             -- class ids (none). When intersecting, nothing will be available
@@ -120,25 +120,36 @@ intersectAtoms (DB m) atoms =
         -- Because ordering is left to right, first var observed is the
         -- variable we're targeting
         intersectInTrie :: Fix ClassIdMap -> [ClassIdOrVar] -> Maybe [ClassId]
-        intersectInTrie (In m) [] = error "intersectInRelation should always be called in 'queries' that have at least one var... something went wrong"
+        intersectInTrie (Fix m) [] = error "intersectInRelation should always be called in 'queries' that have at least one var... something went wrong"
         -- Last variable is a var, so all possible values are possible
-        intersectInTrie (In m) [Var x] = Just (map fst $ IM.toList m)
+        intersectInTrie (Fix m) [Var x] = Just (map fst $ IM.toList m)
 
         -- Last variable is constant (lol), so the valid intersection value is itself if it exists in the map
-        intersectInTrie (In m) [ClassId x] = IM.lookup x m >> pure [x]
+        intersectInTrie (Fix m) [ClassId x] = IM.lookup x m >> pure [x]
 
-        -- For all possible values of var see which result in a non-empty
+        -- ROMES:TODO: we assume that the first variable is the one we want, but that's not true.
+        -- For all possible values of the required var, see which result in a non-empty
         -- intersection, in which its own occurence is replaced by the assumed value
-        intersectInTrie (In m) (Var x:xs) = Just $
+        intersectInTrie (Fix m) (Var x:xs)
+          | x == var = Just $
             flip mapMaybe (IM.toList m) $ \(k, ls) -> do
                 -- The resulting intersection for this value of var @x@ is
                 -- non-empty, meaning we can return it as a valid substitution
                 _ <- intersectInTrie ls (subst x k xs)
                 -- This will only happen if intersectInTrie returned @Just _@ (intersection was successful)
                 pure k
+          -- We found a var which isn't the target, so we'll assume all
+          -- possible values of this variable and get intersections with the
+          -- actual var after
+          | otherwise = Just $
+            -- ROMES:TODO do I need nub?
+            nub $ concat $ flip mapMaybe (IM.toList m) $ \(k, ls) -> do
+                -- The resulting intersection for this value of var @x@ is some
+                -- of the possible values of the target var; return the sum of all valid
+                intersectInTrie ls (subst x k xs)
 
 
-        intersectInTrie (In m) (ClassId x:xs) = intersectInTrie (m IM.! x) xs -- Recurse after descending one layer of the trie map
+        intersectInTrie (Fix m) (ClassId x:xs) = intersectInTrie (m IM.! x) xs -- Recurse after descending one layer of the trie map
 
         subst :: Var -> ClassId -> [ClassIdOrVar] -> [ClassIdOrVar]
         subst v i = map (\case Var v' | v == v' -> ClassId i; x -> x)

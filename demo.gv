@@ -4,8 +4,10 @@ digraph egraph {
     subgraph cluster_0 {
         graph [style=dotted];
         0.0 [label=a];
-        0.1 [label="0 * 4"];
-        0.2 [label="2 / 1"];
+        0.1 [label="0 * 9"];
+        0.2 [label="0 * 9"];
+        0.0 [label="2 / 1"];
+        0.4 [label="5 / 4"];
     }
     subgraph cluster_1 {
         graph [style=dotted];
@@ -17,22 +19,46 @@ digraph egraph {
     }
     subgraph cluster_4 {
         graph [style=dotted];
-        4.0 [label=1];
-        4.1 [label="1 / 1"];
+        4.0 [label=5];
+    }
+    subgraph cluster_5 {
+        graph [style=dotted];
+        5.0 [label="0 * 4"];
+    }
+    subgraph cluster_9 {
+        graph [style=dotted];
+        9.0 [label=1];
+        9.1 [label="1 / 1"];
+        9.2 [label="4 / 4"];
     }
     0.1 -> 0.1 [label=0];
-    0.1 -> 4.0 [lhead=cluster_4
+    0.1 -> 9.0 [lhead=cluster_9
                ,label=1];
-    0.2 -> 2.0 [lhead=cluster_2
+    0.2 -> 0.2 [label=0];
+    0.2 -> 9.0 [lhead=cluster_9
+               ,label=1];
+    0.0 -> 2.0 [lhead=cluster_2
                ,label=0];
-    0.2 -> 1.0 [lhead=cluster_1
+    0.0 -> 1.0 [lhead=cluster_1
+               ,label=1];
+    0.4 -> 5.0 [lhead=cluster_5
+               ,label=0];
+    0.4 -> 4.0 [lhead=cluster_4
                ,label=1];
     2.0 -> 0.0 [lhead=cluster_0
                ,label=0];
     2.0 -> 1.0 [lhead=cluster_1
                ,label=1];
-    4.1 -> 1.0 [lhead=cluster_1
+    5.0 -> 0.0 [lhead=cluster_0
                ,label=0];
-    4.1 -> 1.0 [lhead=cluster_1
+    5.0 -> 4.0 [lhead=cluster_4
+               ,label=1];
+    9.1 -> 1.0 [lhead=cluster_1
+               ,label=0];
+    9.1 -> 1.0 [lhead=cluster_1
+               ,label=1];
+    9.2 -> 4.0 [lhead=cluster_4
+               ,label=0];
+    9.2 -> 4.0 [lhead=cluster_4
                ,label=1];
 }

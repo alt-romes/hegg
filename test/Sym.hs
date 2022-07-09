@@ -7,13 +7,19 @@
 {-# LANGUAGE LambdaCase #-}
 module Sym where
 
+import Test.Tasty
+import Test.Tasty.QuickCheck as QC
+import Test.Tasty.HUnit
+
 import Data.String
 
+import Data.Functor.Classes
 import Data.Functor.Foldable.TH
 import Data.Functor.Foldable
 
 import Data.Equality.Graph
 import Data.Equality.Matching
+import Data.Equality.Saturation
 
 data Expr = Sym String
           | Integer Integer
@@ -49,6 +55,9 @@ instance Show a => Show (ExprF a) where
 instance IsString Expr where
     fromString = Sym
 
+instance IsString (Fix ExprF) where
+    fromString = Fix . SymF
+
 instance Num Expr where
     (+) = BinOp Add
     (-) = BinOp Sub
@@ -57,9 +66,21 @@ instance Num Expr where
     abs = error "abs"
     signum = error "signum"
 
+instance Num (Fix ExprF) where
+    (+) a b = Fix (BinOpF Add a b)
+    (-) a b = Fix (BinOpF Sub a b)
+    (*) a b = Fix (BinOpF Mul a b)
+    fromInteger = Fix . IntegerF
+    abs = error "abs"
+    signum = error "signum"
+
 instance Fractional Expr where
     (/) = BinOp Div
     fromRational = Rational
+
+instance Fractional (Fix ExprF) where
+    (/) a b = Fix (BinOpF Div a b)
+    fromRational = Fix . RationalF
 
 instance ERepr Expr ExprF where
     represent = cata go
@@ -80,8 +101,25 @@ instance ERepr Expr ExprF where
 
     extract = error "extract not yet implemented"
 
+instance Show1 ExprF where
+    -- ROMES:TODO: Don't ignore precedence?
+    liftShowsPrec sp _ d = \case
+        BinOpF op e1 e2 ->
+            sp d e1 . showString (show op) . sp d e2
+        SymF x -> showString x
+        IntegerF i -> showString (show i)
+        RationalF f -> showString (show f)
+
 reprExpr :: Expr -> EGS ExprF ClassId
 reprExpr = represent
+
+symCost :: ExprF Cost -> Cost
+symCost = \case
+    BinOpF Div e1 e2 -> e1 + e2 + 3
+    BinOpF _ e1 e2 -> e1 + e2 + 2
+    SymF _ -> 1
+    IntegerF _ -> 1
+    RationalF _ -> 1
 
 instance Num (PatternAST ExprF) where
     (+) a b = NonVariablePattern $ BinOpF Add a b
@@ -94,3 +132,8 @@ instance Num (PatternAST ExprF) where
 instance Fractional (PatternAST ExprF) where
     (/) a b = NonVariablePattern $ BinOpF Div a b
     fromRational = NonVariablePattern . RationalF
+
+symTests :: TestTree
+symTests = testGroup "Symbolic"
+    [
+    ]

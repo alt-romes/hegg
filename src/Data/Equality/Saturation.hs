@@ -1,34 +1,51 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE BlockArguments #-}
-module Data.Equality.Saturation where
+module Data.Equality.Saturation
+    ( module Data.Equality.Saturation
+    , Fix(..), foldFix, unfoldFix
+    , Cost
+    ) where
 
-import Data.Traversable
+import qualified Data.Set as S
 import qualified Data.Map as M
 import qualified Data.IntMap as IM
+
+import Data.Functor.Classes
+import Data.Traversable
 import Control.Monad
 import Control.Monad.State
 
+import Data.Fix
+
 import Data.Equality.Graph
 import Data.Equality.Matching
+import Data.Equality.Extraction
 
 data Rewrite lang = PatternAST lang := PatternAST lang
-
 infix 3 :=
 
-equalitySaturation :: forall exp lang. (Show (lang (PatternAST lang)), Ord (lang ()), Ord (ENode lang), Traversable lang, ERepr exp lang) 
-                   => exp -> [Rewrite lang] -> EGraph lang
-equalitySaturation exp rewrites = egraph $ do
+equalitySaturation :: forall lang. (Show1 lang, Show (lang (PatternAST lang)), Ord (lang ()), Ord (ENode lang), Traversable lang) 
+                   => Fix lang -> [Rewrite lang] -> (lang Cost -> Cost) -> (Fix lang, EGraph lang)
+equalitySaturation exp rewrites cost = runEGS emptyEGraph $ do
 
     -- Represent expression as an e-graph
-    represent exp
+    origClass <- represent exp
 
     -- Run equality saturation
     equalitySaturation'
 
+    -- Extract best solution from the e-class of the original expression
+    g <- get
+    return $ extractBest g cost origClass
+
       where
+        represent :: Fix lang -> EGS lang ClassId
+        -- Represent each sub-expression and add the resulting e-node to the
+        -- e-graph
+        represent (Fix l) = traverse represent l >>= add
+
         equalitySaturation' :: EGS lang ()
         equalitySaturation' = do
 
@@ -62,7 +79,8 @@ equalitySaturation exp rewrites = egraph $ do
 
             -- ROMES:TODO Better saturation (see Runner)
             -- Apply rewrites until saturated or ROMES:TODO: timeout
-            when (not $ M.size afterMemo == M.size beforeMemo && IM.size afterClasses == IM.size beforeClasses) equalitySaturation'
+            unless (M.size afterMemo == M.size beforeMemo && IM.size afterClasses == IM.size beforeClasses) equalitySaturation'
+
 
         -- | Represent a pattern in the e-graph a pattern given substitions
         reprPat :: (Ord (ENode lang), Traversable lang)
@@ -73,5 +91,4 @@ equalitySaturation exp rewrites = egraph $ do
                     Nothing -> error "impossible: couldn't find v in subst?"
                     Just i  -> return i
             NonVariablePattern p -> reprPat subst p
-
 

@@ -3,10 +3,12 @@ import Test.Tasty.HUnit
 import Test.Tasty
 
 import Invariants
+import Sym
 
 tests :: TestTree
 tests = testGroup "Tests"
   [ invariants
+  , symTests
   -- , testCase "2+2=4" $
   --     2+2 @?= 4
   -- , testCase "7 is even" $

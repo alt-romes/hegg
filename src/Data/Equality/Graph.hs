@@ -7,7 +7,6 @@ module Data.Equality.Graph
     , module Data.Equality.Graph.Nodes
     ) where
 
-import Debug.Trace
 import Data.Bifunctor
 
 import Control.Monad
@@ -42,14 +41,14 @@ data EGraph s = EGraph
     , worklist  :: [ClassId] -- ^ e-class ids that need to be upward merged
     }
 
+-- ROMES:TODO: Monoid instance to join things built in paralell?
+
 instance Show (ENode s) => Show (EGraph s) where
     show (EGraph a b c e) =
         "UnionFind: " <> show a <>
             "\n\nE-Classes: " <> show b <>
                 "\n\nHashcons: " <> show c <>
                         "\n\nWorklist: " <> show e
-
-
 
 -- | Add an e-node to the e-graph
 --

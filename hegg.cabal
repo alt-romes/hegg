@@ -29,6 +29,7 @@ library
                       Data.Equality.Graph.Nodes,
                       Data.Equality.Matching,
                       Data.Equality.Saturation,
+                      Data.Equality.Extraction,
                       Database, Dot
 
     -- Modules included in this library but not exported.
@@ -40,6 +41,7 @@ library
                       text,
                       mtl,
                       containers,
+                      data-fix,
                       graphviz
     hs-source-dirs:   src
     default-language: Haskell2010

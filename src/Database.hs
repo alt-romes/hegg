@@ -5,6 +5,8 @@
 {-# LANGUAGE StandaloneDeriving #-}
 module Database where
 
+-- ROMES:TODO use Data.Fix
+
 import Debug.Trace
 import Data.Maybe (catMaybes, mapMaybe)
 import Data.List (intersect, union, nub)

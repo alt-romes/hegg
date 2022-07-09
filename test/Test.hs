@@ -7,8 +7,8 @@ import Sym
 
 tests :: TestTree
 tests = testGroup "Tests"
-  [ invariants
-  , symTests
+  [ symTests
+  , invariants
   -- , testCase "2+2=4" $
   --     2+2 @?= 4
   -- , testCase "7 is even" $

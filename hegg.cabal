@@ -36,10 +36,8 @@ library
     -- other-modules:
 
     -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
     build-depends:    base >= 4.4 && < 5,
-                      text,
-                      mtl,
+                      text, mtl,
                       containers,
                       data-fix,
                       graphviz
@@ -53,10 +51,10 @@ test-suite hegg-test
     hs-source-dirs:   test
     main-is:          Test.hs
     other-modules:    Invariants, Sym
+    other-extensions: OverloadedStrings
     build-depends:    base,
                       hegg,
                       containers,
-                      recursion-schemes,
                       tasty,
                       tasty-quickcheck,
                       tasty-hunit

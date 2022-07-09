@@ -14,7 +14,7 @@ import Data.Maybe
 import Data.List (nub)
 import Data.Foldable (toList)
 
--- ROMES:TODO use Data.Fix
+import Data.Fix
 
 import Control.Monad
 import Control.Monad.State
@@ -51,30 +51,16 @@ ematch pat eg =
         floatOutEClass [] = Nothing
         floatOutEClass ((_,root_class):xs) = Just (xs, root_class)
 
-        -- A function that can probably be much clearer.
-        --
-        -- "Unjoins" a list @[a,b,c,a,d,e]@ into @[[a,b,c],[a,d,e]]@ in which
-        -- @a@ is the root and always the head of every sublist
-        -- unjoinAtRoot root xs =
-        --     case break ((== root) . fst) xs of
-        --       ([], []) -> []
-        --       (xs, []) -> [xs]
-        --       ([], y:ys) -> case unjoinAtRoot root ys of
-        --                       [] -> [[y]]
-        --                       l:ls -> (y:l):ls -- add root back to list where it was split from
-        --       (zs, y:ys) -> case unjoinAtRoot root ys of
-        --                       [] -> [zs, [y]]
-        --                       l:ls -> zs:((y:l):ls)
-
-
+-- | Convert an e-graph into a database in which we do the conjunctive queries
+--
+-- @
 -- newtype Database lang = DB (Map (lang ()) (Fix ClassIdMap))
 --
 -- data EGraph s = EGraph
 --     { ...
 --     , memo      :: Map (ENode s) ClassId
 --     }
-
--- | Convert an e-graph into a database in which we do the conjunctive queries
+-- @
 eGraphToDatabase :: (Ord (lang ()), Functor lang, Foldable lang) => EGraph lang -> Database lang
 eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB M.empty) memo
   where
@@ -88,18 +74,18 @@ eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB M.empty
 
     -- Populate or create a triemap given the population D_x (ClassIds)
     populate :: [ClassId] -> Maybe (Fix ClassIdMap) -> Maybe (Fix ClassIdMap)
-    populate ids Nothing = Just $ populate' ids (In IM.empty)
+    populate ids Nothing = Just $ populate' ids (Fix IM.empty)
     populate ids (Just f) = Just $ populate' ids f
 
     -- Populate a triemap given the population D_x (ClassIds)
     populate' :: [ClassId] -> Fix ClassIdMap -> Fix ClassIdMap
-    populate' [] (In m) = In m
-    populate' (x:xs) (In m) = In $ IM.alter (alterPopulation xs) x m
+    populate' [] (Fix m) = Fix m
+    populate' (x:xs) (Fix m) = Fix $ IM.alter (alterPopulation xs) x m
       where
         -- Insert remaining ids population doesn't exist, recursively merge tries with remaining ids
         alterPopulation :: [ClassId] -> Maybe (Fix ClassIdMap) -> Maybe (Fix ClassIdMap)
         -- If trie map entry doesn't exist yet, populate an empty map with the remaining ids
-        alterPopulation ids Nothing = Just $ populate' ids (In IM.empty)
+        alterPopulation ids Nothing = Just $ populate' ids (Fix IM.empty)
         -- If trie map entry already exists, populate the existing map with the remaining ids
         alterPopulation ids (Just f) = Just $ populate' ids f
 

@@ -9,6 +9,8 @@ module Data.Equality.Graph
 
 import Data.Bifunctor
 
+import Data.Fix
+
 import Control.Monad
 import Control.Monad.State
 
@@ -49,6 +51,11 @@ instance Show (ENode s) => Show (EGraph s) where
             "\n\nE-Classes: " <> show b <>
                 "\n\nHashcons: " <> show c <>
                         "\n\nWorklist: " <> show e
+
+-- | Represent an expression (@Fix lang@) in an e-graph
+represent :: (Ord (ENode lang), Traversable lang) => Fix lang -> EGS lang ClassId
+-- Represent each sub-expression and add the resulting e-node to the e-graph
+represent (Fix l) = traverse represent l >>= add
 
 -- | Add an e-node to the e-graph
 --
@@ -254,10 +261,4 @@ getSize = gets sizeEGraph
 
 sizeEGraph :: EGraph s -> Int
 sizeEGraph (EGraph { unionFind = (RUF im) }) = IM.size im
-
-class ERepr a r where
-    -- | Represent an expression with an e-graph computation that returns the
-    -- e-class id that represents the expression
-    represent :: a -> EGS r ClassId
-    extract   :: ENode r -> EGraph r -> a 
 

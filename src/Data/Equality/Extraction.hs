@@ -31,7 +31,8 @@ runExtraction = flip evalState M.empty
 -- necessarily all the best sub-expressions from children equilalence classes
 --
 -- Receives a class id, a cost function, and an e-graph
-extractBest :: (Traversable lang, Show1 lang, Ord (ENode lang)) => EGraph lang -> (lang Cost -> Cost) -> ClassId -> Fix lang
+extractBest :: (Traversable lang, Show1 lang, Ord (ENode lang))
+            => EGraph lang -> (lang Cost -> Cost) -> ClassId -> Fix lang
 extractBest g cost (flip find g -> i) = runExtraction $ do
 
     -- Use `egg`s strategy of find costs for all possible classes and then just

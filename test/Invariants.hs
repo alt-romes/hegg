@@ -41,13 +41,13 @@ hashConsInvariant eg@(EGraph {..}) =
 -- ROMES:TODO: Property: Extract expression after equality saturation is always better or equal to the original expression
 
 
-hciSym :: EGraph ExprF -> Bool
+hciSym :: EGraph Expr -> Bool
 hciSym = hashConsInvariant
 
-instance Arbitrary (EGraph ExprF) where
+instance Arbitrary (EGraph Expr) where
     arbitrary = sized $ \n -> do
-        exps :: [Expr] <- forM [0..n] $ const arbitrary
-        -- rws :: [Rewrite ExprF] <- forM [0..n] $ const arbitrary
+        exps <- forM [0..n] $ const arbitrary
+        -- rws :: [Rewrite Expr] <- forM [0..n] $ const arbitrary
         (ids, eg) <- return $ runEGS emptyEGraph $
             mapM represent exps
         ids1 <- sublistOf ids
@@ -63,16 +63,16 @@ instance Arbitrary Op where
                       , return Mul
                       , return Div ]
 
-instance Arbitrary Expr where
-    arbitrary = sized expr'
+instance Arbitrary (Fix Expr) where
+    arbitrary = sized (fmap Fix . expr')
         where
             expr' 0 = oneof [ Sym <$> arbitrary
-                            , Integer <$> arbitrary
+                            , Const . fromInteger <$> arbitrary
                             ]
             expr' n
               | n > 0 = BinOp <$> arbitrary <*> subexpr <*> subexpr
               where 
-                subexpr = expr' (n `div` 2)
+                subexpr = Fix <$> expr' (n `div` 2)
             expr' _ = error "size is negative?"
 
 invariants :: TestTree
@@ -80,10 +80,3 @@ invariants = testGroup "Invariants"
   [ QC.testProperty "Hash Cons Invariant" hciSym
   ]
 
--- Test for 
--- equalitySaturation @ExprF @Expr (("a"*(2/2))) ["~g"/"~g" := 1]
-
-
--- putStrLn "runEGS emptyEGraph $ reprExpr (("a"*2)/2) >> merge 1 2"
--- putStrLn "runEGS emptyEGraph $ reprExpr (("a"*2)/2+0) >> reprExpr (2/2) >>= \idiv -> reprExpr 1 >>= \i1 -> reprExpr ("a"*1) >>= \imul1 -> reprExpr "a" >>= \ia -> reprExpr ("a"*(2/2)) >>= \i -> merge imul1 ia >> merge 3 i >> merge i1 idiv >> merge 3 5 >> rebuild"
--- putStrLn "compileToQuery (NonVariablePattern (BinOpF Add "z" (NonVariablePattern (IntegerF 0))))"

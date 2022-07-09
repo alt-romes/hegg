@@ -5,7 +5,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 module Database where
 
--- ROMES:TODO use Data.Fix
+import Data.Fix
 
 import Debug.Trace
 import Data.Maybe (catMaybes, mapMaybe)
@@ -21,9 +21,6 @@ import qualified Data.Set as S
 -- import GHC.Data.TrieMap
 
 import Data.Equality.Graph
-
-newtype Fix f = In { out :: f (Fix f) }
-deriving instance Show (f (Fix f)) => Show (Fix f)
 
 -- | Query variable
 type Var = String
@@ -48,7 +45,12 @@ deriving instance (Show (lang ClassIdOrVar), Show (lang Var)) => Show (Query lan
 -- | Database made of trie maps for each relation. Each relation is uniquely
 -- identified by the expressions modulo children expressions (hence @lang ()@)
 newtype Database lang = DB (Map (lang ()) (Fix ClassIdMap))
-deriving instance (Show (Fix ClassIdMap), Show (lang ())) => Show (Database lang)
+
+instance Show (lang ()) => Show (Database lang) where
+    show (DB m) = unlines $ map (\(a,b) -> show a <> ": " <> show' 0 b) $ M.toList m where
+        show' :: Int -> Fix ClassIdMap -> String
+        show' s m = flip foldFix m $ \case
+            (IM.toList -> m') -> unlines $ map (\(k,w) -> show k <> " --> " <> w) m'
 
 varsInQuery :: Foldable lang => Query lang -> [Var]
 varsInQuery (Query _ atoms) =

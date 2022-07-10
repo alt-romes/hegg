@@ -18,7 +18,6 @@ import Data.Equality.Saturation
 import Data.Equality.Matching
 import Database
 import Sym
-import Dot
 
 
 -- | If we match a singleton variable pattern against an e-graph, we should get

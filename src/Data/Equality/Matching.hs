@@ -42,14 +42,18 @@ ematch :: (Ord (lang ()), Traversable lang)
 ematch pat eg =
     let db = eGraphToDatabase eg
         q = compileToQuery pat
-    -- genericJoin folds all matches, so, starting with the root variable, we group a level of the query by the root variable to get the substitutions for each e-class
-     in mapMaybe floatOutEClass (genericJoin db q)
+     in mapMaybe copyOutEClass (genericJoin db q)
     where
         -- Given a substitution in which the first element is the pair
-        -- (root_var,root_class), float the root_class out and return it with
-        -- the substitution
-        floatOutEClass [] = Nothing
-        floatOutEClass ((_,root_class):xs) = Just (xs, root_class)
+        -- (root_var,root_class), copy the root_class out and return it with
+        -- the substitution.
+        -- 
+        -- That is, we return the e-class where the pattern was matched, and
+        -- the list of substitutions for all variables including the root. The
+        -- root variable is needed in the substitution for single variable
+        -- queries to find the subst
+        copyOutEClass [] = Nothing
+        copyOutEClass l@((_,root_class):xs) = Just (l, root_class)
 
 -- | Convert an e-graph into a database in which we do the conjunctive queries
 --
@@ -109,13 +113,13 @@ compileToQuery :: (Traversable lang) => PatternAST lang -> Query lang
 compileToQuery = flip evalState 0 . compile_to_query'
     where
         compile_to_query' :: (Traversable lang) => PatternAST lang -> State Int (Query lang)
-        compile_to_query' (VariablePattern _) = error "sole variable pattern doesn't generate any atoms"
-        compile_to_query' p = do
+        compile_to_query' (VariablePattern x) = return (SelectAllQuery x)
+        compile_to_query' p@(NonVariablePattern _) = do
             root :~ atoms <- aux p
             return (Query (S.fromList $ root:vars p) atoms)
 
         aux :: (Traversable lang) => PatternAST lang -> State Int (AuxResult lang)
-        aux (VariablePattern x) = return (x :~ [])
+        aux (VariablePattern x) = return $ x :~ []
         aux (NonVariablePattern p) = do
             v <- fresh
             auxs <- sequence (toList (fmap aux p))

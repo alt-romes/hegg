@@ -116,8 +116,10 @@ merge a b = do
                    new_parents = map (second (`find` eg')) $ eClassParents sub_class <> ps
            modifyClasses (IM.update updateLeader leader)
 
-           -- Recanonize all leader nodes in memo (also didn't see this in
-           -- their implementation...)
+           -- Recanonize all leader nodes in memo
+           --
+           -- ROMES:TODO Rebuild  should maintain both invariants instead of
+           -- merge...
            eg'' <- get
            let EClass _ ns _ = snd $ getClass leader eg'' :: EClass s
            forM_ (S.toList ns) $ \l -> do

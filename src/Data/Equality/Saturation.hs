@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
@@ -7,6 +8,8 @@ module Data.Equality.Saturation
     , Fix(..), foldFix, unfoldFix
     , Cost
     ) where
+
+import Debug.Trace
 
 import qualified Data.Set as S
 import qualified Data.Map as M
@@ -34,7 +37,7 @@ equalitySaturation exp rewrites cost = runEGS emptyEGraph $ do
     origClass <- represent exp
 
     -- Run equality saturation
-    equalitySaturation' 7 -- Stop after X iterations
+    equalitySaturation' 700 -- Stop after X iterations
 
     -- Extract best solution from the e-class of the original expression
     g <- get

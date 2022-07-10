@@ -157,52 +157,54 @@ pattern LnP a = NonVariablePattern (Ln a)
 
 rewrites :: [Rewrite Expr]
 rewrites =
-    [ -- "x"+"y" := "y"+"x" -- comm add
-    -- ROMES:TODO: This rule recurses infinitely "x"*"y" := "y"*"x" -- comm mul
-    "x"+("y"+"z") := ("x"+"y")+"z" -- assoc add
-    , ("x"+"y")+"z" := "x"+("y"+"z")
-    
+    [ "x"+"y" := "y"+"x" -- comm add
+    , "x"*"y" := "y"*"x" -- comm mul
+    , "x"+("y"+"z") := ("x"+"y")+"z" -- assoc add
     , "x"*("y"*"z") := ("x"*"y")*"z" -- assoc mul
-    , ("x"*"y")*"z" := "x"*("y"*"z")
 
-    , ("x"*"y")/"z" := "x"*("y"/"z")
-
-    -- canon ones?
+    , "x"-"y" := "x"+(-"y") -- sub cannon
+    -- , "x"-"y" := "x"+(-"y") -- TODO div canon
 
     -- identities
     , "x"+0 := "x"
     , "x"*0 := 0
     , "x"*1 := "x"
 
+    , "x" := "x"+0
+    , "x" := "x"*1
+
+    , "a"-"a" := 1 -- cancel sub
+    , "a"/"a" := 1 -- cancel div
+
     , "x"*("y"+"z") := ("x"*"y")+("x"*"z") -- distribute
     , ("x"*"y")+("x"*"z") := "x"+("y"+"z") -- factor
 
-    , PowP "a" "b"*PowP "a" "c" := PowP "a" ("b" + "c") -- pow mul
-    , PowP "a" 0 := 1
-    , PowP "a" 1 := "a"
-    , PowP "a" 2 := "a"*"a"
-    , PowP "a" (-1) := 1/"a"
+    , "x"*(1/"x") := 1
 
-    -- for test2
-    , "a"+(-"a") := 0
-    , "a"-"b" := "a"+(-"b")
-    -- , -("a"+"b") := -"a"-"b"
-    , 2*"a" := "a"+"a"
+    -- , PowP "a" "b"*PowP "a" "c" := PowP "a" ("b" + "c") -- pow mul
+    -- , PowP "a" 0 := 1
+    -- , PowP "a" 1 := "a"
+    -- , PowP "a" 2 := "a"*"a"
+    -- , PowP "a" (-1) := 1/"a"
 
-    , "a"/"a" := 1
+    -- -- for test2
+    -- , "a"+(-"a") := 0
+    -- , "a"-"b" := "a"+(-"b")
+    -- -- , -("a"+"b") := -"a"-"b"
+    -- , 2*"a" := "a"+"a"
 
-    , "a"*(1/"b") := "a"/"b"
+    -- , "a"*(1/"b") := "a"/"b"
 
-    , DiffP "x" "x" := 1
-    , DiffP "x" "y" := 0
+    -- , DiffP "x" "x" := 1
+    -- , DiffP "x" "y" := 0
 
-    , DiffP "x" ("a" + "b") := DiffP "x" "a" + DiffP "x" "b"
-    , DiffP "x" ("a" * "b") := ("a"*DiffP "x" "b") + ("b"*DiffP "x" "a")
+    -- , DiffP "x" ("a" + "b") := DiffP "x" "a" + DiffP "x" "b"
+    -- , DiffP "x" ("a" * "b") := ("a"*DiffP "x" "b") + ("b"*DiffP "x" "a")
 
-    , DiffP "x" (SinP "x") := CosP "x"
-    , DiffP "x" (CosP "x") := - SinP "x"
+    -- , DiffP "x" (SinP "x") := CosP "x"
+    -- , DiffP "x" (CosP "x") := - SinP "x"
 
-    , DiffP "x" (LnP "x") := 1/"x"
+    -- , DiffP "x" (LnP "x") := 1/"x"
 
     -- ...
     ]
@@ -220,7 +222,7 @@ rewrites2 =
     -- , "x" * 1 := "x" -- id mul
     -- , "x"+"y" := "y"+"x" -- comm add
     -- , "x"*"y" := "y"*"x" -- comm mul
-    -- , "x"+("y"+"z") := ("x"+"y")+"z" -- assoc add
+    -- "x"+("y"+"z") := ("x"+"y")+"z" -- assoc add
     -- , "x"*("y"*"z") := ("x"*"y")*"z" -- assoc mul
     ]
 

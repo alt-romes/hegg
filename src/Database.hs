@@ -39,7 +39,7 @@ toVar (ClassId _) = Nothing
 data Atom lang = Atom ClassIdOrVar (lang ClassIdOrVar)
 deriving instance Show (lang ClassIdOrVar) => Show (Atom lang)
 
-data Query lang = Query (S.Set Var) [Atom lang]
+data Query lang = Query (S.Set Var) [Atom lang] | SelectAllQuery Var
 deriving instance (Show (lang ClassIdOrVar), Show (lang Var)) => Show (Query lang)
 
 -- | Database made of trie maps for each relation. Each relation is uniquely
@@ -63,8 +63,12 @@ varsInQuery (Query _ atoms) =
 
 -- | Take a query and produce valid substitutions from query variables to actual
 -- classids
+--
+-- ROMES:TODO a less ad-hoc/specialized implementation of generic join...
 genericJoin :: (Ord (lang ()), Foldable lang, Functor lang) => Database lang -> Query lang -> [Subst]
-genericJoin _ (varsInQuery -> []) = error "How did we get here?"
+-- We want to match against ANYTHING, so we return a valid substitution for
+-- all existing e-class: get all relations and make a substition for each class in that relation, then join all substitutions across all classes
+genericJoin (DB m) (SelectAllQuery x) = concatMap (\(_,Fix clss) -> map ((:[]) . (x,) . fst) $ IM.toList clss) (M.toList m)
 -- This is the last variable, so we return a valid substitution for every
 -- possible value for the variable (hence, we prepend @x@ to each and make it
 -- its own substitution)
@@ -93,6 +97,7 @@ genericJoin d q@(Query qv atoms)
                             Var vi
                               | vi == r -> ClassId i
                             vi -> vi
+genericJoin _ _ = error "How did we get here?"
 
 
 elemOfAtom :: Foldable lang => Var -> Atom lang -> Bool

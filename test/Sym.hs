@@ -237,16 +237,16 @@ symTests = testGroup "Symbolic"
     [ testCase "1" $
         rewrite (("a"*2)/2) @?= "a"
 
-    , testCase "2" $
-        rewrite (1 + ("a" - ("a"*(2-1)))) @?= 1
+    -- , testCase "2" $
+    --     rewrite (1 + ("a" - ("a"*(2-1)))) @?= 1
 
-    , testCase "d1" $
-        rewrite (Fix $ Diff "a" "a") @?= 1
+    -- , testCase "d1" $
+    --     rewrite (Fix $ Diff "a" "a") @?= 1
 
-    , testCase "d2" $
-        rewrite (Fix $ Diff "a" "b") @?= 0
+    -- , testCase "d2" $
+    --     rewrite (Fix $ Diff "a" "b") @?= 0
 
-    , testCase "d3" $
-        rewrite (Fix $ Diff "x" (1 + 2*"x")) @?= 2
+    -- , testCase "d3" $
+    --     rewrite (Fix $ Diff "x" (1 + 2*"x")) @?= 2
 
     ]

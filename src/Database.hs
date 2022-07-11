@@ -39,7 +39,7 @@ toVar (ClassId _) = Nothing
 data Atom lang = Atom ClassIdOrVar (lang ClassIdOrVar)
 deriving instance Show (lang ClassIdOrVar) => Show (Atom lang)
 
-data Query lang = Query (S.Set Var) [Atom lang] | SelectAllQuery Var
+data Query lang = Query [Var] [Atom lang] | SelectAllQuery Var
 deriving instance (Show (lang ClassIdOrVar), Show (lang Var)) => Show (Query lang)
 
 -- | Database made of trie maps for each relation. Each relation is uniquely
@@ -60,6 +60,9 @@ varsInQuery (Query _ atoms) =
     of
         [] -> []
         xs -> nub $ foldr1 union xs
+
+queryHeadVars :: Foldable lang => Query lang -> [Var]
+queryHeadVars (Query qv _) = qv
 
 -- ROMES:TODO no longer so sure why the query needs [Var] (the free variables in
 -- the query, since the substitution includes ALL variables)... again, weird

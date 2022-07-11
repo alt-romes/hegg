@@ -117,7 +117,7 @@ compileToQuery = flip evalState 0 . compile_to_query'
         compile_to_query' (VariablePattern x) = return (SelectAllQuery x)
         compile_to_query' p@(NonVariablePattern _) = do
             root :~ atoms <- aux p
-            return (Query (S.fromList $ root:vars p) atoms)
+            return (Query (nub $ root:vars p) atoms)
 
         aux :: (Traversable lang) => PatternAST lang -> State Int (AuxResult lang)
         aux (VariablePattern x) = return $ x :~ [] -- from definition in relational e-matching paper (needed for as base case for recursion)

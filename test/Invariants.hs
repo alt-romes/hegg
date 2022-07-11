@@ -26,14 +26,14 @@ import Sym
 
 -- | Test 'compileToQuery'.
 --
--- Every pattern compiled to a query should have the same number of free variables
+-- Every pattern compiled to a query should have the same number of free variables (except for the root variable)
 -- as the pattern + 1
 testCompileToQuery :: Show (lang ClassIdOrVar) => Show (lang Var) => Traversable lang => PatternAST lang -> Bool
 testCompileToQuery p = case compileToQuery p of
-                         (varsInQuery -> []) -> trace "No vars in query" False
-                         (varsInQuery -> x:xs) ->
-                             trace ("Query: " <> show (compileToQuery p, xs) <> " | Pattern vars: " <> show (vars p)) $
-                                 L.sort xs == L.sort (vars p)
+                         -- Handle special case for selectAll queries...
+                         SelectAllQuery x -> [x] == vars p
+                         (queryHeadVars -> []) -> False
+                         (queryHeadVars -> x:xs) -> L.sort xs == L.sort (vars p)
 
 
 -- | If we match a singleton variable pattern against an e-graph, we should get
@@ -120,7 +120,7 @@ instance Arbitrary (PatternAST Expr) where
 invariants :: TestTree
 invariants = testGroup "Invariants"
   [ QC.testProperty "Compile to query" (testCompileToQuery @Expr)
-  -- , QC.testProperty "Singleton variable matches all" (ematchSingletonVar @Expr)
-  -- , QC.testProperty "Hash Cons Invariant" (hashConsInvariant @Expr)
+  , QC.testProperty "Singleton variable matches all" (ematchSingletonVar @Expr)
+  , QC.testProperty "Hash Cons Invariant" (hashConsInvariant @Expr)
   ]
 

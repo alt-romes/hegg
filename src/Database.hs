@@ -1,5 +1,4 @@
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -40,9 +39,7 @@ toVar (ClassId _) = Nothing
 data Atom lang = Atom ClassIdOrVar (lang ClassIdOrVar)
 deriving instance Show (lang ClassIdOrVar) => Show (Atom lang)
 
--- ROMES:TODO Re-add query head free vars to query, so bound vars can be
--- projected out of the substitution
-data Query lang = Query [Atom lang]
+data Query lang = Query (S.Set Var) [Atom lang] | SelectAllQuery Var
 deriving instance (Show (lang ClassIdOrVar), Show (lang Var)) => Show (Query lang)
 
 -- | Database made of trie maps for each relation. Each relation is uniquely
@@ -56,13 +53,13 @@ instance Show (lang ()) => Show (Database lang) where
             (IM.toList -> m') -> unlines $ map (\(k,w) -> show k <> " --> " <> w) m'
 
 varsInQuery :: Foldable lang => Query lang -> [Var]
-varsInQuery (Query atoms) =
-    case for atoms $ \case
+varsInQuery (Query _ atoms) =
+    case flip map atoms $ \case
             Atom (Var v) (toList -> l) -> v:mapMaybe toVar l
             Atom _ (toList -> l) -> mapMaybe toVar l
     of
         [] -> []
-        xs -> foldr1 union xs
+        xs -> nub $ foldr1 union xs
 
 -- ROMES:TODO no longer so sure why the query needs [Var] (the free variables in
 -- the query, since the substitution includes ALL variables)... again, weird
@@ -72,10 +69,13 @@ varsInQuery (Query atoms) =
 --
 -- ROMES:TODO a less ad-hoc/specialized implementation of generic join...
 genericJoin :: (Ord (lang ()), Foldable lang, Functor lang) => Database lang -> Query lang -> [Subst]
+-- We want to match against ANYTHING, so we return a valid substitution for
+-- all existing e-class: get all relations and make a substition for each class in that relation, then join all substitutions across all classes
+genericJoin (DB m) (SelectAllQuery x) = concatMap (\(_,Fix clss) -> map ((:[]) . (x,) . fst) $ IM.toList clss) (M.toList m)
 -- This is the last variable, so we return a valid substitution for every
 -- possible value for the variable (hence, we prepend @x@ to each and make it
 -- its own substitution)
-genericJoin d q@(Query atoms)
+genericJoin d q@(Query qv atoms)
   | [x] <- varsInQuery q
   = map ((:[]) . (x,)) (domainX x)
 -- ROMES:TODO the reverse order is probably faster bc people tend to put
@@ -83,22 +83,20 @@ genericJoin d q@(Query atoms)
   | x:xs <- varsInQuery q
   = flip concatMap (domainX x) $ \x_in_D ->
         -- Each valid sub-query assumed the x -> x_in_D substitution
-        map ((x,x_in_D):) $ genericJoin d (Query (substitute x x_in_D atoms))
+        map ((x,x_in_D):) $ genericJoin d (Query qv (substitute x x_in_D atoms))
   | otherwise = error "Query should always have at least one var"
+   where
+       atomsWithX x = filter (x `elemOfAtom`) atoms
+       domainX x = intersectAtoms x d (atomsWithX x)
 
-  where
-
-    atomsWithX x = filter (x `elemOfAtom`) atoms
-    domainX x = intersectAtoms x d (atomsWithX x)
-
-    substitute :: Functor lang => Var -> ClassId -> [Atom lang] -> [Atom lang]
-    substitute r i = map $ \case
-        Atom (Var v) l
-          | v == r -> Atom (ClassId i) l
-        Atom x l -> Atom x $ flip fmap l $ \case
-                        Var vi
-                          | vi == r -> ClassId i
-                        vi -> vi
+       substitute :: Functor lang => Var -> ClassId -> [Atom lang] -> [Atom lang]
+       substitute r i = map $ \case
+           Atom (Var v) l
+             | v == r -> Atom (ClassId i) l
+           Atom x l -> Atom x $ flip fmap l $ \case
+                           Var vi
+                             | vi == r -> ClassId i
+                           vi -> vi
 
 
 elemOfAtom :: Foldable lang => Var -> Atom lang -> Bool
@@ -110,17 +108,15 @@ elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
 intersectAtoms :: (Ord (lang ()), Foldable lang, Functor lang) => Var -> Database lang -> [Atom lang] -> [ClassId]
 -- lookup ... >>= ... to make sure non-existing patterns don't crash
 intersectAtoms var (DB m) atoms =
-    case flip map atoms $ \case
-            -- SingletonAtom _ -> concatMap (\(_,Fix clss) -> map fst $ IM.toList clss) (M.toList m)
-            Atom v l -> case M.lookup (void l) m of
-                -- If needed relation doesn't exist altogether, return the matching
-                -- class ids (none). When intersecting, nothing will be available
-                Nothing -> []
-                -- If needed relation does exist, find intersection in it
-                Just r  -> case intersectInTrie r (v:toList l) of
-                             Nothing -> error "intersectInTrie shouldn't return nothing outside of the recursion; failure here is denoted by an empty list of matching classes"
-                             Just rs -> rs
-                             of
+    case flip map atoms $ \(Atom v l) -> case M.lookup (void l) m of
+            -- If needed relation doesn't exist altogether, return the matching
+            -- class ids (none). When intersecting, nothing will be available
+            Nothing -> []
+            -- If needed relation does exist, find intersection in it
+            Just r  -> case intersectInTrie r (v:toList l) of
+                         Nothing -> error "intersectInTrie shouldn't return nothing outside of the recursion; failure here is denoted by an empty list of matching classes"
+                         Just rs -> rs
+                         of
       [] -> []
       ls -> foldr1 intersect ls
 
@@ -164,4 +160,3 @@ intersectAtoms var (DB m) atoms =
         subst :: Var -> ClassId -> [ClassIdOrVar] -> [ClassIdOrVar]
         subst v i = map (\case Var v' | v == v' -> ClassId i; x -> x)
 
-for = flip map

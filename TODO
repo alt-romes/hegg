@@ -4,3 +4,4 @@ Should all nodes in maps be canonical? Or better to keep finding them when need 
 Efficient folding with Mu rather than Fix?
 Lenses for accessing e-nodes as full nodes?
 Drop dependencies
+Continuous database carried in the e-graph, also updated when rebuilding... (how?)

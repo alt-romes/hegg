@@ -1,14 +1,19 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 module Invariants where
 
+import Debug.Trace
 import Test.Tasty
 import Test.Tasty.QuickCheck as QC hiding (classes)
 import Test.Tasty.HUnit
 
 import Control.Monad
 
+import qualified Data.List as L
 import qualified Data.Set as S
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
@@ -18,6 +23,17 @@ import Data.Equality.Saturation
 import Data.Equality.Matching
 import Database
 import Sym
+
+-- | Test 'compileToQuery'.
+--
+-- Every pattern compiled to a query should have the same number of free variables
+-- as the pattern + 1
+testCompileToQuery :: Show (lang ClassIdOrVar) => Show (lang Var) => Traversable lang => PatternAST lang -> Bool
+testCompileToQuery p = case compileToQuery p of
+                         (varsInQuery -> []) -> trace "No vars in query" False
+                         (varsInQuery -> x:xs) ->
+                             trace ("Query: " <> show (compileToQuery p, xs) <> " | Pattern vars: " <> show (vars p)) $
+                                 L.sort xs == L.sort (vars p)
 
 
 -- | If we match a singleton variable pattern against an e-graph, we should get
@@ -64,12 +80,7 @@ hashConsInvariant eg@(EGraph {..}) =
 
 -- ROMES:TODO: Property: Extract expression after equality saturation is always better or equal to the original expression
 
-emsvSym :: Var -> EGraph Expr -> Bool
-emsvSym = ematchSingletonVar
-
-hciSym :: EGraph Expr -> Bool
-hciSym = hashConsInvariant
-
+-- ROMES:TODO: Use action trick https://jaspervdj.be/posts/2015-03-13-practical-testing-in-haskell.html
 instance Arbitrary (EGraph Expr) where
     arbitrary = sized $ \n -> do
         exps <- forM [0..n] $ const arbitrary
@@ -89,21 +100,27 @@ instance Arbitrary Op where
                       , return Mul
                       , return Div ]
 
-instance Arbitrary (Fix Expr) where
-    arbitrary = sized (fmap Fix . expr')
+instance Arbitrary a => Arbitrary (Expr a) where
+    arbitrary = sized expr'
         where
+            expr' :: Int -> Gen (Expr a)
             expr' 0 = oneof [ Sym <$> arbitrary
                             , Const . fromInteger <$> arbitrary
                             ]
             expr' n
-              | n > 0 = BinOp <$> arbitrary <*> subexpr <*> subexpr
-              where 
-                subexpr = Fix <$> expr' (n `div` 2)
+              | n > 0 = BinOp <$> arbitrary <*> arbitrary <*> arbitrary
             expr' _ = error "size is negative?"
+
+instance Arbitrary (Fix Expr) where
+    arbitrary = Fix <$> arbitrary
+
+instance Arbitrary (PatternAST Expr) where
+    arbitrary = oneof [ VariablePattern <$> arbitrary, NonVariablePattern <$> arbitrary ] 
 
 invariants :: TestTree
 invariants = testGroup "Invariants"
-  [ QC.testProperty "Singleton variable matches all" emsvSym
-  , QC.testProperty "Hash Cons Invariant" hciSym
+  [ QC.testProperty "Compile to query" (testCompileToQuery @Expr)
+  -- , QC.testProperty "Singleton variable matches all" (ematchSingletonVar @Expr)
+  -- , QC.testProperty "Hash Cons Invariant" (hashConsInvariant @Expr)
   ]
 

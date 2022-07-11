@@ -237,6 +237,9 @@ symTests = testGroup "Symbolic"
     [ testCase "1" $
         rewrite (("a"*2)/2) @?= "a"
 
+    , testCase "singleton variable" $
+        fst (equalitySaturation (1 + "a") ["x":=0] symCost) @?= 0
+
     -- , testCase "2" $
     --     rewrite (1 + ("a" - ("a"*(2-1)))) @?= 1
 

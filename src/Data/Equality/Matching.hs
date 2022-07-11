@@ -105,6 +105,7 @@ instance IsString (PatternAST lang) where
 
 data AuxResult lang = Var :~ [Atom lang]
 
+-- Return distinct variables in a pattern
 vars :: Foldable lang => PatternAST lang -> [Var]
 vars (VariablePattern x) = [x]
 vars (NonVariablePattern p) = nub $ join $ map vars $ toList p
@@ -113,13 +114,15 @@ compileToQuery :: (Traversable lang) => PatternAST lang -> Query lang
 compileToQuery = flip evalState 0 . compile_to_query'
     where
         compile_to_query' :: (Traversable lang) => PatternAST lang -> State Int (Query lang)
-        compile_to_query' (VariablePattern x) = return (SelectAllQuery x)
-        compile_to_query' p@(NonVariablePattern _) = do
+        compile_to_query' (VariablePattern x) = do
+            v <- fresh
+            return $ Query (S.fromList [v, x]) [SingletonAtom x]
+        compile_to_query' p = do
             root :~ atoms <- aux p
             return (Query (S.fromList $ root:vars p) atoms)
 
         aux :: (Traversable lang) => PatternAST lang -> State Int (AuxResult lang)
-        aux (VariablePattern x) = return $ x :~ []
+        aux (VariablePattern x) = return $ x :~ [] -- from definition in relational e-matching paper (needed for as base case for recursion)
         aux (NonVariablePattern p) = do
             v <- fresh
             auxs <- sequence (toList (fmap aux p))

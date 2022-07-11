@@ -36,10 +36,10 @@ toVar (ClassId _) = Nothing
 
 -- | An Atom ... in pattern ... is R_f(v, v1, ..., vk), so we define it as a
 -- functor ast over pattern variables + the additional var for the e-class id
-data Atom lang = Atom ClassIdOrVar (lang ClassIdOrVar)
+data Atom lang = Atom ClassIdOrVar (lang ClassIdOrVar) | SingletonAtom Var
 deriving instance Show (lang ClassIdOrVar) => Show (Atom lang)
 
-data Query lang = Query (S.Set Var) [Atom lang] | SelectAllQuery Var
+data Query lang = Query (S.Set Var) [Atom lang]
 deriving instance (Show (lang ClassIdOrVar), Show (lang Var)) => Show (Query lang)
 
 -- | Database made of trie maps for each relation. Each relation is uniquely
@@ -54,7 +54,11 @@ instance Show (lang ()) => Show (Database lang) where
 
 varsInQuery :: Foldable lang => Query lang -> [Var]
 varsInQuery (Query _ atoms) =
-    case map (\case Atom (Var v) (toList -> l) -> v:mapMaybe toVar l; Atom _ (toList -> l) -> mapMaybe toVar l) atoms of
+    case for atoms $ \case
+            Atom (Var v) (toList -> l) -> v:mapMaybe toVar l
+            Atom _ (toList -> l) -> mapMaybe toVar l
+            SingletonAtom x -> [x]
+    of
         [] -> []
         xs -> nub $ foldr1 union xs
 
@@ -66,9 +70,6 @@ varsInQuery (Query _ atoms) =
 --
 -- ROMES:TODO a less ad-hoc/specialized implementation of generic join...
 genericJoin :: (Ord (lang ()), Foldable lang, Functor lang) => Database lang -> Query lang -> [Subst]
--- We want to match against ANYTHING, so we return a valid substitution for
--- all existing e-class: get all relations and make a substition for each class in that relation, then join all substitutions across all classes
-genericJoin (DB m) (SelectAllQuery x) = concatMap (\(_,Fix clss) -> map ((:[]) . (x,) . fst) $ IM.toList clss) (M.toList m)
 -- This is the last variable, so we return a valid substitution for every
 -- possible value for the variable (hence, we prepend @x@ to each and make it
 -- its own substitution)
@@ -97,11 +98,17 @@ genericJoin d q@(Query qv atoms)
                             Var vi
                               | vi == r -> ClassId i
                             vi -> vi
+            -- SingletonAtom (Var v)
+            --   | v == r -> SingletonAtom (ClassId i) -- this is needed but have yet to visualize this siituation
+            SingletonAtom x -> SingletonAtom x
+              -- | null atoms -> SingletonAtom x -- substitution doesn't matter because remaining atom list is empty
+              -- | otherwise  -> error "Singleton atoms should never appear with other atoms in the query."
 genericJoin _ _ = error "How did we get here?"
 
 
 elemOfAtom :: Foldable lang => Var -> Atom lang -> Bool
 elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
+elemOfAtom x (SingletonAtom y) = x == y
 
 -- ROMES:TODO Terrible name
 -- | Given a database and a list of Atoms with an occurring var @x@, find
@@ -109,15 +116,22 @@ elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
 intersectAtoms :: (Ord (lang ()), Foldable lang, Functor lang) => Var -> Database lang -> [Atom lang] -> [ClassId]
 -- lookup ... >>= ... to make sure non-existing patterns don't crash
 intersectAtoms var (DB m) atoms =
-    case flip map atoms $ \(Atom v l) -> case M.lookup (void l) m of
-            -- If needed relation doesn't exist altogether, return the matching
-            -- class ids (none). When intersecting, nothing will be available
-            Nothing -> []
-            -- If needed relation does exist, find intersection in it
-            Just r  -> case intersectInTrie r (v:toList l) of
-                         Nothing -> error "intersectInTrie shouldn't return nothing outside of the recursion; failure here is denoted by an empty list of matching classes"
-                         Just rs -> rs
-                         of
+    case flip map atoms $ \case
+            -- SingletonAtom we want to match against ANYTHING, so we return
+            -- all existing e-class: get all relations and make a substition
+            -- for each class in that relation, then join all substitutions
+            -- across all classes
+            SingletonAtom _ -> concatMap (\(_,Fix clss) -> map fst $ IM.toList clss) (M.toList m)
+
+            Atom v l -> case M.lookup (void l) m of
+                -- If needed relation doesn't exist altogether, return the matching
+                -- class ids (none). When intersecting, nothing will be available
+                Nothing -> []
+                -- If needed relation does exist, find intersection in it
+                Just r  -> case intersectInTrie r (v:toList l) of
+                             Nothing -> error "intersectInTrie shouldn't return nothing outside of the recursion; failure here is denoted by an empty list of matching classes"
+                             Just rs -> rs
+                             of
       [] -> []
       ls -> foldr1 intersect ls
 
@@ -161,3 +175,4 @@ intersectAtoms var (DB m) atoms =
         subst :: Var -> ClassId -> [ClassIdOrVar] -> [ClassIdOrVar]
         subst v i = map (\case Var v' | v == v' -> ClassId i; x -> x)
 
+for = flip map

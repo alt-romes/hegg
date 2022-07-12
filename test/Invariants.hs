@@ -27,13 +27,23 @@ import Sym
 -- | Test 'compileToQuery'.
 --
 -- Every pattern compiled to a query should have the same number of free variables (except for the root variable)
--- as the pattern + 1
-testCompileToQuery :: Show (lang ClassIdOrVar) => Show (lang Var) => Traversable lang => PatternAST lang -> Bool
+-- as the pattern
+--
+-- The number of atoms should also match the number of non variable patterns
+-- since we should create an additional atom (with a new bound variable) for each. 
+testCompileToQuery :: Traversable lang => PatternAST lang -> Bool
 testCompileToQuery p = case compileToQuery p of
                          -- Handle special case for selectAll queries...
-                         SelectAllQuery x -> [x] == vars p
-                         (queryHeadVars -> []) -> False
-                         (queryHeadVars -> x:xs) -> L.sort xs == L.sort (vars p)
+                         SelectAllQuery x -> [x] == vars p && numNonVarPatterns p == 0
+                         q@(Query _ atoms)
+                           | [] <- queryHeadVars q   -> False
+                           | x:xs <- queryHeadVars q ->
+                               L.sort xs == L.sort (vars p)
+                                 && length atoms == numNonVarPatterns p
+    where
+        numNonVarPatterns :: Foldable lang => PatternAST lang -> Int
+        numNonVarPatterns (VariablePattern _) = 0
+        numNonVarPatterns (NonVariablePattern l) = foldr ((+) . numNonVarPatterns) 1 l
 
 
 -- | If we match a singleton variable pattern against an e-graph, we should get
@@ -123,7 +133,7 @@ instance Arbitrary (PatternAST Expr) where
 newtype Name = Name { un :: String }
 
 instance Arbitrary Name where
-  arbitrary = oneof (return . Name . (:[]) <$> ['a'..'z'])
+  arbitrary = oneof (return . Name . (:[]) <$> ['a'..'l'])
 
 invariants :: TestTree
 invariants = testGroup "Invariants"

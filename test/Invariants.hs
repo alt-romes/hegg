@@ -104,18 +104,26 @@ instance Arbitrary a => Arbitrary (Expr a) where
     arbitrary = sized expr'
         where
             expr' :: Int -> Gen (Expr a)
-            expr' 0 = oneof [ Sym <$> arbitrary
+            expr' 0 = oneof [ Sym . un <$> arbitrary
                             , Const . fromInteger <$> arbitrary
                             ]
             expr' n
-              | n > 0 = BinOp <$> arbitrary <*> arbitrary <*> arbitrary
+              | n > 0 = BinOp <$> arbitrary <*> resize (n `div` 2) arbitrary <*> resize (n `div` 2) arbitrary
             expr' _ = error "size is negative?"
 
 instance Arbitrary (Fix Expr) where
     arbitrary = Fix <$> arbitrary
 
 instance Arbitrary (PatternAST Expr) where
-    arbitrary = oneof [ VariablePattern <$> arbitrary, NonVariablePattern <$> arbitrary ] 
+    arbitrary = sized p'
+      where
+        p' 0 = VariablePattern . un <$> arbitrary
+        p' n = NonVariablePattern <$> resize (n `div` 2) arbitrary
+
+newtype Name = Name { un :: String }
+
+instance Arbitrary Name where
+  arbitrary = oneof (return . Name . (:[]) <$> ['a'..'z'])
 
 invariants :: TestTree
 invariants = testGroup "Invariants"

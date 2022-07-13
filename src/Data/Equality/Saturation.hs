@@ -70,7 +70,7 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
                     | i < bannedUntil s -> return ([], stats)
                   -- Otherwise, match and update stats
                   x -> do
-                      let treshhold = 1000 {- match limit -} * 2^bannedN
+                      let treshhold = 32 {- match limit -} * 2^bannedN
                           bannedN = case x of
                                       Nothing -> 0
                                       Just (timesBanned -> n) -> n

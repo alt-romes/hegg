@@ -237,7 +237,22 @@ symTests = testGroup "Symbolic"
     [ testCase "1" $
         rewrite (("a"*2)/2) @?= "a"
 
-    -- , testCase "2" $
+    , testCase "2" $
+        rewrite (("a"/2)*2) @?= "a"
+
+    , testCase "3" $
+        rewrite (("a"+"a")/2) @?= "a"
+
+    , testCase "4" $
+        fst (equalitySaturation ("a"*2) rewrites symCost) @?= ("a"*2)
+
+    , testCase "5" $
+        fst (equalitySaturation ("a"+1) rewrites symCost) @?= ("a"+1)
+
+    , testCase "6" $
+        fst (equalitySaturation (0+1) rewrites symCost) @?= 1
+
+    -- , testCase "5" $
     --     rewrite (1 + ("a" - ("a"*(2-1)))) @?= 1
 
     -- , testCase "d1" $

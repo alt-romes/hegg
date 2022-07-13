@@ -13,8 +13,7 @@ import Data.List (intersect, union, nub)
 import Control.Monad
 
 import Data.Foldable (toList)
-import Data.Map (Map)
-import qualified Data.Map.Strict as M
+import qualified Data.HashMap.Strict as M
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
 
@@ -44,7 +43,7 @@ deriving instance (Show (lang ClassIdOrVar), Show (lang Var)) => Show (Query lan
 
 -- | Database made of trie maps for each relation. Each relation is uniquely
 -- identified by the expressions modulo children expressions (hence @lang ()@)
-newtype Database lang = DB (Map (lang ()) (Fix ClassIdMap))
+newtype Database lang = DB (M.HashMap (lang ()) (Fix ClassIdMap))
 
 instance Show (lang ()) => Show (Database lang) where
     show (DB m) = unlines $ map (\(a,b) -> show a <> ": " <> show' 0 b) $ M.toList m where
@@ -71,7 +70,7 @@ queryHeadVars (Query qv _) = qv
 -- classids
 --
 -- ROMES:TODO a less ad-hoc/specialized implementation of generic join...
-genericJoin :: (Ord (lang ()), Foldable lang, Functor lang) => Database lang -> Query lang -> [Subst]
+genericJoin :: Language l => Database l -> Query l -> [Subst]
 -- We want to match against ANYTHING, so we return a valid substitution for
 -- all existing e-class: get all relations and make a substition for each class in that relation, then join all substitutions across all classes
 genericJoin (DB m) (SelectAllQuery x) = concatMap (\(_,Fix clss) -> map ((:[]) . (x,) . fst) $ IM.toList clss) (M.toList m)
@@ -108,7 +107,7 @@ elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
 -- ROMES:TODO Terrible name
 -- | Given a database and a list of Atoms with an occurring var @x@, find
 -- @D_x@, the domain of variable x, that is, the values x can take
-intersectAtoms :: (Ord (lang ()), Foldable lang, Functor lang) => Var -> Database lang -> [Atom lang] -> [ClassId]
+intersectAtoms :: Language l => Var -> Database l -> [Atom l] -> [ClassId]
 -- lookup ... >>= ... to make sure non-existing patterns don't crash
 intersectAtoms var (DB m) atoms =
     case flip map atoms $ \(Atom v l) -> case M.lookup (void l) m of

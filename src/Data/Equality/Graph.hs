@@ -1,5 +1,10 @@
-{-# LANGUAGE UndecidableInstances #-} -- Show (EGraph s) constraints
+{-# LANGUAGE UndecidableInstances #-} -- instance Hashable
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeSynonymInstances #-} -- Hashable (ENode s)
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Data.Equality.Graph
     ( module Data.Equality.Graph
@@ -7,6 +12,7 @@ module Data.Equality.Graph
     , module Data.Equality.Graph.Nodes
     ) where
 
+import Data.Functor.Classes
 import Data.Bifunctor
 
 import Data.Fix
@@ -14,10 +20,16 @@ import Data.Fix
 import Control.Monad
 import Control.Monad.State
 
-import Data.Map (Map)
-import qualified Data.Map    as M
+import Data.Hashable
+import Data.Hashable.Generic
+import Data.Hashable.Lifted
+
 import qualified Data.IntMap as IM
 import qualified Data.Set    as S
+
+import qualified Data.HashMap.Strict as M
+
+import GHC.Generics
 
 import Data.Equality.Graph.ReprUnionFind
 import Data.Equality.Graph.Classes
@@ -39,7 +51,7 @@ egraph = snd . runEGS emptyEGraph
 data EGraph s = EGraph
     { unionFind :: ReprUnionFind -- ^ Union find like structure to find canonical representation of an e-class id
     , classes   :: ClassIdMap (EClass s) -- ^ Map canonical e-class ids to their e-classes
-    , memo      :: Map (ENode s) ClassId -- ^ Hashcons maps all canonical e-nodes to their e-class ids
+    , memo      :: M.HashMap (ENode s) ClassId -- ^ Hashcons maps all canonical e-nodes to their e-class ids
     , worklist  :: [ClassId] -- ^ e-class ids that need to be upward merged
     }
 
@@ -52,15 +64,19 @@ instance Show (ENode s) => Show (EGraph s) where
                 "\n\nHashcons: " <> show c <>
                         "\n\nWorklist: " <> show e
 
+-- deriving instance Eq1 lang => Eq (ENode lang)
+
+class (Hashable (lang ()), Hashable (lang ClassId), Ord (lang ClassId), Ord (lang ()), Traversable lang) => Language lang
+
 -- | Represent an expression (@Fix lang@) in an e-graph
-represent :: (Ord (ENode lang), Traversable lang) => Fix lang -> EGS lang ClassId
+represent :: Language lang => Fix lang -> EGS lang ClassId
 -- Represent each sub-expression and add the resulting e-node to the e-graph
 represent (Fix l) = traverse represent l >>= add
 
 -- | Add an e-node to the e-graph
 --
 -- E-node lookup depends on e-node correctly defining equality
-add :: (Foldable s, Functor s, Ord (ENode s)) => ENode s -> EGS s ClassId
+add :: Language l => ENode l -> EGS l ClassId
 add uncanon_e = do
     egraph@EGraph { memo = encls } <- get
     let new_en = canonicalize uncanon_e egraph
@@ -81,7 +97,7 @@ add uncanon_e = do
 
 
 -- | Merge 2 e-classes by id
-merge :: forall s. (Functor s, Ord (ENode s)) => ClassId -> ClassId -> EGS s ClassId
+merge :: forall l. Language l => ClassId -> ClassId -> EGS l ClassId
 merge a b = do
     eg <- get
     -- Use canonical ids
@@ -121,7 +137,7 @@ merge a b = do
            -- ROMES:TODO Rebuild  should maintain both invariants instead of
            -- merge...
            eg'' <- get
-           let EClass _ ns _ = snd $ getClass leader eg'' :: EClass s
+           let EClass _ ns _ = snd $ getClass leader eg'' :: EClass l
            forM_ (S.toList ns) $ \l -> do
                -- Remove stale term
                modifyMemo (M.delete l)
@@ -141,18 +157,18 @@ merge a b = do
 -- that their e-class ids are represented by the same e-class canonical ids
 --
 -- canonicalize(f(a,b,c,...)) = f((find a), (find b), (find c),...)
-canonicalize :: Functor s => ENode s -> EGraph s -> ENode s
+canonicalize :: Functor l => ENode l -> EGraph l -> ENode l
 canonicalize enode egraph = fmap (`find` egraph) enode
 
 -- | Find the canonical representation of an e-class id in the e-graph
 -- Invariant: The e-class id always exists.
-find :: ClassId -> EGraph s -> ClassId
+find :: ClassId -> EGraph l -> ClassId
 find cid = unsafeUnpack . findRepr cid . unionFind
     where
         unsafeUnpack Nothing  = error $ "The impossible happened: Couldn't find representation of e-node " <> show cid
         unsafeUnpack (Just x) = x
 
-rebuild :: (Functor s, Ord (ENode s)) => EGS s ()
+rebuild :: Language l => EGS l ()
 rebuild = do
     eg <- get
 
@@ -170,7 +186,7 @@ rebuild = do
     unless (null wl) rebuild
 
 
-repair :: (Functor s, Ord (ENode s)) => ClassId -> EGS s ()
+repair :: Language l => ClassId -> EGS l ()
 repair repair_id = do
     (_, EClass ei nodes parents) <- gets (getClass repair_id)
 
@@ -184,7 +200,7 @@ repair repair_id = do
     new_parents <- M.toList <$> go parents M.empty
     modifyClasses (IM.update (\eclass -> Just $ eclass { eClassParents = new_parents }) repair_id)
         where
-            go :: (Functor s, Ord (ENode s)) => [(ENode s, ClassId)] -> Map (ENode s) ClassId -> EGS s (Map (ENode s) ClassId)
+            go :: Language l => [(ENode l, ClassId)] -> M.HashMap (ENode l) ClassId -> EGS l (M.HashMap (ENode l) ClassId)
             go [] s = return s
             go ((node, eclass_id):xs) s = do
                 -- Deduplicate the parents, noting that equal parents get merged and put on
@@ -197,7 +213,7 @@ repair repair_id = do
                 go xs (M.insert node' (find eclass_id eg) s)
 
 -- | Add a singleton e-class with the e-node (first arg) to the e-graph
-singletonClass :: Ord (ENode s) => ENode s -> EGS s ClassId
+singletonClass :: ENode s -> EGS s ClassId
 singletonClass en = do
     -- Make new equivalence class with a new id in the union-find
     new_id <- createUnionFindClass
@@ -252,7 +268,7 @@ mergeUnionFindClasses a b = do
 modifyClasses :: (ClassIdMap (EClass s) -> ClassIdMap (EClass s)) -> EGS s ()
 modifyClasses f = modify (\egraph -> egraph { classes = f (classes egraph) })
 
-modifyMemo :: (Map (ENode s) ClassId -> Map (ENode s) ClassId) -> EGS s ()
+modifyMemo :: (M.HashMap (ENode s) ClassId -> M.HashMap (ENode s) ClassId) -> EGS s ()
 modifyMemo f = modify (\egraph -> egraph { memo = f (memo egraph) })
 
 emptyEGraph :: EGraph s

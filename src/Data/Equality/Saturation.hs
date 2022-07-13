@@ -14,8 +14,10 @@ module Data.Equality.Saturation
     ) where
 
 import qualified Data.Set as S
-import qualified Data.Map as M
+import qualified Data.HashMap.Strict as M
 import qualified Data.IntMap as IM
+
+import Data.Hashable
 
 import Data.Functor.Classes
 import Data.Traversable
@@ -38,7 +40,7 @@ data Stat = Stat { bannedUntil :: Int
                  , timesBanned :: Int
                  } deriving Show
 
-equalitySaturation :: forall lang. (Show1 lang, Show (lang (PatternAST lang)), Ord (PatternAST lang), Ord (lang ()), Ord (ENode lang), Traversable lang) 
+equalitySaturation :: forall lang. (Hashable (Rewrite lang), Hashable (PatternAST lang), Language lang, Show1 lang, Show (lang (PatternAST lang)), Ord (PatternAST lang), Ord (lang ()), Ord (ENode lang), Traversable lang) 
                    => Fix lang -> [Rewrite lang] -> (lang Cost -> Cost) -> (Fix lang, EGraph lang)
 equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
 
@@ -55,7 +57,7 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
       where
 
         -- Take map each rewrite rule to how many times it's been used
-        equalitySaturation' :: Ord (PatternAST lang) => Int -> M.Map (Rewrite lang) Stat -> EGS lang ()
+        equalitySaturation' :: Hashable (PatternAST lang) => Int -> M.HashMap (Rewrite lang) Stat -> EGS lang ()
         equalitySaturation' 30 _ = return () -- Stop after X iterations
         equalitySaturation' i stats = do
 

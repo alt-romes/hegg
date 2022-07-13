@@ -41,8 +41,9 @@ library
     -- LANGUAGE extensions used by modules in this package.
     build-depends:    base >= 4.4 && < 5,
                       text, mtl,
-                      containers,
-                      data-fix
+                      data-fix,
+                      containers, unordered-containers,
+                      hashable
     if flag(vizdot)
         build-depends: graphviz
     hs-source-dirs:   src
@@ -59,7 +60,8 @@ test-suite hegg-test
     build-depends:    base,
                       data-fix,
                       hegg,
-                      containers,
+                      containers, unordered-containers,
+                      hashable,
                       tasty,
                       tasty-quickcheck,
                       tasty-hunit

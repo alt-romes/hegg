@@ -20,7 +20,7 @@ import Data.Fix
 import Control.Monad
 import Control.Monad.State
 
-import qualified Data.Map as M
+import qualified Data.HashMap.Strict as M
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
 
@@ -29,16 +29,16 @@ import Data.Equality.Graph
 import Database
 
 -- | EGS version of 'ematch'
-ematchM :: (Ord (lang ()), Traversable lang)
-       => PatternAST lang
-       -> EGS lang [(Subst, ClassId)]
+ematchM :: Language l
+       => PatternAST l
+       -> EGS l [(Subst, ClassId)]
 ematchM pat = gets (ematch pat)
 
 -- | Match a pattern against an AST, returnin a list of equivalence classes
 -- that match the pattern and the corresponding substitution
-ematch :: (Ord (lang ()), Traversable lang)
-       => PatternAST lang
-       -> EGraph lang
+ematch :: Language l
+       => PatternAST l
+       -> EGraph l
        -> [(Subst, ClassId)]
 ematch pat eg =
     let db = eGraphToDatabase eg
@@ -66,12 +66,12 @@ ematch pat eg =
 --     , memo      :: Map (ENode s) ClassId
 --     }
 -- @
-eGraphToDatabase :: (Ord (lang ()), Functor lang, Foldable lang) => EGraph lang -> Database lang
+eGraphToDatabase :: Language l => EGraph l -> Database l
 eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB M.empty) memo
   where
 
     -- Add an enode in an e-graph, given its class, to a database
-    addENodeToDB :: (Ord (lang ()), Functor lang, Foldable lang) => EGraph lang -> ENode lang -> ClassId -> Database lang -> Database lang
+    addENodeToDB :: Language l => EGraph l -> ENode l -> ClassId -> Database l -> Database l
     addENodeToDB eg enode classid (DB m) =
         -- ROMES:TODO map find
         -- Insert or create a relation R_f(i1,i2,...,in) for lang in which 

@@ -12,13 +12,15 @@ import Test.Tasty
 import Test.Tasty.QuickCheck as QC hiding (classes)
 import Test.Tasty.HUnit
 
+import Data.Hashable
+
 import Data.Functor.Classes
 import Control.Monad
 
 import qualified Data.List as L
 import qualified Data.Set as S
 import qualified Data.IntMap as IM
-import qualified Data.Map as M
+import qualified Data.HashMap.Strict as M
 
 import Data.Equality.Graph
 import Data.Equality.Saturation
@@ -32,7 +34,7 @@ import Sym
 -- should be merged into a single one, since all classes are equal to c and
 -- therefore equivalent to themselves
 patFoldAllClasses :: forall lang
-                   . (Show1 lang, Show (lang (PatternAST lang)), Num (PatternAST lang), Ord (PatternAST lang), Ord (lang ()), Ord (ENode lang), Traversable lang)
+                   . (Language lang, Hashable (Rewrite lang), Show1 lang, Show (lang (PatternAST lang)), Num (PatternAST lang), Ord (PatternAST lang), Hashable (PatternAST lang))
                   => Fix lang -> Integer -> Bool
 patFoldAllClasses exp i =
     case IM.toList $ classes eg of
@@ -66,7 +68,7 @@ testCompileToQuery p = case compileToQuery p of
 
 -- | If we match a singleton variable pattern against an e-graph, we should get
 -- a match on all e-classes in the e-graph
-ematchSingletonVar :: (Traversable lang, Ord (lang ())) => Var -> EGraph lang -> Bool
+ematchSingletonVar :: Language lang => Var -> EGraph lang -> Bool
 ematchSingletonVar v eg =
     let
         matches = S.fromList $ map snd $ ematch (VariablePattern v) eg
@@ -93,7 +95,7 @@ ematchSingletonVar v eg =
 -- when invariants are broken for sure doesn't make much sense
 --
 -- ROMES:TODO Should I rebuild it here? Then the property test is that after rebuilding ...HashConsInvariant
-hashConsInvariant :: forall s. (Show (ENode s), Ord (ENode s), Functor s, Foldable s) => EGraph s -> Bool
+hashConsInvariant :: forall s. (Language s, Show (ENode s), Ord (ENode s), Functor s, Foldable s) => EGraph s -> Bool
 hashConsInvariant eg@(EGraph {..}) =
     all f (IM.toList classes)
     where

@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -14,11 +15,15 @@ import Test.Tasty.HUnit
 
 import Data.String
 
+import Data.Hashable
+
 import Data.Functor.Classes
 
 import Data.Equality.Graph
 import Data.Equality.Matching
 import Data.Equality.Saturation
+
+import GHC.Generics
 
 data Expr a = Sym String
             | Const Double
@@ -26,7 +31,17 @@ data Expr a = Sym String
             | BinOp BOp a a
             deriving ( Eq,  Ord, Functor
                      , Foldable, Traversable
+                     , Generic
                      )
+
+instance Hashable a => Hashable (Expr a)
+
+deriving instance Generic (Rewrite Expr)
+deriving instance Generic (PatternAST Expr)
+instance Hashable (Rewrite Expr)
+instance Hashable (PatternAST Expr)
+
+instance Language Expr
 
 instance Eq1 Expr where
     liftEq eq a b = case (a, b) of
@@ -43,14 +58,17 @@ data BOp = Add
          | Pow
          | Diff
          | Integral
-        deriving (Eq, Ord)
+        deriving (Eq, Ord, Generic)
 
 data UOp = Sin
          | Cos
          | Sqrt
          | Ln
          | Negate
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Generic)
+
+instance Hashable UOp
+instance Hashable BOp
 
 instance Show BOp where
     show = \case

@@ -5,3 +5,4 @@ Efficient folding with Mu rather than Fix?
 Lenses for accessing e-nodes as full nodes?
 Drop dependencies
 Continuous database carried in the e-graph, also updated when rebuilding... (how?)
+If already reached optimal solution (cost == 1) can stop searching?

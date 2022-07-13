@@ -32,7 +32,7 @@ import Sym
 -- should be merged into a single one, since all classes are equal to c and
 -- therefore equivalent to themselves
 patFoldAllClasses :: forall lang
-                   . (Show1 lang, Show (lang (PatternAST lang)), Num (PatternAST lang), Ord (lang ()), Ord (ENode lang), Traversable lang)
+                   . (Show1 lang, Show (lang (PatternAST lang)), Num (PatternAST lang), Ord (PatternAST lang), Ord (lang ()), Ord (ENode lang), Traversable lang)
                   => Fix lang -> Integer -> Bool
 patFoldAllClasses exp i =
     case IM.toList $ classes eg of
@@ -122,11 +122,17 @@ instance Arbitrary (EGraph Expr) where
                 merge a b
             rebuild
 
-instance Arbitrary Op where
+instance Arbitrary BOp where
     arbitrary = oneof [ return Add
                       , return Sub
                       , return Mul
                       , return Div ]
+
+instance Arbitrary UOp where
+    arbitrary = oneof [ return Negate
+                      -- , return Sin
+                      -- , return Cos
+                      ]
 
 instance Arbitrary a => Arbitrary (Expr a) where
     arbitrary = sized expr'
@@ -136,7 +142,8 @@ instance Arbitrary a => Arbitrary (Expr a) where
                             , Const . fromInteger <$> arbitrary
                             ]
             expr' n
-              | n > 0 = BinOp <$> arbitrary <*> resize (n `div` 2) arbitrary <*> resize (n `div` 2) arbitrary
+              | n > 0 = oneof [ BinOp <$> arbitrary <*> resize (n `div` 2) arbitrary <*> resize (n `div` 2) arbitrary
+                              , UnOp <$> arbitrary <*> resize (n - 1) arbitrary ]
             expr' _ = error "size is negative?"
 
 instance Arbitrary (Fix Expr) where

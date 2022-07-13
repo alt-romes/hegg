@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -21,16 +22,8 @@ import Data.Equality.Saturation
 
 data Expr a = Sym String
             | Const Double
-
-            | BinOp Op a a
-
-            | Sin a
-            | Cos a
-            | Sqrt a
-            | Ln a
-
-            | Diff a a
-            | Integral a a
+            | UnOp  UOp a
+            | BinOp BOp a a
             deriving ( Eq,  Ord, Functor
                      , Foldable, Traversable
                      )
@@ -39,53 +32,61 @@ instance Eq1 Expr where
     liftEq eq a b = case (a, b) of
         (Sym x, Sym y) -> x == y
         (Const x, Const y) -> x == y
+        (UnOp op a, UnOp op' b) -> op == op' && a `eq` b
         (BinOp op x y, BinOp op' x' y') -> op == op' && x `eq` x' && y `eq` y'
-        (Sin a, Sin b) -> a `eq` b
-        (Cos a, Cos b) -> a `eq` b
-        (Sqrt a, Sqrt b) -> a `eq` b
-        (Ln a, Ln b) -> a `eq` b
-        (Diff a b, Diff a' b') -> a `eq` a' && b `eq` b'
-        (Integral a b, Integral a' b') -> a `eq` a' && b `eq` b'
         _ -> False
 
-data Op = Add
-        | Sub
-        | Mul
-        | Div
-        | Pow
+data BOp = Add
+         | Sub
+         | Mul
+         | Div
+         | Pow
+         | Diff
+         | Integral
         deriving (Eq, Ord)
 
-instance Show Op where
+data UOp = Sin
+         | Cos
+         | Sqrt
+         | Ln
+         | Negate
+    deriving (Eq, Ord)
+
+instance Show BOp where
     show = \case
         Add -> "+"
         Sub -> "-"
         Mul -> "*"
         Div -> "/"
         Pow -> "^"
+        Diff -> "d/d_"
+        Integral -> "∫"
+
+instance Show UOp where
+    show = \case
+        Sin -> "sin"
+        Cos -> "cos"
+        Sqrt -> "√"
+        Ln -> "ln"
+        Negate -> "-"
 
 instance {-# OVERLAPPABLE #-} Show a => Show (Expr a) where
     show = \case
+        BinOp Diff a b -> show Diff <> show a <> " " <> show b
+        BinOp Integral a b -> show Integral <> show a <> " " <> show b
         BinOp op a b -> show a <> " " <> show op <> " " <> show b
+        UnOp op a -> "( " <> show op <> "(" <> show a <> ")" <> " )"
         Const x -> show x
         Sym x -> x
-        Sin x -> "sin(" <> show x <> ")"
-        Cos x -> "cos(" <> show x <> ")"
-        Sqrt x -> "√(" <> show x <> ")"
-        Ln x -> "ln(" <> show x <> ")"
-        Diff x y -> "d/d_" <> show x <> "(" <> show y <> ")"
-        Integral x y -> "∫" <> show y <> " d" <> show x
 
 instance {-# OVERLAPPING #-} Show (Fix Expr) where
     show = foldFix $ \case
+        BinOp Diff a b -> show Diff <> a <> " " <> b
+        BinOp Integral a b -> show Integral <> a <> " " <> b
         BinOp op a b -> "(" <> a <> " " <> show op <> " " <> b <> ")"
+        UnOp op a -> "( " <> show op <> "(" <> a <> ")" <> " )"
         Const x -> show x
         Sym x -> x
-        Sin x -> "sin(" <> x <> ")"
-        Cos x -> "cos(" <> x <> ")"
-        Sqrt x -> "√(" <> x <> ")"
-        Ln x -> "ln(" <> x <> ")"
-        Diff x y -> "d/d_" <> x <> "(" <> y <> ")"
-        Integral x y -> "∫" <> y <> " d" <> x
 
 instance IsString (Fix Expr) where
     fromString = Fix . Sym
@@ -98,7 +99,7 @@ instance Num (Fix Expr) where
     (-) a b = Fix (BinOp Sub a b)
     (*) a b = Fix (BinOp Mul a b)
     fromInteger = Fix . Const . fromInteger
-    negate = Fix . BinOp Mul (-1)
+    negate = Fix . UnOp Negate
     abs = error "abs"
     signum = error "signum"
 
@@ -111,14 +112,10 @@ instance Show1 Expr where
     liftShowsPrec sp _ d = \case
         BinOp op e1 e2 ->
             sp d e1 . showString (show op) . sp d e2
+
+        UnOp op e1 -> showString (show op) . sp d e1
         Const f -> showString (show f)
         Sym x -> showString x
-        Sin x -> showString "sin(" . sp d x . showString ")"
-        Cos x -> showString "cos(" . sp d x . showString ")"
-        Sqrt x -> showString "√("  . sp d x . showString ")"
-        Ln   x -> showString "ln(" . sp d x  . showString ")"
-        Diff x y -> showString "d("  . sp d x . showString ")"
-        Integral x y -> showString "∫" <> sp d x
 
 symCost :: Expr Cost -> Cost
 symCost = \case
@@ -127,20 +124,24 @@ symCost = \case
     BinOp Sub e1 e2 -> e1 + e2 + 5
     BinOp Mul e1 e2 -> e1 + e2 + 4
     BinOp Add e1 e2 -> e1 + e2 + 2
+    BinOp Diff e1 e2 -> e1 + e2 + 100
+    BinOp Integral e1 e2 -> e1 + e2 + 200
+    UnOp Sin e1 -> e1 + 20
+    UnOp Cos e1 -> e1 + 20
+    UnOp Sqrt e1 -> e1 + 30
+    UnOp Ln   e1 -> e1 + 30
+    UnOp Negate e1 -> e1 + 5
     Sym _ -> 1
     Const _ -> 1
-    Sin x -> x + 20
-    Cos x -> x + 20
-    Sqrt x -> x + 20
-    Ln x -> x + 20
-    Diff _ x -> x + 10
-    Integral _ x -> x + 200
+
+deriving instance Eq (PatternAST Expr)
+deriving instance Ord (PatternAST Expr)
 
 instance Num (PatternAST Expr) where
     (+) a b = NonVariablePattern $ BinOp Add a b
     (-) a b = NonVariablePattern $ BinOp Sub a b
     (*) a b = NonVariablePattern $ BinOp Mul a b
-    negate x = NonVariablePattern $ BinOp Mul (-1) x
+    negate x = NonVariablePattern $ UnOp Negate x
     fromInteger = NonVariablePattern . Const . fromInteger
     abs = error "abs"
     signum = error "signum"
@@ -150,10 +151,10 @@ instance Fractional (PatternAST Expr) where
     fromRational = NonVariablePattern . Const . fromRational
 
 pattern PowP a b = NonVariablePattern (BinOp Pow a b)
-pattern DiffP a b = NonVariablePattern (Diff a b)
-pattern CosP a = NonVariablePattern (Cos a)
-pattern SinP a = NonVariablePattern (Sin a)
-pattern LnP a = NonVariablePattern (Ln a)
+pattern DiffP a b = NonVariablePattern (BinOp Diff a b)
+pattern CosP a = NonVariablePattern (UnOp Cos a)
+pattern SinP a = NonVariablePattern (UnOp Sin a)
+pattern LnP a = NonVariablePattern (UnOp Ln a)
 
 rewrites :: [Rewrite Expr]
 rewrites =
@@ -163,15 +164,16 @@ rewrites =
     , "x"*("y"*"z") := ("x"*"y")*"z" -- assoc mul
 
     , "x"-"y" := "x"+(-"y") -- sub cannon
-    -- , "x"-"y" := "x"+(-"y") -- TODO div canon
+    , "x"/"y" := "x"*(PowP "y" (-1)) -- div cannon
 
     -- identities
     , "x"+0 := "x"
     , "x"*0 := 0
     , "x"*1 := "x"
 
-    , "x" := "x"+0
-    , "x" := "x"*1
+    -- TODO: This collapses all classes...
+    -- , "x" := "x"+0
+    -- , "x" := "x"*1
 
     , "a"-"a" := 1 -- cancel sub
     , "a"/"a" := 1 -- cancel div
@@ -181,11 +183,11 @@ rewrites =
 
     , "x"*(1/"x") := 1
 
-    -- , PowP "a" "b"*PowP "a" "c" := PowP "a" ("b" + "c") -- pow mul
-    -- , PowP "a" 0 := 1
-    -- , PowP "a" 1 := "a"
-    -- , PowP "a" 2 := "a"*"a"
-    -- , PowP "a" (-1) := 1/"a"
+    , PowP "a" "b"*PowP "a" "c" := PowP "a" ("b" + "c") -- pow mul
+    , PowP "a" 0 := 1
+    , PowP "a" 1 := "a"
+    , PowP "a" 2 := "a"*"a"
+    , PowP "a" (-1) := 1/"a"
 
     -- -- for test2
     -- , "a"+(-"a") := 0
@@ -217,7 +219,7 @@ rewrites2 =
     -- , "x"*2 := "x" + "x"
     -- , ("x" + "y") + "z" := "x" + ("y" + "z")
     -- , "a" - "a" := 0
-    -- , (-0) := 0
+     (-0) := 0
     -- , "x" + 0 := "x" -- id add
     -- , "x" * 1 := "x" -- id mul
     -- , "x"+"y" := "y"+"x" -- comm add
@@ -225,6 +227,13 @@ rewrites2 =
     -- "x"+("y"+"z") := ("x"+"y")+"z" -- assoc add
     -- , "x"*("y"*"z") := ("x"*"y")*"z" -- assoc mul
     ]
+
+loopRules :: [Rewrite Expr]
+loopRules = [ "x"/"y" := "x"*(1/"y")
+            , "x"*("y"*"z") := ("x"*"y")*"z" -- assoc mul
+            ]
+
+loopRewrite e = fst $ equalitySaturation e loopRules symCost
 
 rewrite :: Fix Expr -> Fix Expr
 rewrite e = fst $ equalitySaturation e rewrites symCost
@@ -234,26 +243,36 @@ rewrite2 e = fst $ equalitySaturation e rewrites2 symCost
 
 symTests :: TestTree
 symTests = testGroup "Symbolic"
-    [ testCase "1" $
-        rewrite (("a"*2)/2) @?= "a"
+    [ testCase "(a*2)/2 = a (custom rules)" $
+        fst (equalitySaturation (("a"*2)/2) [ ("x"*"y")/"z" := "x"*("y"/"z")
+                                            , "y"/"y" := 1
+                                            , "x"*1 := "x"] symCost) @?= "a"
 
     , testCase "2" $
         rewrite (("a"/2)*2) @?= "a"
 
-    , testCase "3" $
-        rewrite (("a"+"a")/2) @?= "a"
+    -- , testCase "3" $
+    --     rewrite (("a"+"a")/2) @?= "a"
 
-    , testCase "4" $
-        fst (equalitySaturation ("a"*2) rewrites symCost) @?= ("a"*2)
+    , testCase "x/y (custom rules)" $
+        -- without backoff scheduler this will loop forever
+        fst (equalitySaturation
+                ("x"/"y")
+
+                [ "x"/"y" := "x"*(1/"y")
+                , "x"*("y"*"z") := ("x"*"y")*"z"
+                ]
+
+                symCost) @?= ("x"/"y")
+
+    , testCase "0+1 = 1 (all rules)" $
+        fst (equalitySaturation (0+1) rewrites symCost)   @?= 1
+
+    , testCase "b*(1/b) = 1 (custom rules)" $
+        fst (equalitySaturation ("b"*(1/"b")) [ "a"*(1/"a") := 1 ] symCost) @?= 1
 
     , testCase "5" $
-        fst (equalitySaturation ("a"+1) rewrites symCost) @?= ("a"+1)
-
-    , testCase "6" $
-        fst (equalitySaturation (0+1) rewrites symCost) @?= 1
-
-    -- , testCase "5" $
-    --     rewrite (1 + ("a" - ("a"*(2-1)))) @?= 1
+        rewrite (1 + ("a" - ("a"*(2-1)))) @?= 1
 
     -- , testCase "d1" $
     --     rewrite (Fix $ Diff "a" "a") @?= 1

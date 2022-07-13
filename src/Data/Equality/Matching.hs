@@ -10,6 +10,7 @@ module Data.Equality.Matching
 
 import Data.String
 import Data.Maybe
+import Data.Functor.Classes
 
 import Data.List (nub)
 import Data.Foldable (toList)
@@ -98,7 +99,11 @@ eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB M.empty
 -- | @(~x + 0) --> BinOp Add (Var "~x") (ENode (Integer 0))@
 -- @~x --> VariablePattern "~x"@
 data PatternAST lang = NonVariablePattern (lang (PatternAST lang)) | VariablePattern Var
-deriving instance Show (lang (PatternAST lang)) => Show (PatternAST lang)
+
+instance Show1 lang => Show (PatternAST lang) where
+    showsPrec _ (VariablePattern s) = showString s -- ROMES:TODO don't ignore prec?
+    showsPrec d (NonVariablePattern x) = liftShowsPrec showsPrec showList d x
+
 
 instance IsString (PatternAST lang) where
     fromString = VariablePattern

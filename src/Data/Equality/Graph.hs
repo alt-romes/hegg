@@ -62,7 +62,7 @@ represent (Fix l) = traverse represent l >>= add
 -- E-node lookup depends on e-node correctly defining equality
 add :: (Foldable s, Functor s, Ord (ENode s)) => ENode s -> EGS s ClassId
 add uncanon_e = do
-    egraph@(EGraph { memo = encls }) <- get
+    egraph@EGraph { memo = encls } <- get
     let new_en = canonicalize uncanon_e egraph
     case M.lookup new_en encls of
       Just canon_enode_id -> return canon_enode_id

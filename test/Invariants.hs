@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -11,6 +12,7 @@ import Test.Tasty
 import Test.Tasty.QuickCheck as QC hiding (classes)
 import Test.Tasty.HUnit
 
+import Data.Functor.Classes
 import Control.Monad
 
 import qualified Data.List as L
@@ -23,6 +25,22 @@ import Data.Equality.Saturation
 import Data.Equality.Matching
 import Database
 import Sym
+
+
+-- | When a rewrite of type "x":=c where x is a pattern variable and c is a
+-- constant is used in equality saturation of any expression, all e-classes
+-- should be merged into a single one, since all classes are equal to c and
+-- therefore equivalent to themselves
+patFoldAllClasses :: forall lang
+                   . (Show1 lang, Show (lang (PatternAST lang)), Num (PatternAST lang), Ord (lang ()), Ord (ENode lang), Traversable lang)
+                  => Fix lang -> Integer -> Bool
+patFoldAllClasses exp i =
+    case IM.toList $ classes eg of
+        [x] -> True
+        _   -> False
+    where
+        eg :: EGraph lang
+        eg = snd $ equalitySaturation exp [VariablePattern "x":=fromInteger i] (error "Cost function shouldn't be used")
 
 -- | Test 'compileToQuery'.
 --
@@ -140,5 +158,6 @@ invariants = testGroup "Invariants"
   [ QC.testProperty "Compile to query" (testCompileToQuery @Expr)
   , QC.testProperty "Singleton variable matches all" (ematchSingletonVar @Expr)
   , QC.testProperty "Hash Cons Invariant" (hashConsInvariant @Expr)
+  , QC.testProperty "Fold all classes with x:=c" (patFoldAllClasses @Expr)
   ]
 

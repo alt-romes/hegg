@@ -10,7 +10,7 @@ import Data.List (intersect, union, nub)
 import Control.Monad
 
 import Data.Foldable (toList)
-import qualified Data.Map.Strict as M
+import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 
 -- import GHC.Data.TrieMap

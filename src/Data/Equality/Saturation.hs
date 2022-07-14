@@ -10,7 +10,7 @@ module Data.Equality.Saturation
     , Cost
     ) where
 
-import qualified Data.Map.Strict as M
+import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 
 import Data.Traversable

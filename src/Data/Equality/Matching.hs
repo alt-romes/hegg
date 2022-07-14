@@ -18,7 +18,7 @@ import Data.Fix
 import Control.Monad
 import Control.Monad.State
 
-import qualified Data.Map.Strict as M
+import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 
 import Data.Equality.Graph

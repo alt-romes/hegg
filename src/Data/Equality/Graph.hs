@@ -6,6 +6,8 @@ module Data.Equality.Graph
     , module Data.Equality.Graph.Nodes
     ) where
 
+import GHC.Conc
+
 import Data.Bifunctor
 
 import Data.Fix
@@ -37,15 +39,19 @@ egraph = snd . runEGS emptyEGraph
 -- @s@ for the e-node term
 -- @nid@ type of e-node ids
 data EGraph l = EGraph
-    { unionFind :: ReprUnionFind -- ^ Union find like structure to find canonical representation of an e-class id
-    , classes   :: ClassIdMap (EClass l) -- ^ Map canonical e-class ids to their e-classes
-    , memo      :: M.Map (ENode l) ClassId -- ^ Hashcons maps all canonical e-nodes to their e-class ids
-    , worklist  :: [ClassId] -- ^ e-class ids that need to be upward merged
+    { unionFind :: !ReprUnionFind             -- ^ Union find like structure to find canonical representation of an e-class id
+    , classes   :: !(ClassIdMap (EClass l))   -- ^ Map canonical e-class ids to their e-classes
+    , memo      :: !(M.Map (ENode l) ClassId) -- ^ Hashcons maps all canonical e-nodes to their e-class ids
+    , worklist  :: [ClassId]                  -- ^ e-class ids that need to be upward merged
     }
 
 type Memo l = M.Map (ENode l) ClassId
 
--- ROMES:TODO: Monoid instance to join things built in paralell?
+-- ROMES:TODO: join things built in paralell?
+-- instance Ord1 l => Semigroup (EGraph l) where
+--     (<>) eg1 eg2 = undefined -- not so easy
+-- instance Ord1 l => Monoid (EGraph l) where
+--     mempty = EGraph emptyUF mempty mempty mempty
 
 instance Show1 l => Show (EGraph l) where
     show (EGraph a b c e) =
@@ -57,7 +63,7 @@ instance Show1 l => Show (EGraph l) where
 -- | Represent an expression (@Fix lang@) in an e-graph
 represent :: Language lang => Fix lang -> EGS lang ClassId
 -- Represent each sub-expression and add the resulting e-node to the e-graph
-represent (Fix l) = traverse represent l >>= add . Node
+represent = foldFix $ sequence >=> add . Node
 
 -- | Add an e-node to the e-graph
 --

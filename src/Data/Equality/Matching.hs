@@ -95,7 +95,9 @@ eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB mempty)
 
 -- | @(~x + 0) --> BinOp Add (Var "~x") (ENode (Integer 0))@
 -- @~x --> VariablePattern "~x"@
-data Pattern lang = NonVariablePattern (lang (Pattern lang)) | VariablePattern Var
+data Pattern lang
+    = NonVariablePattern (lang (Pattern lang))
+    | VariablePattern Var
 
 instance Eq1 l => (Eq (Pattern l)) where
     (==) (NonVariablePattern a) (NonVariablePattern b) = liftEq (==) a b

@@ -91,10 +91,6 @@ nodeTotalCost :: Traversable lang => EGraph lang -> (lang Cost -> Cost) -> ENode
 nodeTotalCost g cost (Node n) = get >>= \m -> return $ do
     expr <- Fix <$> traverse (fmap snd . (`IM.lookup` m) . flip find g) n
     return (foldFix cost expr, expr)
--- (,n) . cost <$> 
-
--- findCosts :: () -> Extraction lang ()
--- findCosts
 
 -- | Find the current best node and its cost in an equivalence class given only the class and the current extraction
 -- This is not necessarily the best node in the e-graph, only the best in the current extraction state

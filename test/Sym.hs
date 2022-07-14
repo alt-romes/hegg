@@ -201,26 +201,25 @@ rewrites =
     , "x"*("y"+"z") := ("x"*"y")+("x"*"z") -- distribute
     , ("x"*"y")+("x"*"z") := "x"*("y"+"z") -- factor
 
-    , "x"*(1/"x") := 1
-
     , PowP "a" "b"*PowP "a" "c" := PowP "a" ("b" + "c") -- pow mul
     , PowP "a" 0 := 1
     , PowP "a" 1 := "a"
     , PowP "a" 2 := "a"*"a"
     , PowP "a" (-1) := 1/"a"
 
-    -- , DiffP "x" "x" := 1
-    -- , DiffP "x" "y" := 0
+    , "x"*(1/"x") := 1
 
-    -- , DiffP "x" ("a" + "b") := DiffP "x" "a" + DiffP "x" "b"
-    -- , DiffP "x" ("a" * "b") := ("a"*DiffP "x" "b") + ("b"*DiffP "x" "a")
+    , DiffP "x" "x" := 1
+    , DiffP "x" "y" := 0
 
-    -- , DiffP "x" (SinP "x") := CosP "x"
-    -- , DiffP "x" (CosP "x") := - SinP "x"
+    , DiffP "x" ("a" + "b") := DiffP "x" "a" + DiffP "x" "b"
+    , DiffP "x" ("a" * "b") := ("a"*DiffP "x" "b") + ("b"*DiffP "x" "a")
 
-    -- , DiffP "x" (LnP "x") := 1/"x"
+    , DiffP "x" (SinP "x") := CosP "x"
+    , DiffP "x" (CosP "x") := (-1)*SinP "x"
 
-    -- ...
+    , DiffP "x" (LnP "x") := 1/"x"
+
     ]
 
 rewrite :: Fix Expr -> Fix Expr

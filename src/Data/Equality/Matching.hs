@@ -25,10 +25,14 @@ import Data.Equality.Graph
 
 import Database
 
+-- |  Matching a pattern on an e-graph returns substitutions for every variable
+-- in the pattern and the e-class that matched the pattern
+type Match = (Subst, ClassId)
+
 -- | EGS version of 'ematch'
 ematchM :: Language l
        => Pattern l
-       -> EGS l [(Subst, ClassId)]
+       -> EGS l [Match]
 ematchM pat = gets (ematch pat)
 
 -- | Match a pattern against an AST, returnin a list of equivalence classes
@@ -36,7 +40,7 @@ ematchM pat = gets (ematch pat)
 ematch :: Language l
        => Pattern l
        -> EGraph l
-       -> [(Subst, ClassId)]
+       -> [Match]
 ematch pat eg =
     let db = eGraphToDatabase eg
         q = compileToQuery pat

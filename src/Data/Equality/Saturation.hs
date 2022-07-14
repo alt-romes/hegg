@@ -13,6 +13,7 @@ module Data.Equality.Saturation
 import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 
+import Data.Functor.Classes
 import Data.Traversable
 import Control.Monad
 import Control.Monad.State
@@ -47,7 +48,8 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
 
       where
 
-        -- Take map each rewrite rule to how many times it's been used
+        -- Take map each rewrite rule to stats on its usage so we can do
+        -- backoff scheduling
         equalitySaturation' :: Language l => Int -> M.Map (Rewrite l) Stat -> EGS l ()
         equalitySaturation' 30 _ = return () -- Stop after X iterations
         equalitySaturation' i stats = do
@@ -58,27 +60,20 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
             -- With backoff scheduler
             (matches, newStats) <- mconcat <$> forM rewrites \(lhs := rhs) -> do 
                 case M.lookup (lhs := rhs) stats of
-                  -- If it's banned until some iteration, don't match.
-                  Just s
-                    | i < bannedUntil s -> return ([], stats)
+                  -- If it's banned until some iteration, don't match this rule
+                  -- against anything.
+                  Just s | i < bannedUntil s -> return ([], stats)
+
                   -- Otherwise, match and update stats
                   x -> do
-                      let treshhold = 32 {- match limit -} * 2^bannedN
-                          bannedN = case x of
-                                      Nothing -> 0
-                                      Just (timesBanned -> n) -> n
-                      matches' <- map (lhs := rhs,) <$> ematchM lhs -- Add rewrite to the e-match substitutions
-                      let total_len = sum $ map length matches'
-                      if total_len > treshhold
-                        then
-                          let defaultBanLength = 5
-                              ban_length = defaultBanLength * 2^bannedN;
-                              newStats = M.alter updateBans (lhs := rhs) stats
-                              updateBans = \case
-                                Nothing -> Just (Stat (i + ban_length) 1)
-                                Just (Stat _ n)  -> Just (Stat (i + ban_length) (n+1))
-                           in return (matches', newStats)
-                        else return (matches', stats)
+
+                      -- Match pattern
+                      matches' <- ematchM lhs -- Add rewrite to the e-match substitutions
+
+                      -- Backoff scheduler: update stats
+                      let newStats = updateStats i (lhs:=rhs) x stats matches'
+
+                      return (map (lhs := rhs,) matches', newStats)
 
             -- Write-only phase, temporarily break invariants
             forM_ matches \case
@@ -120,4 +115,42 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
                     Nothing -> error "impossible: couldn't find v in subst?"
                     Just i  -> return i
             NonVariablePattern p -> reprPat subst p
+
+
+-- | Backoff scheduler: update stats
+updateStats :: Ord1 l
+            => Int                    -- ^ Iteration we're in
+            -> Rewrite l              -- ^ Rewrite rule we're updating
+            -> Maybe Stat             -- ^ Current stat for this rewrite rule (we already got it so no point in doing a lookup again)
+            -> M.Map (Rewrite l) Stat -- ^ The map to update
+            -> [Match]                -- ^ The list of matches resulting from matching this rewrite rule
+            -> M.Map (Rewrite l) Stat -- ^ The updated map
+updateStats i rw currentStat stats matches =
+
+    if total_len > threshold
+
+      then
+        M.alter updateBans rw stats
+
+      else
+        stats
+
+    where
+
+      total_len = sum (map length matches)
+
+      defaultMatchLimit = 32
+      defaultBanLength  = 5
+
+      bannedN = case currentStat of
+                  Nothing -> 0;
+                  Just (timesBanned -> n) -> n
+
+      threshold = defaultMatchLimit * 2^bannedN
+
+      ban_length = defaultBanLength * 2^bannedN;
+
+      updateBans = \case
+        Nothing -> Just (Stat (i + ban_length) 1)
+        Just (Stat _ n)  -> Just (Stat (i + ban_length) (n+1))
 

@@ -1,13 +1,14 @@
 {-# LANGUAGE TypeFamilies #-}
 module Data.Equality.Graph.Nodes where
 
-import qualified Data.Map    as M
-import qualified Data.IntMap as IM
-import qualified Data.Set    as S
-
+import Data.Hashable
+import Data.Hashable.Lifted
+import Data.Functor.Classes
 import Data.Foldable
 
-import Data.Equality.Graph.Classes
+import Control.Monad (void)
+
+import Data.Equality.Graph.Classes.Id
 
 -- | E-node
 --
@@ -19,16 +20,47 @@ import Data.Equality.Graph.Classes
 -- When @l@ is an expression-like data type, @ENode l = l ClassId@ means every
 -- recursive field (so, every argument passed to this expr) is a 'ClassId'
 -- rather than an explicit expression
-type ENode l = l ClassId
+newtype ENode l = Node { unNode :: l ClassId }
 
-children :: Foldable l => ENode l -> [ClassId]
-children = toList
+-- | Operator
+--
+-- An operator is solely the function symbol part of the e-node, that is, there
+-- are no children e-classes.
+newtype Operator l = Operator { unOperator :: l () }
 
--- TODO: type class with associated type family "Operator" for the token that identifies the operator ...
--- Maybe use it instead of the functors? aber the functors look so natural..
-class ELang lang where
+-- | Get the children class ids of an e-node
+children :: Language l => ENode l -> [ClassId]
+children = toList . unNode
 
-    -- | Token that uniquely identifies operator
-    type Operator lang
+-- | Get the operator (function symbol) of an e-node
+operator :: Language l => ENode l -> Operator l
+operator = Operator . void . unNode
 
+-- | A language is a recursive data type written in its functor \"form\"
+--
+-- Must satisfy all other class constraints
+class (Hashable1 l, Eq1 l, Ord1 l, Traversable l) => Language l
 
+instance Eq1 l => (Eq (ENode l)) where
+    (==) (Node a) (Node b) = liftEq (==) a b
+
+instance Ord1 l => (Ord (ENode l)) where
+    compare (Node a) (Node b) = liftCompare compare a b
+
+instance Hashable1 l => (Hashable (ENode l)) where
+    hashWithSalt a (Node l) = liftHashWithSalt hashWithSalt a l
+
+instance Show1 l => (Show (ENode l)) where
+    showsPrec p (Node l) = liftShowsPrec showsPrec showList p l
+
+instance Eq1 l => (Eq (Operator l)) where
+    (==) (Operator a) (Operator b) = liftEq (==) a b
+
+instance Ord1 l => (Ord (Operator l)) where
+    compare (Operator a) (Operator b) = liftCompare compare a b
+
+instance Hashable1 l => (Hashable (Operator l)) where
+    hashWithSalt a (Operator l) = liftHashWithSalt hashWithSalt a l
+
+instance Show1 l => (Show (Operator l)) where
+    showsPrec p (Operator l) = liftShowsPrec (const . const $ showString "") (const $ showString "") p l

@@ -1,21 +1,17 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE StandaloneDeriving #-}
 module Database where
 
 import Data.Fix
 
-import Debug.Trace
-import Data.Maybe (catMaybes, mapMaybe)
+import Data.Maybe (mapMaybe)
 import Data.List (intersect, union, nub)
 import Control.Monad
 
 import Data.Foldable (toList)
 import qualified Data.HashMap.Strict as M
 import qualified Data.IntMap as IM
-import qualified Data.Set as S
 
 -- import GHC.Data.TrieMap
 
@@ -35,23 +31,26 @@ toVar (ClassId _) = Nothing
 
 -- | An Atom ... in pattern ... is R_f(v, v1, ..., vk), so we define it as a
 -- functor ast over pattern variables + the additional var for the e-class id
-data Atom lang = Atom ClassIdOrVar (lang ClassIdOrVar)
-deriving instance Show (lang ClassIdOrVar) => Show (Atom lang)
+data Atom lang
+    = Atom ClassIdOrVar (lang ClassIdOrVar)
 
-data Query lang = Query [Var] [Atom lang] | SelectAllQuery Var
-deriving instance (Show (lang ClassIdOrVar), Show (lang Var)) => Show (Query lang)
+data Query lang
+    = Query [Var] [Atom lang]
+    | SelectAllQuery Var
 
 -- | Database made of trie maps for each relation. Each relation is uniquely
 -- identified by the expressions modulo children expressions (hence @lang ()@)
-newtype Database lang = DB (M.HashMap (lang ()) (Fix ClassIdMap))
+newtype Database l
+    = DB (M.HashMap (Operator l) (Fix ClassIdMap))
 
-instance Show (lang ()) => Show (Database lang) where
-    show (DB m) = unlines $ map (\(a,b) -> show a <> ": " <> show' 0 b) $ M.toList m where
-        show' :: Int -> Fix ClassIdMap -> String
-        show' s m = flip foldFix m $ \case
-            (IM.toList -> m') -> unlines $ map (\(k,w) -> show k <> " --> " <> w) m'
+-- instance Show (lang ()) => Show (Database lang) where
+--     show (DB m) = unlines $ map (\(a,b) -> show a <> ": " <> show' 0 b) $ M.toList m where
+--         show' :: Int -> Fix ClassIdMap -> String
+--         show' s m = flip foldFix m $ \case
+--             (IM.toList -> m') -> unlines $ map (\(k,w) -> show k <> " --> " <> w) m'
 
 varsInQuery :: Foldable lang => Query lang -> [Var]
+varsInQuery (SelectAllQuery x) = [x]
 varsInQuery (Query _ atoms) =
     case flip map atoms $ \case
             Atom (Var v) (toList -> l) -> v:mapMaybe toVar l
@@ -61,6 +60,7 @@ varsInQuery (Query _ atoms) =
         xs -> nub $ foldr1 union xs
 
 queryHeadVars :: Foldable lang => Query lang -> [Var]
+queryHeadVars (SelectAllQuery x) = [x]
 queryHeadVars (Query qv _) = qv
 
 -- ROMES:TODO no longer so sure why the query needs [Var] (the free variables in
@@ -82,7 +82,7 @@ genericJoin d q@(Query qv atoms)
   = map ((:[]) . (x,)) (domainX x)
 -- ROMES:TODO the reverse order is probably faster bc people tend to put
 -- variables on the left of constants? e.g. (x + 0 = x)
-  | x:xs <- varsInQuery q
+  | x:_ <- varsInQuery q
   = flip concatMap (domainX x) $ \x_in_D ->
         -- Each valid sub-query assumed the x -> x_in_D substitution
         map ((x,x_in_D):) $ genericJoin d (Query qv (substitute x x_in_D atoms))
@@ -109,8 +109,8 @@ elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
 -- @D_x@, the domain of variable x, that is, the values x can take
 intersectAtoms :: Language l => Var -> Database l -> [Atom l] -> [ClassId]
 -- lookup ... >>= ... to make sure non-existing patterns don't crash
-intersectAtoms var (DB m) atoms =
-    case flip map atoms $ \(Atom v l) -> case M.lookup (void l) m of
+intersectAtoms var (DB db) atoms =
+    case flip map atoms $ \(Atom v l) -> case M.lookup (Operator $ void l) db of
             -- If needed relation doesn't exist altogether, return the matching
             -- class ids (none). When intersecting, nothing will be available
             Nothing -> []
@@ -123,14 +123,12 @@ intersectAtoms var (DB m) atoms =
       ls -> foldr1 intersect ls
 
     where 
-        relation l = m M.! void l
-
         -- Because ordering is left to right, first var observed is the
         -- variable we're targeting
         intersectInTrie :: Fix ClassIdMap -> [ClassIdOrVar] -> Maybe [ClassId]
-        intersectInTrie (Fix m) [] = error "intersectInRelation should always be called in 'queries' that have at least one var... something went wrong"
+        intersectInTrie (Fix _) [] = error "intersectInRelation should always be called in 'queries' that have at least one var... something went wrong"
         -- Last variable is a var, so all possible values are possible
-        intersectInTrie (Fix m) [Var x] = Just (map fst $ IM.toList m)
+        intersectInTrie (Fix m) [Var _] = Just (map fst $ IM.toList m)
 
         -- Last variable is constant (lol), so the valid intersection value is itself if it exists in the map
         intersectInTrie (Fix m) [ClassId x] = IM.lookup x m >> pure [x]

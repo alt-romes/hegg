@@ -1,20 +1,15 @@
+{-# OPTIONS_GHC -Wno-orphans #-} -- Arbitrary
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 module Invariants where
 
-import Debug.Trace
 import Test.Tasty
 import Test.Tasty.QuickCheck as QC hiding (classes)
-import Test.Tasty.HUnit
 
-import Data.Hashable
-
-import Data.Functor.Classes
 import Control.Monad
 
 import qualified Data.List as L
@@ -33,16 +28,15 @@ import Sym
 -- constant is used in equality saturation of any expression, all e-classes
 -- should be merged into a single one, since all classes are equal to c and
 -- therefore equivalent to themselves
-patFoldAllClasses :: forall lang
-                   . (Language lang, Hashable (Rewrite lang), Show1 lang, Show (lang (PatternAST lang)), Num (PatternAST lang), Ord (PatternAST lang), Hashable (PatternAST lang))
-                  => Fix lang -> Integer -> Bool
-patFoldAllClasses exp i =
+patFoldAllClasses :: forall l. (Language l, Num (Pattern l))
+                  => Fix l -> Integer -> Bool
+patFoldAllClasses expr i =
     case IM.toList $ classes eg of
-        [x] -> True
+        [_] -> True
         _   -> False
     where
-        eg :: EGraph lang
-        eg = snd $ equalitySaturation exp [VariablePattern "x":=fromInteger i] (error "Cost function shouldn't be used")
+        eg :: EGraph l
+        eg = snd $ equalitySaturation expr [VariablePattern "x":=fromInteger i] (error "Cost function shouldn't be used")
 
 -- | Test 'compileToQuery'.
 --
@@ -51,17 +45,18 @@ patFoldAllClasses exp i =
 --
 -- The number of atoms should also match the number of non variable patterns
 -- since we should create an additional atom (with a new bound variable) for each. 
-testCompileToQuery :: Traversable lang => PatternAST lang -> Bool
+testCompileToQuery :: Traversable lang => Pattern lang -> Bool
 testCompileToQuery p = case compileToQuery p of
                          -- Handle special case for selectAll queries...
                          SelectAllQuery x -> [x] == vars p && numNonVarPatterns p == 0
                          q@(Query _ atoms)
                            | [] <- queryHeadVars q   -> False
-                           | x:xs <- queryHeadVars q ->
+                           | _:xs <- queryHeadVars q ->
                                L.sort xs == L.sort (vars p)
                                  && length atoms == numNonVarPatterns p
+                         _ -> error "impossible! testCompileToQuery"
     where
-        numNonVarPatterns :: Foldable lang => PatternAST lang -> Int
+        numNonVarPatterns :: Foldable lang => Pattern lang -> Int
         numNonVarPatterns (VariablePattern _) = 0
         numNonVarPatterns (NonVariablePattern l) = foldr ((+) . numNonVarPatterns) 1 l
 
@@ -95,18 +90,17 @@ ematchSingletonVar v eg =
 -- when invariants are broken for sure doesn't make much sense
 --
 -- ROMES:TODO Should I rebuild it here? Then the property test is that after rebuilding ...HashConsInvariant
-hashConsInvariant :: forall s. (Language s, Show (ENode s), Ord (ENode s), Functor s, Foldable s) => EGraph s -> Bool
+hashConsInvariant :: forall l. Language l
+                  => EGraph l -> Bool
 hashConsInvariant eg@(EGraph {..}) =
     all f (IM.toList classes)
     where
-        -- e-node 𝑛 ∈ 𝑀 [𝑎] ⇐⇒ 𝐻 [canonicalize(𝑛)] = find(𝑎)
-        f :: (Ord (ENode s), Functor s) => (ClassId, EClass s) -> Bool
-        f (i, EClass _ nodes _) = all g nodes
-            where
-                g :: (Ord (ENode s), Functor s) => ENode s -> Bool
-                g en = case M.lookup (canonicalize en eg) memo of
-                    Nothing -> error "how can we not find canonical thing in map? :)" -- False
-                    Just i' -> i' == find i eg 
+      -- e-node 𝑛 ∈ 𝑀 [𝑎] ⇐⇒ 𝐻 [canonicalize(𝑛)] = find(𝑎)
+      f (i, EClass _ nodes _) = all g nodes
+        where
+          g en = case M.lookup (canonicalize en eg) memo of
+            Nothing -> error "how can we not find canonical thing in map? :)" -- False
+            Just i' -> i' == find i eg 
 
 -- ROMES:TODO: Property: Extract expression after equality saturation is always better or equal to the original expression
 
@@ -151,7 +145,7 @@ instance Arbitrary a => Arbitrary (Expr a) where
 instance Arbitrary (Fix Expr) where
     arbitrary = Fix <$> arbitrary
 
-instance Arbitrary (PatternAST Expr) where
+instance Arbitrary (Pattern Expr) where
     arbitrary = sized p'
       where
         p' 0 = VariablePattern . un <$> arbitrary

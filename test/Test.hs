@@ -1,5 +1,3 @@
-import Test.Tasty.QuickCheck as QC
-import Test.Tasty.HUnit
 import Test.Tasty
 
 import Invariants

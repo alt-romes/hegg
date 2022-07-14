@@ -1,10 +1,3 @@
-{-# LANGUAGE UndecidableInstances #-} -- instance Hashable
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeSynonymInstances #-} -- Hashable (ENode s)
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Data.Equality.Graph
     ( module Data.Equality.Graph
@@ -12,24 +5,19 @@ module Data.Equality.Graph
     , module Data.Equality.Graph.Nodes
     ) where
 
-import Data.Functor.Classes
 import Data.Bifunctor
 
 import Data.Fix
 
+import Data.Functor.Classes
+
 import Control.Monad
 import Control.Monad.State
-
-import Data.Hashable
-import Data.Hashable.Generic
-import Data.Hashable.Lifted
 
 import qualified Data.IntMap as IM
 import qualified Data.Set    as S
 
 import qualified Data.HashMap.Strict as M
-
-import GHC.Generics
 
 import Data.Equality.Graph.ReprUnionFind
 import Data.Equality.Graph.Classes
@@ -57,29 +45,25 @@ data EGraph s = EGraph
 
 -- ROMES:TODO: Monoid instance to join things built in paralell?
 
-instance Show (ENode s) => Show (EGraph s) where
+instance Show1 l => Show (EGraph l) where
     show (EGraph a b c e) =
         "UnionFind: " <> show a <>
             "\n\nE-Classes: " <> show b <>
                 "\n\nHashcons: " <> show c <>
-                        "\n\nWorklist: " <> show e
-
--- deriving instance Eq1 lang => Eq (ENode lang)
-
-class (Hashable (lang ()), Hashable (lang ClassId), Ord (lang ClassId), Ord (lang ()), Traversable lang) => Language lang
+                    "\n\nWorklist: " <> show e
 
 -- | Represent an expression (@Fix lang@) in an e-graph
 represent :: Language lang => Fix lang -> EGS lang ClassId
 -- Represent each sub-expression and add the resulting e-node to the e-graph
-represent (Fix l) = traverse represent l >>= add
+represent (Fix l) = traverse represent l >>= add . Node
 
 -- | Add an e-node to the e-graph
 --
 -- E-node lookup depends on e-node correctly defining equality
-add :: Language l => ENode l -> EGS l ClassId
+add :: forall l. Language l => ENode l -> EGS l ClassId
 add uncanon_e = do
-    egraph@EGraph { memo = encls } <- get
-    let new_en = canonicalize uncanon_e egraph
+    eg@EGraph { memo = encls } <- get
+    let new_en = canonicalize uncanon_e eg
     case M.lookup new_en encls of
       Just canon_enode_id -> return canon_enode_id
       Nothing -> do
@@ -90,7 +74,7 @@ add uncanon_e = do
         forM_ (children new_en) $ \eclass_id -> do
             -- Update canonical e-class of child e-class
             -- ROMES:TODO: does the find operation need to take into consideration the new e_class?
-            modifyClasses (IM.update (\e_class -> Just $ e_class { eClassParents = (new_en, new_eclass_id):eClassParents e_class }) (find eclass_id egraph))
+            modifyClasses (IM.update (\e_class -> Just $ e_class { eClassParents = (new_en, new_eclass_id):eClassParents e_class }) (find eclass_id eg))
         -- Add the e-node's e-class id at the e-node's id
         modifyMemo (M.insert new_en new_eclass_id)
         return new_eclass_id
@@ -158,7 +142,7 @@ merge a b = do
 --
 -- canonicalize(f(a,b,c,...)) = f((find a), (find b), (find c),...)
 canonicalize :: Functor l => ENode l -> EGraph l -> ENode l
-canonicalize enode egraph = fmap (`find` egraph) enode
+canonicalize (Node enode) eg = Node $ fmap (`find` eg) enode
 
 -- | Find the canonical representation of an e-class id in the e-graph
 -- Invariant: The e-class id always exists.
@@ -182,13 +166,13 @@ rebuild = do
     forM_ todo repair
 
     -- Loop until worklist is completely empty
-    wl <- gets worklist
-    unless (null wl) rebuild
+    wl' <- gets worklist
+    unless (null wl') rebuild
 
 
 repair :: Language l => ClassId -> EGS l ()
 repair repair_id = do
-    (_, EClass ei nodes parents) <- gets (getClass repair_id)
+    (_, EClass _ _ parents) <- gets (getClass repair_id)
 
     -- Update the hashcons so it always points
     -- canonical enodes to canonical eclasses
@@ -226,13 +210,13 @@ singletonClass en = do
 
 addToWorklist :: ClassId -> EGS s ()
 addToWorklist i =
-    modify (\egraph -> egraph { worklist = i:worklist egraph })
+    modify (\egr -> egr { worklist = i:worklist egr})
 
 -- | Clear the e-graph worklist and return the existing work items
 clearWorkList :: EGS s [ClassId]
 clearWorkList = do
     wl <- gets worklist
-    modify (\egraph -> egraph { worklist = [] })
+    modify (\egr -> egr { worklist = [] })
     return wl
 
 -- | Get an e-class from an e-graph given its e-class id
@@ -243,9 +227,9 @@ clearWorkList = do
 --
 -- Invariant: The e-class always exists.
 getClass :: ClassId -> EGraph s -> (ClassId, EClass s)
-getClass cid egraph =
-    let canon_id = find cid egraph
-     in (canon_id, classes egraph IM.! canon_id)
+getClass cid egr=
+    let canon_id = find cid egr
+     in (canon_id, classes egr IM.! canon_id)
 
 -- | Extend the existing UnionFind equivalence classes with a new one and
 -- return the new id
@@ -253,7 +237,7 @@ createUnionFindClass :: EGS s ClassId
 createUnionFindClass = do
     uf <- gets unionFind
     let (new_id, new_uf) = makeNewSet uf
-    modify (\egraph -> egraph { unionFind = new_uf })
+    modify (\egr -> egr { unionFind = new_uf })
     return new_id
 
 -- | Merge two equivalent classes in the union find
@@ -261,15 +245,15 @@ mergeUnionFindClasses :: ClassId -> ClassId -> EGS s ClassId
 mergeUnionFindClasses a b = do
     uf <- gets unionFind
     let (new_id, new_uf) = unionSets a b uf
-    modify (\egraph -> egraph { unionFind = new_uf })
+    modify (\egr -> egr { unionFind = new_uf })
     return new_id
 
 
 modifyClasses :: (ClassIdMap (EClass s) -> ClassIdMap (EClass s)) -> EGS s ()
-modifyClasses f = modify (\egraph -> egraph { classes = f (classes egraph) })
+modifyClasses f = modify (\egr -> egr { classes = f (classes egr) })
 
 modifyMemo :: (M.HashMap (ENode s) ClassId -> M.HashMap (ENode s) ClassId) -> EGS s ()
-modifyMemo f = modify (\egraph -> egraph { memo = f (memo egraph) })
+modifyMemo f = modify (\egr -> egr { memo = f (memo egr) })
 
 emptyEGraph :: EGraph s
 emptyEGraph = EGraph emptyUF IM.empty M.empty []

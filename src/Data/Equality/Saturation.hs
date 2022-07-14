@@ -1,9 +1,7 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE BlockArguments #-}
@@ -13,13 +11,14 @@ module Data.Equality.Saturation
     , Cost
     ) where
 
-import qualified Data.Set as S
+import GHC.Generics
+
 import qualified Data.HashMap.Strict as M
 import qualified Data.IntMap as IM
 
 import Data.Hashable
+import Data.Hashable.Lifted
 
-import Data.Functor.Classes
 import Data.Traversable
 import Control.Monad
 import Control.Monad.State
@@ -30,18 +29,18 @@ import Data.Equality.Graph
 import Data.Equality.Matching
 import Data.Equality.Extraction
 
-data Rewrite lang = PatternAST lang := PatternAST lang
-deriving instance Show1 lang => Show (Rewrite lang)
-deriving instance Eq (PatternAST lang) => Eq (Rewrite lang)
-deriving instance Ord (PatternAST lang) => Ord (Rewrite lang)
+data Rewrite lang = Pattern lang := Pattern lang
+    deriving (Eq, Ord, Generic)
 infix 3 :=
+
+instance Hashable1 l => Hashable (Rewrite l)
 
 data Stat = Stat { bannedUntil :: Int
                  , timesBanned :: Int
                  } deriving Show
 
-equalitySaturation :: forall lang. (Hashable (Rewrite lang), Hashable (PatternAST lang), Language lang, Show1 lang, Show (lang (PatternAST lang)), Ord (PatternAST lang), Ord (lang ()), Ord (ENode lang), Traversable lang) 
-                   => Fix lang -> [Rewrite lang] -> (lang Cost -> Cost) -> (Fix lang, EGraph lang)
+equalitySaturation :: forall l. Language l
+                   => Fix l -> [Rewrite l] -> (l Cost -> Cost) -> (Fix l, EGraph l)
 equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
 
     -- Represent expression as an e-graph
@@ -57,7 +56,7 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
       where
 
         -- Take map each rewrite rule to how many times it's been used
-        equalitySaturation' :: Hashable (PatternAST lang) => Int -> M.HashMap (Rewrite lang) Stat -> EGS lang ()
+        equalitySaturation' :: Language l => Int -> M.HashMap (Rewrite l) Stat -> EGS l ()
         equalitySaturation' 30 _ = return () -- Stop after X iterations
         equalitySaturation' i stats = do
 
@@ -121,9 +120,9 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
 
 
         -- | Represent a pattern in the e-graph a pattern given substitions
-        reprPat :: (Ord (ENode lang), Traversable lang)
-                => Subst -> lang (PatternAST lang) -> EGS lang ClassId
-        reprPat subst = add <=< traverse \case
+        reprPat :: Language l
+                => Subst -> l (Pattern l) -> EGS l ClassId
+        reprPat subst = add . Node <=< traverse \case
             VariablePattern v ->
                 case lookup v subst of
                     Nothing -> error "impossible: couldn't find v in subst?"

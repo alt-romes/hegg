@@ -1,9 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module Data.Equality.Graph.ReprUnionFind where
 
-import qualified Data.Map    as M
 import qualified Data.IntMap as IM
-import qualified Data.Set    as S
 
 import Data.Equality.Graph.Classes
 

@@ -1,5 +1,4 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,12 +9,12 @@
 module Sym where
 
 import Test.Tasty
-import Test.Tasty.QuickCheck as QC
 import Test.Tasty.HUnit
 
 import Data.String
 
 import Data.Hashable
+import Data.Hashable.Lifted
 
 import Data.Functor.Classes
 
@@ -29,27 +28,43 @@ data Expr a = Sym String
             | Const Double
             | UnOp  UOp a
             | BinOp BOp a a
-            deriving ( Eq,  Ord, Functor
+            deriving ( Eq, Ord, Functor
                      , Foldable, Traversable
-                     , Generic
+                     , Generic, Generic1
                      )
-
-instance Hashable a => Hashable (Expr a)
-
-deriving instance Generic (Rewrite Expr)
-deriving instance Generic (PatternAST Expr)
-instance Hashable (Rewrite Expr)
-instance Hashable (PatternAST Expr)
-
-instance Language Expr
 
 instance Eq1 Expr where
     liftEq eq a b = case (a, b) of
         (Sym x, Sym y) -> x == y
         (Const x, Const y) -> x == y
-        (UnOp op a, UnOp op' b) -> op == op' && a `eq` b
+        (UnOp op x, UnOp op' y) -> op == op' && x `eq` y
         (BinOp op x y, BinOp op' x' y') -> op == op' && x `eq` x' && y `eq` y'
         _ -> False
+
+instance Ord1 Expr where
+    liftCompare cmp a b = case (a, b) of
+        (Sym x, Sym y) -> compare x y
+        (Const x, Const y) -> compare x y
+        (UnOp op x, UnOp op' y) -> case compare op op' of
+                                     EQ -> cmp x y
+                                     o  -> o
+        (BinOp op x y, BinOp op' x' y') -> case compare op op' of
+                                             EQ -> case cmp x x' of
+                                                     EQ -> cmp y y'
+                                                     o  -> o
+                                             o  -> o
+        (x, y) -> compare (expIx x) (expIx y)
+      where
+        expIx :: Expr a -> Int
+        expIx = \case
+            Sym _ -> 1
+            Const _ -> 2
+            UnOp _ _ -> 3
+            BinOp {} -> 4
+
+instance Hashable1 Expr
+
+instance Language Expr
 
 data BOp = Add
          | Sub
@@ -88,15 +103,6 @@ instance Show UOp where
         Ln -> "ln"
         Negate -> "-"
 
-instance {-# OVERLAPPABLE #-} Show a => Show (Expr a) where
-    show = \case
-        BinOp Diff a b -> show Diff <> show a <> " " <> show b
-        BinOp Integral a b -> show Integral <> show a <> " " <> show b
-        BinOp op a b -> show a <> " " <> show op <> " " <> show b
-        UnOp op a -> "( " <> show op <> "(" <> show a <> ")" <> " )"
-        Const x -> show x
-        Sym x -> x
-
 instance {-# OVERLAPPING #-} Show (Fix Expr) where
     show = foldFix $ \case
         BinOp Diff a b -> show Diff <> a <> " " <> b
@@ -128,8 +134,10 @@ instance Fractional (Fix Expr) where
 instance Show1 Expr where
     -- ROMES:TODO: Don't ignore precedence?
     liftShowsPrec sp _ d = \case
+        BinOp Diff e1 e2 -> showString (show Diff) . sp d e1 . showString " " . sp d e2
+        BinOp Integral e1 e2 -> showString (show Integral) . sp d e1 . showString " " . sp d e2
         BinOp op e1 e2 ->
-            sp d e1 . showString (show op) . sp d e2
+            showString "(" . sp d e1 . showString (show op) . sp d e2 . showString ")"
 
         UnOp op e1 -> showString (show op) . sp d e1
         Const f -> showString (show f)
@@ -152,10 +160,7 @@ symCost = \case
     Sym _ -> 1
     Const _ -> 1
 
-deriving instance Eq (PatternAST Expr)
-deriving instance Ord (PatternAST Expr)
-
-instance Num (PatternAST Expr) where
+instance Num (Pattern Expr) where
     (+) a b = NonVariablePattern $ BinOp Add a b
     (-) a b = NonVariablePattern $ BinOp Sub a b
     (*) a b = NonVariablePattern $ BinOp Mul a b
@@ -164,14 +169,23 @@ instance Num (PatternAST Expr) where
     abs = error "abs"
     signum = error "signum"
 
-instance Fractional (PatternAST Expr) where
+instance Fractional (Pattern Expr) where
     (/) a b = NonVariablePattern $ BinOp Div a b
     fromRational = NonVariablePattern . Const . fromRational
 
+pattern PowP :: Pattern Expr -> Pattern Expr -> Pattern Expr
 pattern PowP a b = NonVariablePattern (BinOp Pow a b)
+
+pattern DiffP :: Pattern Expr -> Pattern Expr -> Pattern Expr
 pattern DiffP a b = NonVariablePattern (BinOp Diff a b)
+
+pattern CosP :: Pattern Expr -> Pattern Expr
 pattern CosP a = NonVariablePattern (UnOp Cos a)
+
+pattern SinP :: Pattern Expr -> Pattern Expr
 pattern SinP a = NonVariablePattern (UnOp Sin a)
+
+pattern LnP :: Pattern Expr -> Pattern Expr
 pattern LnP a = NonVariablePattern (UnOp Ln a)
 
 rewrites :: [Rewrite Expr]
@@ -182,7 +196,7 @@ rewrites =
     , "x"*("y"*"z") := ("x"*"y")*"z" -- assoc mul
 
     , "x"-"y" := "x"+((-1)*"y") -- sub cannon
-    , "x"/"y" := "x"*(PowP "y" (-1)) -- div cannon
+    , "x"/"y" := "x"*PowP "y" (-1) -- div cannon
 
     -- identities
     , "x"+0 := "x"

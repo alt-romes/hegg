@@ -1,12 +1,13 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE StandaloneDeriving #-}
 module Data.Equality.Matching
     ( module Data.Equality.Matching
     , Subst
     )
     where
+
+import Data.Hashable
+import Data.Hashable.Lifted
 
 import Data.String
 import Data.Maybe
@@ -22,7 +23,6 @@ import Control.Monad.State
 
 import qualified Data.HashMap.Strict as M
 import qualified Data.IntMap as IM
-import qualified Data.Set as S
 
 import Data.Equality.Graph
 
@@ -30,14 +30,14 @@ import Database
 
 -- | EGS version of 'ematch'
 ematchM :: Language l
-       => PatternAST l
+       => Pattern l
        -> EGS l [(Subst, ClassId)]
 ematchM pat = gets (ematch pat)
 
 -- | Match a pattern against an AST, returnin a list of equivalence classes
 -- that match the pattern and the corresponding substitution
 ematch :: Language l
-       => PatternAST l
+       => Pattern l
        -> EGraph l
        -> [(Subst, ClassId)]
 ematch pat eg =
@@ -54,7 +54,7 @@ ematch pat eg =
         -- root variable is needed in the substitution for single variable
         -- queries to find the subst
         copyOutEClass [] = Nothing
-        copyOutEClass l@((_,root_class):xs) = Just (l, root_class)
+        copyOutEClass l@((_,root_class):_) = Just (l, root_class)
 
 -- | Convert an e-graph into a database in which we do the conjunctive queries
 --
@@ -72,10 +72,10 @@ eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB M.empty
 
     -- Add an enode in an e-graph, given its class, to a database
     addENodeToDB :: Language l => EGraph l -> ENode l -> ClassId -> Database l -> Database l
-    addENodeToDB eg enode classid (DB m) =
+    addENodeToDB _ enode classid (DB m) =
         -- ROMES:TODO map find
         -- Insert or create a relation R_f(i1,i2,...,in) for lang in which 
-        DB $ M.alter (populate (classid:toList enode)) (void enode) m
+        DB $ M.alter (populate (classid:children enode)) (operator enode) m
 
     -- Populate or create a triemap given the population D_x (ClassIds)
     populate :: [ClassId] -> Maybe (Fix ClassIdMap) -> Maybe (Fix ClassIdMap)
@@ -98,33 +98,47 @@ eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB M.empty
 
 -- | @(~x + 0) --> BinOp Add (Var "~x") (ENode (Integer 0))@
 -- @~x --> VariablePattern "~x"@
-data PatternAST lang = NonVariablePattern (lang (PatternAST lang)) | VariablePattern Var
+data Pattern lang = NonVariablePattern (lang (Pattern lang)) | VariablePattern Var
 
-instance Show1 lang => Show (PatternAST lang) where
+instance Eq1 l => (Eq (Pattern l)) where
+    (==) (NonVariablePattern a) (NonVariablePattern b) = liftEq (==) a b
+    (==) (VariablePattern a) (VariablePattern b) = a == b 
+    (==) _ _ = False
+
+instance Ord1 l => (Ord (Pattern l)) where
+    compare (VariablePattern _) (NonVariablePattern _) = LT
+    compare (NonVariablePattern _) (VariablePattern _) = GT
+    compare (VariablePattern a) (VariablePattern b) = compare a b
+    compare (NonVariablePattern a) (NonVariablePattern b) = liftCompare compare a b
+
+instance Hashable1 l => (Hashable (Pattern l)) where
+    hashWithSalt a (NonVariablePattern l) = liftHashWithSalt hashWithSalt a l
+    hashWithSalt a (VariablePattern b) = hashWithSalt a b
+
+instance Show1 lang => Show (Pattern lang) where
     showsPrec _ (VariablePattern s) = showString s -- ROMES:TODO don't ignore prec?
     showsPrec d (NonVariablePattern x) = liftShowsPrec showsPrec showList d x
 
-
-instance IsString (PatternAST lang) where
+instance IsString (Pattern lang) where
     fromString = VariablePattern
 
 data AuxResult lang = Var :~ [Atom lang]
 
 -- Return distinct variables in a pattern
-vars :: Foldable lang => PatternAST lang -> [Var]
+vars :: Foldable lang => Pattern lang -> [Var]
 vars (VariablePattern x) = [x]
 vars (NonVariablePattern p) = nub $ join $ map vars $ toList p
 
-compileToQuery :: (Traversable lang) => PatternAST lang -> Query lang
+compileToQuery :: (Traversable lang) => Pattern lang -> Query lang
 compileToQuery = flip evalState 0 . compile_to_query'
     where
-        compile_to_query' :: (Traversable lang) => PatternAST lang -> State Int (Query lang)
+        compile_to_query' :: (Traversable lang) => Pattern lang -> State Int (Query lang)
         compile_to_query' (VariablePattern x) = return (SelectAllQuery x)
         compile_to_query' p@(NonVariablePattern _) = do
             root :~ atoms <- aux p
             return (Query (nub $ root:vars p) atoms)
 
-        aux :: (Traversable lang) => PatternAST lang -> State Int (AuxResult lang)
+        aux :: (Traversable lang) => Pattern lang -> State Int (AuxResult lang)
         aux (VariablePattern x) = return $ x :~ [] -- from definition in relational e-matching paper (needed for as base case for recursion)
         aux (NonVariablePattern p) = do
             v <- fresh
@@ -139,8 +153,8 @@ compileToQuery = flip evalState 0 . compile_to_query'
                 where
                     -- State keeps track of the index of the variable we're
                     -- taking from the bound vars array
-                    subPatsToVars :: Traversable lang => lang (PatternAST lang) -> [Var] -> State Int (lang Var)
-                    subPatsToVars p boundVars = traverse (const $ (boundVars !!) <$> next) p
+                    subPatsToVars :: Traversable lang => lang (Pattern lang) -> [Var] -> State Int (lang Var)
+                    subPatsToVars p' boundVars = traverse (const $ (boundVars !!) <$> next) p'
 
 fresh :: State Int String
 fresh = ('$':) . ('~':) . (letters !!) <$> next

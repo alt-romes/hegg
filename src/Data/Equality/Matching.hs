@@ -6,9 +6,6 @@ module Data.Equality.Matching
     )
     where
 
-import Data.Hashable
-import Data.Hashable.Lifted
-
 import Data.String
 import Data.Maybe
 import Data.Functor.Classes
@@ -21,7 +18,7 @@ import Data.Fix
 import Control.Monad
 import Control.Monad.State
 
-import qualified Data.HashMap.Strict as M
+import qualified Data.Map.Strict as M
 import qualified Data.IntMap as IM
 
 import Data.Equality.Graph
@@ -67,7 +64,7 @@ ematch pat eg =
 --     }
 -- @
 eGraphToDatabase :: Language l => EGraph l -> Database l
-eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB M.empty) memo
+eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB mempty) memo
   where
 
     -- Add an enode in an e-graph, given its class, to a database
@@ -79,7 +76,7 @@ eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB M.empty
 
     -- Populate or create a triemap given the population D_x (ClassIds)
     populate :: [ClassId] -> Maybe (Fix ClassIdMap) -> Maybe (Fix ClassIdMap)
-    populate ids Nothing = Just $ populate' ids (Fix IM.empty)
+    populate ids Nothing = Just $ populate' ids (Fix mempty)
     populate ids (Just f) = Just $ populate' ids f
 
     -- Populate a triemap given the population D_x (ClassIds)
@@ -90,7 +87,7 @@ eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB M.empty
         -- Insert remaining ids population doesn't exist, recursively merge tries with remaining ids
         alterPopulation :: [ClassId] -> Maybe (Fix ClassIdMap) -> Maybe (Fix ClassIdMap)
         -- If trie map entry doesn't exist yet, populate an empty map with the remaining ids
-        alterPopulation ids Nothing = Just $ populate' ids (Fix IM.empty)
+        alterPopulation ids Nothing = Just $ populate' ids (Fix mempty)
         -- If trie map entry already exists, populate the existing map with the remaining ids
         alterPopulation ids (Just f) = Just $ populate' ids f
 
@@ -110,10 +107,6 @@ instance Ord1 l => (Ord (Pattern l)) where
     compare (NonVariablePattern _) (VariablePattern _) = GT
     compare (VariablePattern a) (VariablePattern b) = compare a b
     compare (NonVariablePattern a) (NonVariablePattern b) = liftCompare compare a b
-
-instance Hashable1 l => (Hashable (Pattern l)) where
-    hashWithSalt a (NonVariablePattern l) = liftHashWithSalt hashWithSalt a l
-    hashWithSalt a (VariablePattern b) = hashWithSalt a b
 
 instance Show1 lang => Show (Pattern lang) where
     showsPrec _ (VariablePattern s) = showString s -- ROMES:TODO don't ignore prec?

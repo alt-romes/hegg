@@ -43,8 +43,7 @@ library
     build-depends:    base >= 4.4 && < 5,
                       text, mtl,
                       data-fix,
-                      containers, unordered-containers,
-                      hashable
+                      containers
     if flag(vizdot)
         build-depends: graphviz
     hs-source-dirs:   src
@@ -61,8 +60,7 @@ test-suite hegg-test
     build-depends:    base,
                       data-fix,
                       hegg,
-                      containers, unordered-containers,
-                      hashable,
+                      containers,
                       tasty,
                       tasty-quickcheck,
                       tasty-hunit

@@ -10,7 +10,7 @@ import Data.List (intersect, union, nub)
 import Control.Monad
 
 import Data.Foldable (toList)
-import qualified Data.HashMap.Strict as M
+import qualified Data.Map.Strict as M
 import qualified Data.IntMap as IM
 
 -- import GHC.Data.TrieMap
@@ -41,7 +41,7 @@ data Query lang
 -- | Database made of trie maps for each relation. Each relation is uniquely
 -- identified by the expressions modulo children expressions (hence @lang ()@)
 newtype Database l
-    = DB (M.HashMap (Operator l) (Fix ClassIdMap))
+    = DB (M.Map (Operator l) (Fix ClassIdMap))
 
 -- instance Show (lang ()) => Show (Database lang) where
 --     show (DB m) = unlines $ map (\(a,b) -> show a <> ": " <> show' 0 b) $ M.toList m where

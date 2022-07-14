@@ -15,14 +15,13 @@ import Control.Monad
 import qualified Data.List as L
 import qualified Data.Set as S
 import qualified Data.IntMap as IM
-import qualified Data.HashMap.Strict as M
+import qualified Data.Map.Strict as M
 
 import Data.Equality.Graph
 import Data.Equality.Saturation
 import Data.Equality.Matching
 import Database
 import Sym
-
 
 -- | When a rewrite of type "x":=c where x is a pattern variable and c is a
 -- constant is used in equality saturation of any expression, all e-classes

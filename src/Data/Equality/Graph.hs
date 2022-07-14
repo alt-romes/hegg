@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 module Data.Equality.Graph
     ( module Data.Equality.Graph
     , module Data.Equality.Graph.Classes
@@ -14,10 +15,9 @@ import Data.Functor.Classes
 import Control.Monad
 import Control.Monad.State
 
+import qualified Data.Map.Strict     as M
 import qualified Data.IntMap as IM
 import qualified Data.Set    as S
-
-import qualified Data.HashMap.Strict as M
 
 import Data.Equality.Graph.ReprUnionFind
 import Data.Equality.Graph.Classes
@@ -29,19 +29,21 @@ type EGS s = State (EGraph s)
 runEGS :: EGraph s -> EGS s a -> (a, EGraph s)
 runEGS = flip runState
 
-egraph :: EGS s a -> EGraph s
+egraph :: Language l => EGS l a -> EGraph l
 egraph = snd . runEGS emptyEGraph
 
 -- | E-graph
 --
 -- @s@ for the e-node term
 -- @nid@ type of e-node ids
-data EGraph s = EGraph
+data EGraph l = EGraph
     { unionFind :: ReprUnionFind -- ^ Union find like structure to find canonical representation of an e-class id
-    , classes   :: ClassIdMap (EClass s) -- ^ Map canonical e-class ids to their e-classes
-    , memo      :: M.HashMap (ENode s) ClassId -- ^ Hashcons maps all canonical e-nodes to their e-class ids
+    , classes   :: ClassIdMap (EClass l) -- ^ Map canonical e-class ids to their e-classes
+    , memo      :: M.Map (ENode l) ClassId -- ^ Hashcons maps all canonical e-nodes to their e-class ids
     , worklist  :: [ClassId] -- ^ e-class ids that need to be upward merged
     }
+
+type Memo l = M.Map (ENode l) ClassId
 
 -- ROMES:TODO: Monoid instance to join things built in paralell?
 
@@ -181,10 +183,10 @@ repair repair_id = do
         eg <- get
         modifyMemo (M.insert (canonicalize node eg) (find eclass_id eg))
 
-    new_parents <- M.toList <$> go parents M.empty
+    new_parents <- M.toList <$> go parents mempty
     modifyClasses (IM.update (\eclass -> Just $ eclass { eClassParents = new_parents }) repair_id)
         where
-            go :: Language l => [(ENode l, ClassId)] -> M.HashMap (ENode l) ClassId -> EGS l (M.HashMap (ENode l) ClassId)
+            go :: Language l => [(ENode l, ClassId)] -> Memo l -> EGS l (Memo l)
             go [] s = return s
             go ((node, eclass_id):xs) s = do
                 -- Deduplicate the parents, noting that equal parents get merged and put on
@@ -252,15 +254,15 @@ mergeUnionFindClasses a b = do
 modifyClasses :: (ClassIdMap (EClass s) -> ClassIdMap (EClass s)) -> EGS s ()
 modifyClasses f = modify (\egr -> egr { classes = f (classes egr) })
 
-modifyMemo :: (M.HashMap (ENode s) ClassId -> M.HashMap (ENode s) ClassId) -> EGS s ()
+modifyMemo :: (Memo l -> Memo l) -> EGS l ()
 modifyMemo f = modify (\egr -> egr { memo = f (memo egr) })
 
-emptyEGraph :: EGraph s
-emptyEGraph = EGraph emptyUF IM.empty M.empty []
+emptyEGraph :: Language l => EGraph l
+emptyEGraph = EGraph emptyUF mempty mempty []
 
-getSize :: EGS s Int
+getSize :: EGS l Int
 getSize = gets sizeEGraph
 
-sizeEGraph :: EGraph s -> Int
+sizeEGraph :: EGraph l -> Int
 sizeEGraph (EGraph { unionFind = (RUF im) }) = IM.size im
 

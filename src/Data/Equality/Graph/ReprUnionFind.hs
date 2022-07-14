@@ -24,7 +24,7 @@ data Repr
   deriving Show
 
 emptyUF :: ReprUnionFind
-emptyUF = RUF IM.empty
+emptyUF = RUF mempty
 
 makeNewSet :: ReprUnionFind -> (ClassId, ReprUnionFind)
 makeNewSet (RUF im) = (new_id, RUF $ IM.insert new_id Canonical im)

@@ -1,5 +1,4 @@
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
@@ -11,13 +10,8 @@ module Data.Equality.Saturation
     , Cost
     ) where
 
-import GHC.Generics
-
-import qualified Data.HashMap.Strict as M
+import qualified Data.Map.Strict as M
 import qualified Data.IntMap as IM
-
-import Data.Hashable
-import Data.Hashable.Lifted
 
 import Data.Traversable
 import Control.Monad
@@ -30,10 +24,8 @@ import Data.Equality.Matching
 import Data.Equality.Extraction
 
 data Rewrite lang = Pattern lang := Pattern lang
-    deriving (Eq, Ord, Generic)
+    deriving (Eq, Ord)
 infix 3 :=
-
-instance Hashable1 l => Hashable (Rewrite l)
 
 data Stat = Stat { bannedUntil :: Int
                  , timesBanned :: Int
@@ -56,7 +48,7 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
       where
 
         -- Take map each rewrite rule to how many times it's been used
-        equalitySaturation' :: Language l => Int -> M.HashMap (Rewrite l) Stat -> EGS l ()
+        equalitySaturation' :: Language l => Int -> M.Map (Rewrite l) Stat -> EGS l ()
         equalitySaturation' 30 _ = return () -- Stop after X iterations
         equalitySaturation' i stats = do
 

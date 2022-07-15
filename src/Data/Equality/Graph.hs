@@ -233,11 +233,14 @@ clearWorkList = do
 --
 -- We'll find its canonical representation and then get it from the e-classes map
 --
--- Invariant: The e-class always exists.
+-- Invariant: The e-class exists.
 getClass :: ClassId -> EGraph s -> (ClassId, EClass s)
 getClass cid egr=
     let canon_id = find cid egr
      in (canon_id, classes egr IM.! canon_id)
+
+setClass :: EGraph s -> ClassId -> EClass s -> EGraph s
+setClass egr i c = egr { classes = IM.insert i c (classes egr) }
 
 -- | Extend the existing UnionFind equivalence classes with a new one and
 -- return the new id
@@ -270,5 +273,5 @@ getSize :: EGS l Int
 getSize = gets sizeEGraph
 
 sizeEGraph :: EGraph l -> Int
-sizeEGraph (EGraph { unionFind = (RUF im) }) = IM.size im
+sizeEGraph EGraph { unionFind = RUF im } = IM.size im
 

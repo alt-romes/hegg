@@ -1,3 +1,4 @@
+{-# LANGUAGE UndecidableInstances #-}
 {-|
    Equivalence classes
 -}
@@ -13,16 +14,19 @@ import Data.Functor.Classes
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 
+import Data.Equality.Analysis
+
 -- | E-Class
 --
 -- @cid@ type of e-class ids
 -- @nid@ type of e-node ids
-data EClass s = EClass
-    { eClassId :: {-# UNPACK #-} !ClassId -- ^ E-class Id
-    , eClassNodes :: !(S.Set (ENode s)) -- ^ E-nodes in this class
-    , eClassParents :: ![(ENode s, ClassId)] -- ^ E-nodes which are parents of (reference) this e-class and their e-class ids. (See EGraph.ENode for why @s ClassId@)
+data EClass l = EClass
+    { eClassId      :: {-# UNPACK #-} !ClassId -- ^ E-class Id
+    , eClassNodes   :: !(S.Set (ENode l))      -- ^ E-nodes in this class
+    , eClassData    :: Domain l                -- ^ The analysis data associated with this eclass.
+    , eClassParents :: ![(ENode l, ClassId)]   -- ^ E-nodes which are parents of (reference) this e-class and their e-class ids. (See EGraph.ENode for why @s ClassId@)
     }
 
-instance Show1 l => Show (EClass l) where
-    show (EClass a b c) = "Id: " <> show a <> "\nNodes: " <> show b <> "\nParents: " <> show c
+instance (Show (Domain l), Show1 l) => Show (EClass l) where
+    show (EClass a b d c) = "Id: " <> show a <> "\nNodes: " <> show b <> "\nParents: " <> show c <> "\nData: " <> show d
 

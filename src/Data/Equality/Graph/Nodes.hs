@@ -27,17 +27,12 @@ newtype ENode l = Node { unNode :: l ClassId }
 newtype Operator l = Operator { unOperator :: l () }
 
 -- | Get the children class ids of an e-node
-children :: Language l => ENode l -> [ClassId]
+children :: Traversable l => ENode l -> [ClassId]
 children = toList . unNode
 
 -- | Get the operator (function symbol) of an e-node
-operator :: Language l => ENode l -> Operator l
+operator :: Traversable l => ENode l -> Operator l
 operator = Operator . void . unNode
-
--- | A language is a recursive data type written in its functor \"form\"
---
--- Must satisfy all other class constraints
-class (Traversable l, Ord1 l) => Language l
 
 instance Eq1 l => (Eq (ENode l)) where
     (==) (Node a) (Node b) = liftEq (==) a b

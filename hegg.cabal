@@ -33,6 +33,7 @@ library
                       Data.Equality.Matching,
                       Data.Equality.Saturation,
                       Data.Equality.Extraction,
+                      Data.Equality.Language,
                       Data.Equality.Analysis,
                       Database
     if flag(vizdot)

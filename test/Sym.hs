@@ -7,14 +7,17 @@
 {-# LANGUAGE LambdaCase #-}
 module Sym where
 
+import Debug.Trace
 import Test.Tasty
 import Test.Tasty.HUnit
 
 import Data.String
 
 import Data.Functor.Classes
+import Control.Applicative (liftA2)
 
 import Data.Equality.Graph
+import Data.Equality.Graph.Lens
 import Data.Equality.Matching
 import Data.Equality.Saturation
 
@@ -176,6 +179,57 @@ pattern SinP a = NonVariablePattern (UnOp Sin a)
 pattern LnP :: Pattern Expr -> Pattern Expr
 pattern LnP a = NonVariablePattern (UnOp Ln a)
 
+
+-- | Define analysis for the @Expr@ language over domain @Maybe Double@ for
+-- constant folding
+instance Analysis Expr where
+    type Domain Expr = Maybe Double
+
+    makeA (Node e) egr = evalConstant ((\c -> egr^._class c._data) <$> e)
+
+    -- joinA = (<|>)
+    joinA ma mb = do
+        a <- ma
+        _ <- mb
+        -- this assertion only seemed to be triggering when using bogus
+        -- constant assignments for "Fold all classes with x:=c"
+        -- !_ <- unless (a == b) (error "assert failed!")
+        return a
+
+    modifyA i egr =
+        case egr ^._class i._data of
+          Nothing -> egr
+          Just d  -> snd $ runEGS egr $ do
+
+            -- Add constant as e-node
+            new_c <- represent (Fix $ Const d)
+            merge i new_c
+
+            -- Prune all except leaf e-nodes
+            -- modifyClasses (IM.modify (\E) ji)
+
+
+
+evalConstant :: Expr (Maybe Double) -> Maybe Double
+evalConstant = \case
+    -- Exception: Negative exponent: BinOp Pow e1 e2 -> liftA2 (^) e1 (round <$> e2 :: Maybe Integer)
+    BinOp Div e1 e2 -> liftA2 (/) e1 e2
+    BinOp Sub e1 e2 -> liftA2 (-) e1 e2
+    BinOp Mul e1 e2 -> liftA2 (*) e1 e2
+    BinOp Add e1 e2 -> liftA2 (+) e1 e2
+    BinOp Pow _ _ -> Nothing
+    BinOp Diff _ _ -> Nothing
+    BinOp Integral _ _ -> Nothing
+    UnOp Sin e1 -> sin <$> e1
+    UnOp Cos e1 -> cos <$> e1
+    UnOp Sqrt e1 -> sqrt <$> e1
+    UnOp Ln   _  -> Nothing
+    UnOp Negate e1 -> (\e -> -e) <$> e1
+    Sym _ -> Nothing
+    Const x -> Just x
+    
+
+
 rewrites :: [Rewrite Expr]
 rewrites =
     [ "x"+"y" := "y"+"x" -- comm add
@@ -255,7 +309,10 @@ symTests = testGroup "Symbolic"
     , testCase "b*(1/b) = 1 (custom rules)" $
         fst (equalitySaturation ("b"*(1/"b")) [ "a"*(1/"a") := 1 ] symCost) @?= 1
 
-    -- , testCase "5" $
+    , testCase "1+1=2 (constant folding)" $
+        fst (equalitySaturation (1+1) [] symCost) @?= 2
+
+    -- , testCase "1+1=2 (constant folding)" $
     --     rewrite (1 + ("a" - ("a"*(2-1)))) @?= 1
 
     -- , testCase "d1" $

@@ -1,13 +1,17 @@
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE UndecidableInstances #-} -- tmp show
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 module Data.Equality.Graph
     ( module Data.Equality.Graph
     , module Data.Equality.Graph.Classes
     , module Data.Equality.Graph.Nodes
+    , module Data.Equality.Language
     ) where
 
 import GHC.Conc
 
+import Data.Function
 import Data.Bifunctor
 
 import Data.Fix
@@ -24,6 +28,8 @@ import qualified Data.Set    as S
 import Data.Equality.Graph.ReprUnionFind
 import Data.Equality.Graph.Classes
 import Data.Equality.Graph.Nodes
+import Data.Equality.Language
+import Data.Equality.Graph.Lens
 
 -- | E-graph stateful computation
 type EGS s = State (EGraph s)
@@ -53,7 +59,7 @@ type Memo l = M.Map (ENode l) ClassId
 -- instance Ord1 l => Monoid (EGraph l) where
 --     mempty = EGraph emptyUF mempty mempty mempty
 
-instance Show1 l => Show (EGraph l) where
+instance (Show (Domain l), Show1 l) => Show (EGraph l) where
     show (EGraph a b c e) =
         "UnionFind: " <> show a <>
             "\n\nE-Classes: " <> show b <>
@@ -85,7 +91,28 @@ add uncanon_e = do
             modifyClasses (IM.update (\e_class -> Just $ e_class { eClassParents = (new_en, new_eclass_id):eClassParents e_class }) (find eclass_id eg))
         -- Add the e-node's e-class id at the e-node's id
         modifyMemo (M.insert new_en new_eclass_id)
+        addToWorklist new_eclass_id
         return new_eclass_id
+
+-- | Create a singleton e-class with the e-node in the e-graph
+--
+-- Additionally make the analysis data for this e-class
+singletonClass :: Analysis s => ENode s -> EGS s ClassId
+singletonClass en = do
+
+    -- Make new equivalence class with a new id in the union-find
+    new_id <- createUnionFindClass
+    
+    d0 <- gets $ makeA en
+
+    -- New singleton e-class stores the e-node id of the e-node
+    let new_eclass = EClass new_id (S.singleton en) d0 []
+
+    -- Add new e-class to existing e-classes
+    modifyClasses (IM.insert new_id new_eclass)
+
+    -- Return created e-class id
+    return new_id
 
 
 -- | Merge 2 e-classes by id
@@ -98,8 +125,8 @@ merge a b = do
     if a' == b'
        then return a'
        else do
-           let class_a@(EClass _ _ pa) = snd $ getClass a' eg
-               class_b@(EClass _ _ pb) = snd $ getClass b' eg
+           let class_a@EClass {eClassParents = pa} = snd $ getClass a' eg
+               class_b@EClass {eClassParents = pb} = snd $ getClass b' eg
 
            -- Leader is the class with more parents
            let (leader, sub, sub_class) =
@@ -116,12 +143,14 @@ merge a b = do
 
            -- Update leader class with all e-nodes and parents from the
            -- subsumed class
-           let updateLeader (EClass i ns ps) = Just $ EClass i new_nodes new_parents where
+           let updateLeader (EClass i ns d0 ps) =
+                 Just $ EClass i new_nodes new_data new_parents where
                    new_nodes = eClassNodes sub_class <> ns
                    -- ROMES:TODO I must @map (second (`find` eg)) here to
                    -- correct the result, but the original implementation
                    -- doesn't do it quite here, if I saw correctly
                    new_parents = map (second (`find` eg')) $ eClassParents sub_class <> ps
+                   new_data = joinA @l d0 (eClassData sub_class)
            modifyClasses (IM.update updateLeader leader)
 
            -- Recanonize all leader nodes in memo
@@ -129,7 +158,7 @@ merge a b = do
            -- ROMES:TODO Rebuild  should maintain both invariants instead of
            -- merge...
            eg'' <- get
-           let EClass _ ns _ = snd $ getClass leader eg'' :: EClass l
+           let EClass {eClassNodes = ns} = snd $ getClass leader eg'' :: EClass l
            forM_ (S.toList ns) $ \l -> do
                -- Remove stale term
                modifyMemo (M.delete l)
@@ -178,10 +207,11 @@ rebuild = do
     unless (null wl') rebuild
 
 
-repair :: Language l => ClassId -> EGS l ()
+repair :: forall l. Language l => ClassId -> EGS l ()
 repair repair_id = do
-    (_, EClass _ _ parents) <- gets (getClass repair_id)
+    (_, c@EClass {eClassParents = parents}) <- gets (getClass repair_id)
 
+    -- ROMES:TODO easy to paralellize?
     -- Update the hashcons so it always points
     -- canonical enodes to canonical eclasses
     forM_ parents $ \(node, eclass_id) -> do
@@ -189,32 +219,34 @@ repair repair_id = do
         eg <- get
         modifyMemo (M.insert (canonicalize node eg) (find eclass_id eg))
 
+    -- Upward merge parents
     new_parents <- M.toList <$> go parents mempty
     modifyClasses (IM.update (\eclass -> Just $ eclass { eClassParents = new_parents }) repair_id)
-        where
-            go :: Language l => [(ENode l, ClassId)] -> Memo l -> EGS l (Memo l)
-            go [] s = return s
-            go ((node, eclass_id):xs) s = do
-                -- Deduplicate the parents, noting that equal parents get merged and put on
-                -- the worklist 
-                node' <- gets (canonicalize node)
-                case M.lookup node' s of
-                  Nothing -> return ()
-                  Just ci -> void $ merge eclass_id ci
-                eg <- get
-                go xs (M.insert node' (find eclass_id eg) s)
 
--- | Add a singleton e-class with the e-node (first arg) to the e-graph
-singletonClass :: ENode s -> EGS s ClassId
-singletonClass en = do
-    -- Make new equivalence class with a new id in the union-find
-    new_id <- createUnionFindClass
-    -- New singleton e-class stores the e-node id of the e-node
-    let new_eclass = EClass new_id (S.singleton en) []
-    -- Add new e-class to existing e-classes
-    modifyClasses (IM.insert new_id new_eclass)
-    -- Return created e-class id
-    return new_id
+    -- Update e-graph according to e-class analysis modify
+    -- Any mutations modify makes to the e-class will add to the worklist
+    modify (modifyA repair_id)
+    forM_ parents $ \(node, eclass_id) -> do
+        egr <- get
+        -- TODO: Try factoring out egr^._class to see if it makes a difference.
+        -- memoization might be on my side
+        let new_data = joinA @l (egr^._class eclass_id._data) (makeA node egr)
+        unless (c^._data == new_data) $ do
+            put (egr&_class eclass_id._data .~ new_data)
+            addToWorklist eclass_id
+
+      where
+        go :: Language l => [(ENode l, ClassId)] -> Memo l -> EGS l (Memo l)
+        go [] s = return s
+        go ((node, eclass_id):xs) s = do
+            -- Deduplicate the parents, noting that equal parents get merged and put on
+            -- the worklist 
+            node' <- gets (canonicalize node)
+            case M.lookup node' s of
+              Nothing -> return ()
+              Just ci -> void $ merge eclass_id ci
+            eg <- get
+            go xs (M.insert node' (find eclass_id eg) s)
 
 addToWorklist :: ClassId -> EGS s ()
 addToWorklist i =

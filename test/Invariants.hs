@@ -91,11 +91,11 @@ ematchSingletonVar v eg =
 -- ROMES:TODO Should I rebuild it here? Then the property test is that after rebuilding ...HashConsInvariant
 hashConsInvariant :: forall l. Language l
                   => EGraph l -> Bool
-hashConsInvariant eg@(EGraph {..}) =
+hashConsInvariant eg@EGraph{..} =
     all f (IM.toList classes)
     where
       -- e-node 𝑛 ∈ 𝑀 [𝑎] ⇐⇒ 𝐻 [canonicalize(𝑛)] = find(𝑎)
-      f (i, EClass _ nodes _) = all g nodes
+      f (i, EClass _ nodes _ _) = all g nodes
         where
           g en = case M.lookup (canonicalize en eg) memo of
             Nothing -> error "how can we not find canonical thing in map? :)" -- False

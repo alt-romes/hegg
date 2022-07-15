@@ -47,7 +47,7 @@ extractBest g cost (flip find g -> i) = runExtraction $ do
 -- | Find the lowest cost of all e-classes in an e-graph in an extraction
 findCosts :: forall lang. Language lang
           => EGraph lang -> (lang Cost -> Cost) -> Extraction lang ()
-findCosts g@(EGraph {..}) cost = do
+findCosts g@EGraph{..} cost = do
 
     modified <- forM (IM.toList classes) $ \(i, eclass) -> do
         pass <- makePass eclass 
@@ -74,7 +74,7 @@ findCosts g@(EGraph {..}) cost = do
     where
         -- Get lowest cost and corresponding node of an e-class if possible
         makePass :: EClass lang -> Extraction lang (Maybe (Cost, Fix lang))
-        makePass (EClass _ (S.toList -> nodes) _) = do
+        makePass (EClass _ (S.toList -> nodes) _ _) = do
             costs <- catMaybes <$> traverse (nodeTotalCost g cost) nodes
             return (getBest . L.sortBy (\(a,_) (b,_) -> compare a b) $ costs)
           where

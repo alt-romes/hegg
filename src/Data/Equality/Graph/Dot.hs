@@ -4,8 +4,8 @@
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE TypeFamilies              #-}
 
-module Dot
-    ( module Dot
+module Data.Equality.Graph.Dot
+    ( module Data.Equality.Graph.Dot
     , writeDotFile
     )
     where

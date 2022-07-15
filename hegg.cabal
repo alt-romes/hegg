@@ -29,12 +29,14 @@ library
                       Data.Equality.Graph.Classes,
                       Data.Equality.Graph.Classes.Id,
                       Data.Equality.Graph.Nodes,
+                      Data.Equality.Graph.Lens,
                       Data.Equality.Matching,
                       Data.Equality.Saturation,
                       Data.Equality.Extraction,
+                      Data.Equality.Analysis,
                       Database
     if flag(vizdot)
-        exposed-modules: Dot
+        exposed-modules: Data.Equality.Graph.Dot
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -66,6 +68,6 @@ test-suite hegg-test
                       tasty-hunit
 
 Flag vizdot
-    Description: Compile 'Dot' module to visualize e-graphs
+    Description: Compile 'Data.Equality.Graph.Dot' module to visualize e-graphs
     Manual: True
     Default: False

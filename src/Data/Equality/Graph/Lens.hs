@@ -2,6 +2,8 @@
 {-# LANGUAGE Rank2Types #-}
 module Data.Equality.Graph.Lens where
 
+import qualified Data.Set as S
+
 import Data.Functor.Identity
 import Data.Functor.Const
 
@@ -18,12 +20,20 @@ _class :: ClassId -> Lens' (EGraph l) (EClass l)
 _class i afa s =
     let (i', c) = getClass i s
      in setClass s i' <$> afa c
+{-# INLINE _class #-}
 
 _data :: Lens' (EClass l) (Domain l)
 _data afa EClass{..} = (\d1 -> EClass eClassId eClassNodes d1 eClassParents) <$> afa eClassData
+{-# INLINE _data #-}
 
 _parents :: Lens' (EClass l) [(ENode l, ClassId)]
 _parents afa EClass{..} = EClass eClassId eClassNodes eClassData <$> afa eClassParents
+{-# INLINE _parents #-}
+
+_nodes :: Lens' (EClass l) (S.Set (ENode l))
+_nodes afa EClass{..} = (\ns -> EClass eClassId ns eClassData eClassParents) <$> afa eClassNodes
+{-# INLINE _nodes #-}
+
 
 -- | Like @'view'@ but with the arguments flipped
 (^.) :: s -> Lens' s a -> a

@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE UndecidableInstances #-} -- tmp show
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -10,6 +11,7 @@ module Data.Equality.Graph
     ) where
 
 import GHC.Conc
+import Debug.Trace
 
 import Data.Function
 import Data.Bifunctor
@@ -49,6 +51,7 @@ data EGraph l = EGraph
     , classes   :: !(ClassIdMap (EClass l))   -- ^ Map canonical e-class ids to their e-classes
     , memo      :: !(M.Map (ENode l) ClassId) -- ^ Hashcons maps all canonical e-nodes to their e-class ids
     , worklist  :: [ClassId]                  -- ^ e-class ids that need to be upward merged
+    -- , analysisWorklist :: [ClassId]           -- ^ e-classes that need their analysis to be upward merged
     }
 
 type Memo l = M.Map (ENode l) ClassId
@@ -75,98 +78,91 @@ represent = foldFix $ sequence >=> add . Node
 --
 -- E-node lookup depends on e-node correctly defining equality
 add :: forall l. Language l => ENode l -> EGS l ClassId
-add uncanon_e = do
+add uncanon_e = trace "add" do
     eg@EGraph { memo = encls } <- get
     let new_en = canonicalize uncanon_e eg
     case M.lookup new_en encls of
-      Just canon_enode_id -> return canon_enode_id
+      Just canon_enode_id -> gets $ find canon_enode_id
       Nothing -> do
-        -- Add new singleton e-class with the e-node
-        new_eclass_id <- singletonClass new_en
+
+        -- Make new equivalence class with a new id in the union-find
+        new_eclass_id <- createUnionFindClass
+
+        -- New singleton e-class stores the e-node and its analysis data
+        new_eclass <- gets $ \egr -> EClass new_eclass_id (S.singleton new_en) (makeA new_en egr) []
+
         -- Update e-classes by going through all e-node children and adding
         -- to the e-class parents the new e-node and its e-class id
         forM_ (children new_en) $ \eclass_id -> do
-            -- Update canonical e-class of child e-class
-            -- ROMES:TODO: does the find operation need to take into consideration the new e_class?
-            modifyClasses (IM.update (\e_class -> Just $ e_class { eClassParents = (new_en, new_eclass_id):eClassParents e_class }) (find eclass_id eg))
+            modify (_class eclass_id._parents %~ ((new_en, new_eclass_id):))
+
+        -- Add new e-class to existing e-classes
+        modifyClasses (IM.insert new_eclass_id new_eclass)
+
         -- Add the e-node's e-class id at the e-node's id
         modifyMemo (M.insert new_en new_eclass_id)
-        addToWorklist new_eclass_id
+
+        -- Modify created node according to analysis
+        modify (modifyA new_eclass_id)
+
         return new_eclass_id
-
--- | Create a singleton e-class with the e-node in the e-graph
---
--- Additionally make the analysis data for this e-class
-singletonClass :: Analysis s => ENode s -> EGS s ClassId
-singletonClass en = do
-
-    -- Make new equivalence class with a new id in the union-find
-    new_id <- createUnionFindClass
-    
-    d0 <- gets $ makeA en
-
-    -- New singleton e-class stores the e-node id of the e-node
-    let new_eclass = EClass new_id (S.singleton en) d0 []
-
-    -- Add new e-class to existing e-classes
-    modifyClasses (IM.insert new_id new_eclass)
-
-    -- Return created e-class id
-    return new_id
 
 
 -- | Merge 2 e-classes by id
 merge :: forall l. Language l => ClassId -> ClassId -> EGS l ClassId
-merge a b = do
-    eg <- get
+merge a b = get >>= \egr0 -> trace ("merge " <> show a <> " " <> show b) do
+
     -- Use canonical ids
-    let a' = find a eg
-        b' = find b eg
+    let
+        a' = find a egr0
+        b' = find b egr0
+
     if a' == b'
        then return a'
        else do
-           let class_a@EClass {eClassParents = pa} = snd $ getClass a' eg
-               class_b@EClass {eClassParents = pb} = snd $ getClass b' eg
+
+           -- Get classes being merged
+           let
+               class_a = egr0 ^._class a'
+               class_b = egr0 ^._class b'
 
            -- Leader is the class with more parents
-           let (leader, sub, sub_class) =
-                   if length pa < length pb
-                      then (b', a', class_a) -- b is leader
-                      else (a', b', class_b) -- a is leader
+           let (leader, leader_class, sub, sub_class) =
+                   if length (class_a^._parents) < length (class_b^._parents)
+                      then (b', class_b, a', class_a) -- b is leader
+                      else (a', class_a, b', class_b) -- a is leader
 
            new_id <- mergeUnionFindClasses leader sub
 
-           eg' <- get
-
-           -- Delete subsumed? class
+           -- Delete subsumed class
            modifyClasses (IM.delete sub)
+
+           -- Add all subsumed parents to worklist
+           -- We can do this instead of adding the new e-class itself to the worklist because it'll end up in doing this anyway
+           forM_ (sub_class^._parents) (addToWorklist . snd)
 
            -- Update leader class with all e-nodes and parents from the
            -- subsumed class
-           let updateLeader (EClass i ns d0 ps) =
-                 Just $ EClass i new_nodes new_data new_parents where
-                   new_nodes = eClassNodes sub_class <> ns
-                   -- ROMES:TODO I must @map (second (`find` eg)) here to
-                   -- correct the result, but the original implementation
-                   -- doesn't do it quite here, if I saw correctly
-                   new_parents = map (second (`find` eg')) $ eClassParents sub_class <> ps
-                   new_data = joinA @l d0 (eClassData sub_class)
-           modifyClasses (IM.update updateLeader leader)
+           let updatedLeader = leader_class & _parents %~ (<> sub_class^._parents)
+                                            & _nodes   %~ (<> sub_class^._nodes)
+                                            & _data    %~ joinA @l (sub_class^._data)
+                                            -- TODO: If joinA _did_merge_, extend analysis pending
+           modify (_class leader .~ updatedLeader)
 
            -- Recanonize all leader nodes in memo
            --
            -- ROMES:TODO Rebuild  should maintain both invariants instead of
            -- merge...
+           -- PRIORITY:HIGH
            eg'' <- get
            let EClass {eClassNodes = ns} = snd $ getClass leader eg'' :: EClass l
            forM_ (S.toList ns) $ \l -> do
                -- Remove stale term
                modifyMemo (M.delete l)
                -- Insert canonicalized term
-               modifyMemo (M.insert (l `canonicalize` eg) leader)
+               modifyMemo (M.insert (l `canonicalize` eg'') leader)
 
-
-           addToWorklist new_id
+           modify (modifyA new_id)
            return new_id
             
 
@@ -200,7 +196,7 @@ rebuild = do
     let todo = S.fromList $ map (`find` eg) wl
 
     -- repair deduplicated eclasses
-    forM_ todo repair
+    trace ("rebuild " <> show wl) $ forM_ todo repair
 
     -- Loop until worklist is completely empty
     wl' <- gets worklist
@@ -208,8 +204,17 @@ rebuild = do
 
 
 repair :: forall l. Language l => ClassId -> EGS l ()
-repair repair_id = do
+repair repair_id = trace ("repair " <> show repair_id) do
     (_, c@EClass {eClassParents = parents}) <- gets (getClass repair_id)
+
+    forM_ parents $ \(node, eclass_id) -> do
+        egr <- get
+        -- TODO: Try factoring out egr^._class to see if it makes a difference.
+        -- memoization might be on my side
+        let new_data = joinA @l (egr^._class eclass_id._data) (makeA node egr)
+        unless (c^._data == new_data) $ do
+            put (egr & _class eclass_id._data .~ new_data)
+            addToWorklist eclass_id
 
     -- ROMES:TODO easy to paralellize?
     -- Update the hashcons so it always points
@@ -226,14 +231,6 @@ repair repair_id = do
     -- Update e-graph according to e-class analysis modify
     -- Any mutations modify makes to the e-class will add to the worklist
     modify (modifyA repair_id)
-    forM_ parents $ \(node, eclass_id) -> do
-        egr <- get
-        -- TODO: Try factoring out egr^._class to see if it makes a difference.
-        -- memoization might be on my side
-        let new_data = joinA @l (egr^._class eclass_id._data) (makeA node egr)
-        unless (c^._data == new_data) $ do
-            put (egr&_class eclass_id._data .~ new_data)
-            addToWorklist eclass_id
 
       where
         go :: Language l => [(ENode l, ClassId)] -> Memo l -> EGS l (Memo l)
@@ -258,6 +255,16 @@ clearWorkList = do
     wl <- gets worklist
     modify (\egr -> egr { worklist = [] })
     return wl
+
+-- addToAnalysisWorklist :: ClassId -> EGS s ()
+-- addToAnalysisWorklist i =
+--     modify (\egr -> egr { analysisWorklist = i:analysisWorklist egr})
+--
+-- clearAnalysisWorkList :: EGS s [ClassId]
+-- clearAnalysisWorkList = do
+--     wl <- gets analysisWorklist
+--     modify (\egr -> egr { analysisWorklist = [] })
+--     return wl
 
 -- | Get an e-class from an e-graph given its e-class id
 --

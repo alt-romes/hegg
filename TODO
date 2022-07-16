@@ -1,3 +1,4 @@
+Unlifted ReprUnionFind
 Continue testing
 Test that e-classes are never empty
 Should all nodes in maps be canonical? Or better to keep finding them when need to use? Must check which is more common, probably checking is done way less so it's better to just find them when needed

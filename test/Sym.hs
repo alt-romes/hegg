@@ -312,8 +312,11 @@ symTests = testGroup "Symbolic"
     , testCase "1+1=2 (constant folding)" $
         fst (equalitySaturation (1+1) [] symCost) @?= 2
 
-    -- , testCase "1+1=2 (constant folding)" $
-    --     rewrite (1 + ("a" - ("a"*(2-1)))) @?= 1
+    , testCase "a*(2-1) (1 rule + constant folding)" $
+        fst (equalitySaturation ("a" * (2-1)) ["x"*1:="x"] symCost) @?= "a"
+
+    , testCase "1+a*(2-1) = 1+a (all + constant folding)" $
+        rewrite (1+("a"*(2-1))) @?= (1+"a")
 
     -- , testCase "d1" $
     --     rewrite (Fix $ Diff "a" "a") @?= 1

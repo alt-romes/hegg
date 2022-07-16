@@ -318,6 +318,15 @@ symTests = testGroup "Symbolic"
     , testCase "1+a*(2-1) = 1+a (all + constant folding)" $
         rewrite (1+("a"*(2-1))) @?= (1+"a")
 
+    , testCase "1+a*(2-1) = 1+a (all + constant f.)" $
+        rewrite ((-3)+(-3)-6) @?= Fix (Const $ -12)
+
+    , testCase "1+a-a*(2-1) = 1 (all + constant f.)" $
+        rewrite (1 + "a" - "a"*(2-1)) @?= 1
+
+    , testCase "1+(a-a*(2-1)) = 1 (all + constant f.)" $
+        rewrite ("a" - "a"*(4-1)) @?= "a"*(Fix . Const $ -2)
+
     -- , testCase "d1" $
     --     rewrite (Fix $ Diff "a" "a") @?= 1
 

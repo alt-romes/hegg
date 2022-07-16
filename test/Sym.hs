@@ -142,8 +142,8 @@ symCost = \case
     BinOp Sub e1 e2 -> e1 + e2 + 5
     BinOp Mul e1 e2 -> e1 + e2 + 4
     BinOp Add e1 e2 -> e1 + e2 + 2
-    BinOp Diff e1 e2 -> e1 + e2 + 100
-    BinOp Integral e1 e2 -> e1 + e2 + 200
+    BinOp Diff e1 e2 -> e1 + e2 + 500
+    BinOp Integral e1 e2 -> e1 + e2 + 2000
     UnOp Sin e1 -> e1 + 20
     UnOp Cos e1 -> e1 + 20
     UnOp Sqrt e1 -> e1 + 30
@@ -328,13 +328,21 @@ symTests = testGroup "Symbolic"
     , testCase "1+(a-a*(2-1)) = 1 (all + constant f.)" $
         rewrite ("a" - "a"*(4-1)) @?= "a"*(Fix . Const $ -2)
 
+    -- TODO: How ?
+    -- , testCase "x + x + x + x = 4*x" $
+    --     rewrite ("a"+"a"+"a"+"a") @?= "a"*4
+
+    , testCase "math powers" $
+        rewrite (Fix (BinOp Pow 2 "x")*Fix (BinOp Pow 2 "y")) @?= Fix (BinOp Pow 2 ("x" + "y"))
+
+    -- TODO: Need conditional rewrites
     -- , testCase "d1" $
-    --     rewrite (Fix $ Diff "a" "a") @?= 1
+    --     rewrite (Fix $ BinOp Diff "a" "a") @?= 1
 
     -- , testCase "d2" $
-    --     rewrite (Fix $ Diff "a" "b") @?= 0
+    --     rewrite (Fix $ BinOp Diff "a" "b") @?= 0
 
     -- , testCase "d3" $
-    --     rewrite (Fix $ Diff "x" (1 + 2*"x")) @?= 2
+    --     rewrite (Fix $ BinOp Diff "x" (1 + 2*"x")) @?= 2
 
     ]

@@ -11,7 +11,7 @@ import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 import Data.Equality.Graph.Classes
 import Data.Equality.Analysis
-import {-# SOURCE #-} Data.Equality.Graph (EGraph, getClass, setClass)
+import {-# SOURCE #-} Data.Equality.Graph (EGraph(..), Memo, getClass, setClass)
 
 type Lens' s a = forall f. Functor f => (a -> f a) -> (s -> f s)
 
@@ -21,6 +21,10 @@ _class i afa s =
     let (i', c) = getClass i s
      in setClass s i' <$> afa c
 {-# INLINE _class #-}
+
+_memo :: Lens' (EGraph l) (Memo l)
+_memo afa egr = (\m1 -> egr {memo = m1}) <$> afa (memo egr)
+{-# INLINE _memo #-}
 
 _data :: Lens' (EClass l) (Domain l)
 _data afa EClass{..} = (\d1 -> EClass eClassId eClassNodes d1 eClassParents) <$> afa eClassData

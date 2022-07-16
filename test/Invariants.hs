@@ -1,4 +1,9 @@
 {-# OPTIONS_GHC -Wno-orphans #-} -- Arbitrary
+{-# LANGUAGE RoleAnnotations #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeApplications #-}
@@ -10,6 +15,7 @@ module Invariants where
 import Test.Tasty
 import Test.Tasty.QuickCheck as QC hiding (classes)
 
+import Data.Functor.Classes
 import Control.Monad
 
 import qualified Data.List   as L
@@ -22,6 +28,18 @@ import Data.Equality.Saturation
 import Data.Equality.Matching
 import Database
 import Sym
+
+-- | Newtype deriving via Expr to be able to define a different analysis
+-- TODO: Use type level symbol to define the analysis
+type role SimpleExpr nominal
+newtype SimpleExpr l = SE (Expr l)
+    deriving (Functor, Foldable, Traversable, Show1, Eq1, Ord1, Language)
+
+instance Analysis SimpleExpr where
+    type Domain SimpleExpr = ()
+    makeA _ _ = ()
+    joinA = (<>)
+    modifyA _ = id
 
 -- | When a rewrite of type "x":=c where x is a pattern variable and c is a
 -- constant is used in equality saturation of any expression, all e-classes
@@ -104,7 +122,7 @@ hashConsInvariant eg@EGraph{..} =
 -- ROMES:TODO: Property: Extract expression after equality saturation is always better or equal to the original expression
 
 -- ROMES:TODO: Use action trick https://jaspervdj.be/posts/2015-03-13-practical-testing-in-haskell.html
-instance Arbitrary (EGraph Expr) where
+instance Arbitrary (EGraph SimpleExpr) where
     arbitrary = sized $ \n -> do
         exps <- forM [0..n] $ const arbitrary
         -- rws :: [Rewrite Expr] <- forM [0..n] $ const arbitrary
@@ -125,26 +143,26 @@ instance Arbitrary BOp where
 
 instance Arbitrary UOp where
     arbitrary = oneof [ return Negate
-                      -- , return Sin
-                      -- , return Cos
+                      , return Sin
+                      , return Cos
                       ]
 
-instance Arbitrary a => Arbitrary (Expr a) where
+instance Arbitrary a => Arbitrary (SimpleExpr a) where
     arbitrary = sized expr'
         where
-            expr' :: Int -> Gen (Expr a)
-            expr' 0 = oneof [ Sym . un <$> arbitrary
-                            , Const . fromInteger <$> arbitrary
-                            ]
+            expr' :: Int -> Gen (SimpleExpr a)
+            expr' 0 = SE <$> oneof [ Sym . un <$> arbitrary
+                                   , Const . fromInteger <$> arbitrary
+                                   ]
             expr' n
-              | n > 0 = oneof [ BinOp <$> arbitrary <*> resize (n `div` 2) arbitrary <*> resize (n `div` 2) arbitrary
-                              , UnOp <$> arbitrary <*> resize (n - 1) arbitrary ]
+              | n > 0 = SE <$> oneof [ BinOp <$> arbitrary <*> resize (n `div` 2) arbitrary <*> resize (n `div` 2) arbitrary
+                                     , UnOp <$> arbitrary <*> resize (n - 1) arbitrary ]
             expr' _ = error "size is negative?"
 
-instance Arbitrary (Fix Expr) where
+instance Arbitrary (Fix SimpleExpr) where
     arbitrary = Fix <$> arbitrary
 
-instance Arbitrary (Pattern Expr) where
+instance Arbitrary (Pattern SimpleExpr) where
     arbitrary = sized p'
       where
         p' 0 = VariablePattern . un <$> arbitrary
@@ -157,9 +175,9 @@ instance Arbitrary Name where
 
 invariants :: TestTree
 invariants = testGroup "Invariants"
-  [ QC.testProperty "Compile to query" (testCompileToQuery @Expr)
-  , QC.testProperty "Singleton variable matches all" (ematchSingletonVar @Expr)
-  , QC.testProperty "Hash Cons Invariant" (hashConsInvariant @Expr)
-  , QC.testProperty "Fold all classes with x:=c" (patFoldAllClasses @Expr)
+  [ QC.testProperty "Compile to query" (testCompileToQuery @SimpleExpr)
+  , QC.testProperty "Singleton variable matches all" (ematchSingletonVar @SimpleExpr)
+  , QC.testProperty "Hash Cons Invariant" (hashConsInvariant @SimpleExpr)
+  -- , QC.testProperty "Fold all classes with x:=0" (patFoldAllClasses @SimpleExpr)
   ]
 

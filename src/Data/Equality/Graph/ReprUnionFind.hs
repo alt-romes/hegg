@@ -3,7 +3,7 @@ module Data.Equality.Graph.ReprUnionFind where
 
 import qualified Data.IntMap as IM
 
-import Data.Equality.Graph.Classes
+import Data.Equality.Graph.Classes.Id
 
 -- | A union find for equivalence classes of e-class ids.
 --

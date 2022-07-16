@@ -11,5 +11,5 @@ import Data.Equality.Analysis
 -- | A language is a recursive data type written in its functor \"form\"
 --
 -- Must satisfy all other class constraints
-class (Show (Domain l), Analysis l, Eq (Domain l), Traversable l, Ord1 l) => Language l where
+class (Show1 l, Show (Domain l), Analysis l, Eq (Domain l), Traversable l, Ord1 l) => Language l where
 

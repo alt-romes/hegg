@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -7,7 +8,6 @@
 {-# LANGUAGE LambdaCase #-}
 module Sym where
 
-import Debug.Trace
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -15,6 +15,7 @@ import Data.String
 
 import Data.Functor.Classes
 import Control.Applicative (liftA2)
+import Control.Monad (unless)
 
 import Data.Equality.Graph
 import Data.Equality.Graph.Lens
@@ -190,10 +191,10 @@ instance Analysis Expr where
     -- joinA = (<|>)
     joinA ma mb = do
         a <- ma
-        _ <- mb
+        b <- mb
         -- this assertion only seemed to be triggering when using bogus
         -- constant assignments for "Fold all classes with x:=c"
-        -- !_ <- unless (a == b) (error "assert failed!")
+        !_ <- unless (a == b) (error "Merged non-equal constants!")
         return a
 
     modifyA i egr =

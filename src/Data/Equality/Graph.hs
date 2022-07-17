@@ -163,20 +163,15 @@ merge a b = get >>= \egr0 -> do
            -- subsumed class
            modify (_class leader .~ updatedLeader)
 
-           -- Recanonize all leader nodes in memo
+           -- Subsumed nodes in memo should now point to leader
            --
-           -- ROMES:TODO Rebuild  should maintain both invariants instead of
+           -- ROMES:TODO Rebuild should maintain both invariants instead of
            -- merge...
-           -- PRIORITY:HIGH
            -- 
            -- I do not understand how they don't have this kind of thing,
            -- Without it, everything breaks
-           egr2 <- get
-           forM_ (S.toList (updatedLeader^._nodes)) $ \l -> do
-               -- Remove stale term
-               modifyMemo (M.delete l)
-               -- Insert canonicalized term
-               modifyMemo (M.insert (l `canonicalize` egr2) leader)
+           forM_ (sub_class^._nodes) $ \l ->
+               modifyMemo (M.insert l leader)
 
            modify (modifyA new_id)
            return new_id

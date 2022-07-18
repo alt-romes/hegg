@@ -12,6 +12,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import qualified Data.List as L
+import qualified Data.Set  as S
 import Data.String
 import Data.Maybe (isJust)
 
@@ -206,10 +207,10 @@ instance Analysis Expr where
 
             -- Add constant as e-node
             new_c <- represent (Fix $ Const d)
-            merge i new_c
+            _ <- merge i new_c
 
             -- Prune all except leaf e-nodes
-            -- modifyClasses (IM.modify (\E) ji)
+            modify (_class i._nodes %~ S.filter (null . children))
 
 
 

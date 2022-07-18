@@ -10,6 +10,7 @@ module Data.Equality.Graph
     , module Data.Equality.Graph.Classes
     , module Data.Equality.Graph.Nodes
     , module Data.Equality.Language
+    , modify
     ) where
 
 import GHC.Conc
@@ -100,7 +101,12 @@ add uncanon_e = do
             modify (_class eclass_id._parents %~ ((new_en, new_eclass_id):))
 
         -- TODO: From egg: Is this needed?
-        -- addToWorklist (new_en, new_eclass_id)
+        -- This is required if we want math pruning to work. Unfortunately, it
+        -- also makes the invariants tests x4 slower (because they aren't using
+        -- analysis) I think there might be another way to ensure math analysis
+        -- pruning to work without having this line here.  Comment it out to
+        -- check the result on the unit tests.
+        addToWorklist [(new_en, new_eclass_id)]
 
         -- Add new e-class to existing e-classes
         modifyClasses (IM.insert new_eclass_id new_eclass)

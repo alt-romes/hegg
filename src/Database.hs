@@ -101,7 +101,6 @@ genericJoin d q@(Query qv atoms)
                              | vi == r -> ClassId i
                            vi -> vi
 
-
 elemOfAtom :: Foldable lang => Var -> Atom lang -> Bool
 elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
 

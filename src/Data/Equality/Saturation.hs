@@ -13,7 +13,7 @@ module Data.Equality.Saturation
 import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 
-import Data.Functor.Classes
+import Data.Bifunctor
 import Data.Traversable
 import Control.Monad
 import Control.Monad.State
@@ -25,8 +25,13 @@ import Data.Equality.Matching
 import Data.Equality.Extraction
 
 data Rewrite lang = Pattern lang := Pattern lang
-    deriving (Eq, Ord)
+                  | Rewrite lang :| RewriteCondition lang -- Conditional rewrites
 infix 3 :=
+infixl 2 :|
+
+-- | A rewrite condition. With a substitution from bound variables to e-classes
+-- and with the e-graph, return true when a condition is satisfied
+type RewriteCondition lang = Subst -> EGraph lang -> Bool
 
 data Stat = Stat { bannedUntil :: {-# UNPACK #-} !Int
                  , timesBanned :: {-# UNPACK #-} !Int
@@ -49,8 +54,9 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
       where
 
         -- Take map each rewrite rule to stats on its usage so we can do
-        -- backoff scheduling
-        equalitySaturation' :: Language l => Int -> M.Map (Rewrite l) Stat -> EGS l ()
+        -- backoff scheduling. Each rewrite rule is assigned an integer
+        -- (corresponding to its position in the list of rewrite rules)
+        equalitySaturation' :: Int -> IM.IntMap Stat -> EGS l ()
         equalitySaturation' 30 _ = return () -- Stop after X iterations
         equalitySaturation' i stats = do
 
@@ -58,39 +64,10 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
 
             -- Read-only phase, invariants are preserved
             -- With backoff scheduler
-            (matches, newStats) <- mconcat <$> forM rewrites \(lhs := rhs) -> do 
-                case M.lookup (lhs := rhs) stats of
-                  -- If it's banned until some iteration, don't match this rule
-                  -- against anything.
-                  Just s | i < bannedUntil s -> return ([], stats)
-
-                  -- Otherwise, match and update stats
-                  x -> do
-
-                      -- Match pattern
-                      matches' <- ematchM lhs -- Add rewrite to the e-match substitutions
-
-                      -- Backoff scheduler: update stats
-                      let newStats = updateStats i (lhs:=rhs) x stats matches'
-
-                      return (map (lhs := rhs,) matches', newStats)
+            (matches, newStats) <- mconcat <$> forM (zip [1..] rewrites) (matchWithBackoffScheduler i stats)
 
             -- Write-only phase, temporarily break invariants
-            forM_ matches \case
-                (_ := VariablePattern v, Match subst eclass) -> do
-                    -- rhs is equal to right hand side, simply merge class where lhs
-                    -- pattern was found (@eclass@) and the eclass the pattern variable
-                    -- matched (@lookup v subst@)
-                    case lookup v subst of
-                      Nothing -> error "impossible: couldn't find v in subst"
-                      Just n  -> merge n eclass
-                (_ := NonVariablePattern rhs, Match subst eclass) -> do
-                    -- rhs is (at the top level) a non-variable pattern, so substitute
-                    -- all pattern variables in the pattern and create a new e-node (and
-                    -- e-class that represents it), then merge the e-class of the
-                    -- substituted rhs with the class that matched the left hand side
-                    eclass' <- reprPat subst rhs
-                    merge eclass eclass'
+            forM_ matches applyMatchesRhs
 
             -- Restore the invariants once per iteration
             rebuild
@@ -105,10 +82,55 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
                       && IM.size afterClasses == IM.size beforeClasses)
                 (equalitySaturation' (i+1) newStats)
 
+        matchWithBackoffScheduler :: Int -> IM.IntMap Stat -> (Int, Rewrite l) -> EGS l ([(Rewrite l, Match)], IM.IntMap Stat)
+        matchWithBackoffScheduler i stats = \case
+            (rw_id, rw :| cnd) -> first (map (first (:| cnd))) <$> matchWithBackoffScheduler i stats (rw_id, rw)
+            (rw_id, lhs := rhs) -> do 
+                case IM.lookup rw_id stats of
+                  -- If it's banned until some iteration, don't match this rule
+                  -- against anything.
+                  Just s | i < bannedUntil s -> return ([], stats)
+
+                  -- Otherwise, match and update stats
+                  x -> do
+
+                      -- Match pattern
+                      matches' <- ematchM lhs -- Add rewrite to the e-match substitutions
+
+                      -- Backoff scheduler: update stats
+                      let newStats = updateStats i rw_id x stats matches'
+
+                      return (map (lhs := rhs,) matches', newStats)
+
+        applyMatchesRhs :: (Rewrite l, Match) -> EGS l ()
+        applyMatchesRhs =
+            \case
+                (rw :| cond, m@(Match subst _)) -> do
+                    -- If the rewrite condition is satisfied, applyMatchesRhs on the rewrite rule.
+                    egr <- get
+                    when (cond subst egr) $
+                       applyMatchesRhs (rw, m)
+
+                (_ := VariablePattern v, Match subst eclass) -> do
+                    -- rhs is equal to a variable, simply merge class where lhs
+                    -- pattern was found (@eclass@) and the eclass the pattern
+                    -- variable matched (@lookup v subst@)
+                    case lookup v subst of
+                      Nothing -> error "impossible: couldn't find v in subst"
+                      Just n  -> do
+                          _ <- merge n eclass
+                          return ()
+                (_ := NonVariablePattern rhs, Match subst eclass) -> do
+                    -- rhs is (at the top level) a non-variable pattern, so substitute
+                    -- all pattern variables in the pattern and create a new e-node (and
+                    -- e-class that represents it), then merge the e-class of the
+                    -- substituted rhs with the class that matched the left hand side
+                    eclass' <- reprPat subst rhs
+                    _ <- merge eclass eclass'
+                    return ()
 
         -- | Represent a pattern in the e-graph a pattern given substitions
-        reprPat :: Language l
-                => Subst -> l (Pattern l) -> EGS l ClassId
+        reprPat :: Subst -> l (Pattern l) -> EGS l ClassId
         reprPat subst = add . Node <=< traverse \case
             VariablePattern v ->
                 case lookup v subst of
@@ -118,19 +140,18 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
 
 
 -- | Backoff scheduler: update stats
-updateStats :: Ord1 l
-            => Int                    -- ^ Iteration we're in
-            -> Rewrite l              -- ^ Rewrite rule we're updating
-            -> Maybe Stat             -- ^ Current stat for this rewrite rule (we already got it so no point in doing a lookup again)
-            -> M.Map (Rewrite l) Stat -- ^ The map to update
-            -> [Match]                -- ^ The list of matches resulting from matching this rewrite rule
-            -> M.Map (Rewrite l) Stat -- ^ The updated map
+updateStats :: Int            -- ^ Iteration we're in
+            -> Int            -- ^ Index of rewrite rule we're updating
+            -> Maybe Stat     -- ^ Current stat for this rewrite rule (we already got it so no point in doing a lookup again)
+            -> IM.IntMap Stat -- ^ The map to update
+            -> [Match]        -- ^ The list of matches resulting from matching this rewrite rule
+            -> IM.IntMap Stat -- ^ The updated map
 updateStats i rw currentStat stats matches =
 
     if total_len > threshold
 
       then
-        M.alter updateBans rw stats
+        IM.alter updateBans rw stats
 
       else
         stats
@@ -140,7 +161,7 @@ updateStats i rw currentStat stats matches =
       -- TODO: Overall difficult, and buggy at the moment.
       total_len = sum (map (length . matchSubst) matches)
 
-      defaultMatchLimit = 100 -- they're using 1000...
+      defaultMatchLimit = 120 -- they're using 1000...
       defaultBanLength  = 5
 
       bannedN = case currentStat of

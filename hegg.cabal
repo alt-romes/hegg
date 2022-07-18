@@ -23,7 +23,7 @@ source-repository head
     location: https://github.com/alt-romes/hegg
 
 library
-    ghc-options:      -Wall
+    ghc-options:      -Wall -Wcompat
     exposed-modules:  Data.Equality.Graph,
                       Data.Equality.Graph.ReprUnionFind,
                       Data.Equality.Graph.Classes,

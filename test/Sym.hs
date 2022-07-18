@@ -11,7 +11,9 @@ module Sym where
 import Test.Tasty
 import Test.Tasty.HUnit
 
+import qualified Data.List as L
 import Data.String
+import Data.Maybe (isJust)
 
 import Data.Functor.Classes
 import Control.Applicative (liftA2)
@@ -229,7 +231,26 @@ evalConstant = \case
     Sym _ -> Nothing
     Const x -> Just x
     
+unsafeGetSubst :: String -> Subst -> ClassId
+unsafeGetSubst v subst = case L.lookup v subst of
+      Nothing -> error "Searching for non existent bound var in conditional"
+      Just class_id -> class_id
 
+is_not_zero :: String -> RewriteCondition Expr
+is_not_zero v subst egr =
+    egr^._class (unsafeGetSubst v subst)._data /= Just 0
+
+is_sym :: String -> RewriteCondition Expr
+is_sym v subst egr =
+    any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class (unsafeGetSubst v subst)._nodes)
+
+is_const_or_distinct_var :: String -> String -> RewriteCondition Expr
+is_const_or_distinct_var v w subst egr =
+    let v' = unsafeGetSubst v subst
+        w' = unsafeGetSubst w subst
+     in (eClassId (egr^._class v') /= eClassId (egr^._class w'))
+        && (isJust (egr^._class v'._data)
+            || any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class v'._nodes))
 
 rewrites :: [Rewrite Expr]
 rewrites =
@@ -239,7 +260,7 @@ rewrites =
     , "x"*("y"*"z") := ("x"*"y")*"z" -- assoc mul
 
     , "x"-"y" := "x"+((-1)*"y") -- sub cannon
-    , "x"/"y" := "x"*PowP "y" (-1) -- div cannon
+    , "x"/"y" := "x"*PowP "y" (-1) :| is_not_zero "y" -- div cannon
 
     -- identities
     , "x"+0 := "x"
@@ -251,21 +272,21 @@ rewrites =
     -- , "x" := "x"*1
 
     , "a"-"a" := 1 -- cancel sub
-    , "a"/"a" := 1 -- cancel div
+    , "a"/"a" := 1 :| is_not_zero "a" -- cancel div
 
     , "x"*("y"+"z") := ("x"*"y")+("x"*"z") -- distribute
     , ("x"*"y")+("x"*"z") := "x"*("y"+"z") -- factor
 
     , PowP "a" "b"*PowP "a" "c" := PowP "a" ("b" + "c") -- pow mul
-    , PowP "a" 0 := 1
+    , PowP "a" 0 := 1 :| is_not_zero "a"
     , PowP "a" 1 := "a"
     , PowP "a" 2 := "a"*"a"
-    , PowP "a" (-1) := 1/"a"
+    , PowP "a" (-1) := 1/"a" :| is_not_zero "a"
 
-    , "x"*(1/"x") := 1
+    , "x"*(1/"x") := 1 :| is_not_zero "x"
 
-    , DiffP "x" "x" := 1
-    , DiffP "x" "y" := 0
+    , DiffP "x" "x" := 1 :| is_sym "x"
+    , DiffP "x" "c" := 0 :| is_sym "x" :| is_const_or_distinct_var "c" "x"
 
     , DiffP "x" ("a" + "b") := DiffP "x" "a" + DiffP "x" "b"
     , DiffP "x" ("a" * "b") := ("a"*DiffP "x" "b") + ("b"*DiffP "x" "a")
@@ -273,7 +294,7 @@ rewrites =
     , DiffP "x" (SinP "x") := CosP "x"
     , DiffP "x" (CosP "x") := (-1)*SinP "x"
 
-    , DiffP "x" (LnP "x") := 1/"x"
+    , DiffP "x" (LnP "x") := 1/"x" :| is_not_zero "x"
 
     ]
 
@@ -335,14 +356,21 @@ symTests = testGroup "Symbolic"
     , testCase "math powers" $
         rewrite (Fix (BinOp Pow 2 "x")*Fix (BinOp Pow 2 "y")) @?= Fix (BinOp Pow 2 ("x" + "y"))
 
-    -- TODO: Need conditional rewrites
-    -- , testCase "d1" $
-    --     rewrite (Fix $ BinOp Diff "a" "a") @?= 1
+    , testCase "d1" $
+        rewrite (Fix $ BinOp Diff "a" "a") @?= 1
 
-    -- , testCase "d2" $
-    --     rewrite (Fix $ BinOp Diff "a" "b") @?= 0
+    , testCase "d2" $
+        rewrite (Fix $ BinOp Diff "a" "b") @?= 0
 
-    -- , testCase "d3" $
-    --     rewrite (Fix $ BinOp Diff "x" (1 + 2*"x")) @?= 2
+    -- This only passes when defaultMatchLimit = 120, before I had 100
+    -- TODO back off scheduler not so good...
+    , testCase "d3" $
+        rewrite (Fix $ BinOp Diff "x" (1 + 2*"x")) @?= 2
+
+    , testCase "d4" $
+        rewrite (Fix $ BinOp Diff "x" (1 + "y"*"x")) @?= "y"
+
+    , testCase "d5" $
+        rewrite (Fix $ BinOp Diff "x" (Fix $ UnOp Ln "x")) @?= 1/"x"
 
     ]

@@ -49,8 +49,8 @@ egraph = snd . runEGS emptyEGraph
 -- @nid@ type of e-node ids
 data EGraph l = EGraph
     { unionFind :: !ReprUnionFind           -- ^ Union find like structure to find canonical representation of an e-class id
-    , classes   :: !(ClassIdMap (EClass l)) -- ^ Map canonical e-class ids to their e-classes
-    , memo      :: !(Memo l)                -- ^ Hashcons maps all canonical e-nodes to their e-class ids
+    , classes   :: ClassIdMap (EClass l) -- ^ Map canonical e-class ids to their e-classes
+    , memo      :: Memo l                -- ^ Hashcons maps all canonical e-nodes to their e-class ids
     , worklist  :: Worklist l               -- ^ e-class ids that needs repair and the class it's in
     , analysisWorklist :: Worklist l        -- ^ like 'worklist' but for analysis repairing
     }
@@ -251,22 +251,22 @@ repairAnal (node, repair_id) = do
 
 
 
-addToWorklist :: Ord1 l => Worklist l -> EGS l ()
+addToWorklist :: Eq1 l => Worklist l -> EGS l ()
 addToWorklist li =
     modify (\egr -> egr { worklist = li <> worklist egr})
 
 -- | Clear the e-graph worklist and return the existing work items
-clearWorkList :: Ord1 l => EGS l (Worklist l)
+clearWorkList :: Eq1 l => EGS l (Worklist l)
 clearWorkList = do
     wl <- gets worklist
     modify (\egr -> egr { worklist = mempty })
     return (L.nub wl)
 
-addToAnalysisWorklist :: Ord1 l => Worklist l -> EGS l ()
+addToAnalysisWorklist :: Eq1 l => Worklist l -> EGS l ()
 addToAnalysisWorklist lx =
     modify (\egr -> egr { analysisWorklist = lx <> analysisWorklist egr})
 
-clearAnalysisWorkList :: Ord1 l => EGS l (Worklist l)
+clearAnalysisWorkList :: Eq1 l => EGS l (Worklist l)
 clearAnalysisWorkList = do
     wl <- gets analysisWorklist
     modify (\egr -> egr { analysisWorklist = mempty })
@@ -313,12 +313,6 @@ modifyMemo f = modify (\egr -> egr { memo = f (memo egr) })
 
 emptyEGraph :: Language l => EGraph l
 emptyEGraph = EGraph emptyUF mempty mempty mempty mempty
-
-getSize :: EGS l Int
-getSize = gets sizeEGraph
-
-sizeEGraph :: EGraph l -> Int
-sizeEGraph EGraph { unionFind = RUF im } = IM.size im
 
 insertLookup :: Ord k => k -> a -> M.Map k a -> (Maybe a, M.Map k a)
 insertLookup = M.insertLookupWithKey (\_ a _ -> a)

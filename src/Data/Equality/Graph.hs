@@ -23,6 +23,7 @@ import Data.Functor.Classes
 import Control.Monad
 import Control.Monad.State.Strict
 
+import qualified Data.List   as L
 import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 import qualified Data.Set    as S
@@ -47,14 +48,15 @@ egraph = snd . runEGS emptyEGraph
 -- @s@ for the e-node term
 -- @nid@ type of e-node ids
 data EGraph l = EGraph
-    { unionFind :: !ReprUnionFind              -- ^ Union find like structure to find canonical representation of an e-class id
-    , classes   :: !(ClassIdMap (EClass l))    -- ^ Map canonical e-class ids to their e-classes
-    , memo      :: !(Memo l)                   -- ^ Hashcons maps all canonical e-nodes to their e-class ids
-    , worklist  :: [(ENode l, ClassId)]        -- ^ e-class ids that needs repair and the class it's in
-    , analysisWorklist :: [(ENode l, ClassId)] -- ^ like 'worklist' but for analysis repairing
+    { unionFind :: !ReprUnionFind           -- ^ Union find like structure to find canonical representation of an e-class id
+    , classes   :: !(ClassIdMap (EClass l)) -- ^ Map canonical e-class ids to their e-classes
+    , memo      :: !(Memo l)                -- ^ Hashcons maps all canonical e-nodes to their e-class ids
+    , worklist  :: Worklist l               -- ^ e-class ids that needs repair and the class it's in
+    , analysisWorklist :: Worklist l        -- ^ like 'worklist' but for analysis repairing
     }
 
 type Memo l = M.Map (ENode l) ClassId
+type Worklist l = [(ENode l, ClassId)]
 
 -- ROMES:TODO: join things built in paralell?
 -- instance Ord1 l => Semigroup (EGraph l) where
@@ -143,7 +145,7 @@ merge a b = get >>= \egr0 -> do
 
            -- Add all subsumed parents to worklist
            -- We can do this instead of adding the new e-class itself to the worklist because it'll end up in doing this anyway
-           forM_ (sub_class^._parents) addToWorklist
+           addToWorklist (sub_class^._parents)
 
            -- Update leader class with all e-nodes and parents from the
            -- subsumed class
@@ -156,9 +158,9 @@ merge a b = get >>= \egr0 -> do
            -- class whose data is different from the merged must be put on the
            -- analysisWorklist
            when (new_data /= (leader_class^._data)) $
-               forM_ (leader_class^._parents) addToAnalysisWorklist
+               addToAnalysisWorklist (leader_class^._parents)
            when (new_data /= (sub_class^._data)) $
-               forM_ (leader_class^._parents) addToAnalysisWorklist
+               addToAnalysisWorklist (leader_class^._parents)
 
            -- Update leader so that it has all nodes and parents from
            -- subsumed class
@@ -222,7 +224,7 @@ repair (node, repair_id) = do
     let canon_node = node `canonicalize` egr 
 
     egrMemo0 <- gets (^._memo)
-    case insertLookup canon_node (find repair_id egr) egrMemo0 of-- TODO: Is find needed? (they don't use it)
+    case insertLookup canon_node (find repair_id egr) egrMemo0 of-- TODO: I seem to really need it. Is find needed? (they don't use it)
       (Nothing, egrMemo1) -> modify (_memo .~ egrMemo1)
       (Just existing_class, egrMemo1) -> do
           modify (_memo .~ egrMemo1)
@@ -244,31 +246,31 @@ repairAnal (node, repair_id) = do
         -- Merge result is different from original class data, update class
         -- with new_data
         put (egr & _class canon_id._data .~ new_data)
-        forM_ (c^._parents) addToAnalysisWorklist
+        addToAnalysisWorklist (c^._parents)
         modify (modifyA canon_id)
 
 
 
-addToWorklist :: (ENode s, ClassId) -> EGS s ()
-addToWorklist i =
-    modify (\egr -> egr { worklist = i:worklist egr})
+addToWorklist :: Ord1 l => Worklist l -> EGS l ()
+addToWorklist li =
+    modify (\egr -> egr { worklist = li <> worklist egr})
 
 -- | Clear the e-graph worklist and return the existing work items
-clearWorkList :: EGS s [(ENode s, ClassId)]
+clearWorkList :: Ord1 l => EGS l (Worklist l)
 clearWorkList = do
     wl <- gets worklist
-    modify (\egr -> egr { worklist = [] })
-    return wl
+    modify (\egr -> egr { worklist = mempty })
+    return (L.nub wl)
 
-addToAnalysisWorklist :: (ENode s, ClassId) -> EGS s ()
-addToAnalysisWorklist x =
-    modify (\egr -> egr { analysisWorklist = x:analysisWorklist egr})
+addToAnalysisWorklist :: Ord1 l => Worklist l -> EGS l ()
+addToAnalysisWorklist lx =
+    modify (\egr -> egr { analysisWorklist = lx <> analysisWorklist egr})
 
-clearAnalysisWorkList :: EGS s [(ENode s, ClassId)]
+clearAnalysisWorkList :: Ord1 l => EGS l (Worklist l)
 clearAnalysisWorkList = do
     wl <- gets analysisWorklist
-    modify (\egr -> egr { analysisWorklist = [] })
-    return wl
+    modify (\egr -> egr { analysisWorklist = mempty })
+    return (L.nub wl)
 
 -- | Get an e-class from an e-graph given its e-class id
 --
@@ -310,7 +312,7 @@ modifyMemo :: (Memo l -> Memo l) -> EGS l ()
 modifyMemo f = modify (\egr -> egr { memo = f (memo egr) })
 
 emptyEGraph :: Language l => EGraph l
-emptyEGraph = EGraph emptyUF mempty mempty [] []
+emptyEGraph = EGraph emptyUF mempty mempty mempty mempty
 
 getSize :: EGS l Int
 getSize = gets sizeEGraph

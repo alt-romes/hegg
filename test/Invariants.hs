@@ -83,7 +83,7 @@ testCompileToQuery p = case compileToQuery p of
 ematchSingletonVar :: Language lang => Var -> EGraph lang -> Bool
 ematchSingletonVar v eg =
     let
-        matches = S.fromList $ map snd $ ematch (VariablePattern v) eg
+        matches = S.fromList $ map matchClassId $ ematch (VariablePattern v) eg
         eclasses = S.fromList $ map fst $ IM.toList $ classes eg
     in
         matches == eclasses 

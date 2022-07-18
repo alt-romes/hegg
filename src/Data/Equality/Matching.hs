@@ -27,7 +27,10 @@ import Database
 
 -- |  Matching a pattern on an e-graph returns substitutions for every variable
 -- in the pattern and the e-class that matched the pattern
-type Match = (Subst, ClassId)
+data Match = Match
+    { matchSubst :: Subst
+    , matchClassId :: {-# UNPACK #-} !ClassId
+    }
 
 -- | EGS version of 'ematch'
 ematchM :: Language l
@@ -55,7 +58,7 @@ ematch pat eg =
         -- root variable is needed in the substitution for single variable
         -- queries to find the subst
         copyOutEClass [] = Nothing
-        copyOutEClass l@((_,root_class):_) = Just (l, root_class)
+        copyOutEClass l@((_,root_class):_) = Just $ uncurry Match (l, root_class)
 
 -- | Convert an e-graph into a database in which we do the conjunctive queries
 --
@@ -68,7 +71,7 @@ ematch pat eg =
 --     }
 -- @
 eGraphToDatabase :: Language l => EGraph l -> Database l
-eGraphToDatabase eg@(EGraph {..}) = M.foldrWithKey (addENodeToDB eg) (DB mempty) memo
+eGraphToDatabase eg@EGraph{..} = M.foldrWithKey (addENodeToDB eg) (DB mempty) memo
   where
 
     -- Add an enode in an e-graph, given its class, to a database

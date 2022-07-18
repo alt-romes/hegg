@@ -20,7 +20,7 @@ import Data.Fix
 import Data.Functor.Classes
 
 import Control.Monad
-import Control.Monad.State
+import Control.Monad.State.Strict
 
 import qualified Data.Map    as M
 import qualified Data.IntMap as IM

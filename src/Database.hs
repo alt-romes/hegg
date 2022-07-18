@@ -22,7 +22,8 @@ type Var = String
 
 type Subst = [(Var, ClassId)]
 
-data ClassIdOrVar = ClassId ClassId | Var Var
+data ClassIdOrVar = ClassId {-# UNPACK #-} !ClassId
+                  | Var !Var
     deriving (Show, Eq, Ord)
 
 toVar :: ClassIdOrVar -> Maybe Var
@@ -32,11 +33,11 @@ toVar (ClassId _) = Nothing
 -- | An Atom ... in pattern ... is R_f(v, v1, ..., vk), so we define it as a
 -- functor ast over pattern variables + the additional var for the e-class id
 data Atom lang
-    = Atom ClassIdOrVar (lang ClassIdOrVar)
+    = Atom !ClassIdOrVar (lang ClassIdOrVar)
 
 data Query lang
     = Query [Var] [Atom lang]
-    | SelectAllQuery Var
+    | SelectAllQuery !Var
 
 -- | Database made of trie maps for each relation. Each relation is uniquely
 -- identified by the expressions modulo children expressions (hence @lang ()@)

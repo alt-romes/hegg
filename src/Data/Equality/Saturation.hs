@@ -28,8 +28,8 @@ data Rewrite lang = Pattern lang := Pattern lang
     deriving (Eq, Ord)
 infix 3 :=
 
-data Stat = Stat { bannedUntil :: Int
-                 , timesBanned :: Int
+data Stat = Stat { bannedUntil :: {-# UNPACK #-} !Int
+                 , timesBanned :: {-# UNPACK #-} !Int
                  } deriving Show
 
 equalitySaturation :: forall l. Language l
@@ -77,14 +77,14 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
 
             -- Write-only phase, temporarily break invariants
             forM_ matches \case
-                (_ := VariablePattern v, (subst, eclass)) -> do
+                (_ := VariablePattern v, Match subst eclass) -> do
                     -- rhs is equal to right hand side, simply merge class where lhs
                     -- pattern was found (@eclass@) and the eclass the pattern variable
                     -- matched (@lookup v subst@)
                     case lookup v subst of
                       Nothing -> error "impossible: couldn't find v in subst"
                       Just n  -> merge n eclass
-                (_ := NonVariablePattern rhs, (subst, eclass)) -> do
+                (_ := NonVariablePattern rhs, Match subst eclass) -> do
                     -- rhs is (at the top level) a non-variable pattern, so substitute
                     -- all pattern variables in the pattern and create a new e-node (and
                     -- e-class that represents it), then merge the e-class of the
@@ -137,18 +137,19 @@ updateStats i rw currentStat stats matches =
 
     where
 
-      total_len = sum (map length matches)
+      -- TODO: Overall difficult, and buggy at the moment.
+      total_len = sum (map (length . matchSubst) matches)
 
-      defaultMatchLimit = 32
+      defaultMatchLimit = 100 -- they're using 1000...
       defaultBanLength  = 5
 
       bannedN = case currentStat of
                   Nothing -> 0;
                   Just (timesBanned -> n) -> n
 
-      threshold = defaultMatchLimit * 2^bannedN
+      threshold = defaultMatchLimit * (2^bannedN)
 
-      ban_length = defaultBanLength * 2^bannedN;
+      ban_length = defaultBanLength * (2^bannedN)
 
       updateBans = \case
         Nothing -> Just (Stat (i + ban_length) 1)

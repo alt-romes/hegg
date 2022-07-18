@@ -168,20 +168,23 @@ instance Fractional (Pattern Expr) where
     (/) a b = NonVariablePattern $ BinOp Div a b
     fromRational = NonVariablePattern . Const . fromRational
 
-pattern PowP :: Pattern Expr -> Pattern Expr -> Pattern Expr
-pattern PowP a b = NonVariablePattern (BinOp Pow a b)
+powP :: Pattern Expr -> Pattern Expr -> Pattern Expr
+powP a b = NonVariablePattern (BinOp Pow a b)
 
-pattern DiffP :: Pattern Expr -> Pattern Expr -> Pattern Expr
-pattern DiffP a b = NonVariablePattern (BinOp Diff a b)
+diffP :: Pattern Expr -> Pattern Expr -> Pattern Expr
+diffP a b = NonVariablePattern (BinOp Diff a b)
 
-pattern CosP :: Pattern Expr -> Pattern Expr
-pattern CosP a = NonVariablePattern (UnOp Cos a)
+intP :: Pattern Expr -> Pattern Expr -> Pattern Expr
+intP a b = NonVariablePattern (BinOp Integral a b)
 
-pattern SinP :: Pattern Expr -> Pattern Expr
-pattern SinP a = NonVariablePattern (UnOp Sin a)
+cosP :: Pattern Expr -> Pattern Expr
+cosP a = NonVariablePattern (UnOp Cos a)
 
-pattern LnP :: Pattern Expr -> Pattern Expr
-pattern LnP a = NonVariablePattern (UnOp Ln a)
+sinP :: Pattern Expr -> Pattern Expr
+sinP a = NonVariablePattern (UnOp Sin a)
+
+lnP :: Pattern Expr -> Pattern Expr
+lnP a = NonVariablePattern (UnOp Ln a)
 
 
 -- | Define analysis for the @Expr@ language over domain @Maybe Double@ for
@@ -247,6 +250,10 @@ is_sym :: String -> RewriteCondition Expr
 is_sym v subst egr =
     any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class (unsafeGetSubst v subst)._nodes)
 
+is_const :: String -> RewriteCondition Expr
+is_const v subst egr =
+    isJust (egr^._class (unsafeGetSubst v subst)._data)
+
 is_const_or_distinct_var :: String -> String -> RewriteCondition Expr
 is_const_or_distinct_var v w subst egr =
     let v' = unsafeGetSubst v subst
@@ -263,7 +270,7 @@ rewrites =
     , "x"*("y"*"z") := ("x"*"y")*"z" -- assoc mul
 
     , "x"-"y" := "x"+((-1)*"y") -- sub cannon
-    , "x"/"y" := "x"*PowP "y" (-1) :| is_not_zero "y" -- div cannon
+    , "x"/"y" := "x"*powP "y" (-1) :| is_not_zero "y" -- div cannon
 
     -- identities
     , "x"+0 := "x"
@@ -280,24 +287,45 @@ rewrites =
     , "x"*("y"+"z") := ("x"*"y")+("x"*"z") -- distribute
     , ("x"*"y")+("x"*"z") := "x"*("y"+"z") -- factor
 
-    , PowP "a" "b"*PowP "a" "c" := PowP "a" ("b" + "c") -- pow mul
-    , PowP "a" 0 := 1 :| is_not_zero "a"
-    , PowP "a" 1 := "a"
-    , PowP "a" 2 := "a"*"a"
-    , PowP "a" (-1) := 1/"a" :| is_not_zero "a"
+    , powP "a" "b"*powP "a" "c" := powP "a" ("b" + "c") -- pow mul
+    , powP "a" 0 := 1 :| is_not_zero "a"
+    , powP "a" 1 := "a"
+    , powP "a" 2 := "a"*"a"
+    , powP "a" (-1) := 1/"a" :| is_not_zero "a"
 
     , "x"*(1/"x") := 1 :| is_not_zero "x"
 
-    , DiffP "x" "x" := 1 :| is_sym "x"
-    , DiffP "x" "c" := 0 :| is_sym "x" :| is_const_or_distinct_var "c" "x"
+    , diffP "x" "x" := 1 :| is_sym "x"
+    , diffP "x" "c" := 0 :| is_sym "x" :| is_const_or_distinct_var "c" "x"
 
-    , DiffP "x" ("a" + "b") := DiffP "x" "a" + DiffP "x" "b"
-    , DiffP "x" ("a" * "b") := ("a"*DiffP "x" "b") + ("b"*DiffP "x" "a")
+    , diffP "x" ("a" + "b") := diffP "x" "a" + diffP "x" "b"
+    , diffP "x" ("a" * "b") := ("a"*diffP "x" "b") + ("b"*diffP "x" "a")
 
-    , DiffP "x" (SinP "x") := CosP "x"
-    , DiffP "x" (CosP "x") := (-1)*SinP "x"
+    , diffP "x" (sinP "x") := cosP "x"
+    , diffP "x" (cosP "x") := (-1)*sinP "x"
 
-    , DiffP "x" (LnP "x") := 1/"x" :| is_not_zero "x"
+    , diffP "x" (lnP "x") := 1/"x" :| is_not_zero "x"
+
+    , diffP "x" (lnP "x") := 1/"x" :| is_not_zero "x"
+
+    -- diff-power
+    , diffP "x" (powP "f" "g") := powP "f" "g" * ((diffP "x" "f" * ("g" / "f")) +
+        (diffP "x" "g" * (lnP "f"))) :| is_not_zero "f" :| is_not_zero "g"
+
+    -- i-one
+    , intP 1 "x" := "x"
+
+    -- i power const
+    , intP (powP "x" "c") "x" := ((/) (powP "x" ((+) "c" 1)) ((+) "c" 1)) :| is_const "c"
+
+    , intP (cosP "x") "x" := sinP "x"
+    , intP (sinP "x") "x" := (-1) * (cosP "x")
+
+    , intP ("f" + "g") "x" := (intP "f" "x") + (intP "g" "x")
+
+    , intP ("f" - "g") "x" := (intP "f" "x") - (intP "g" "x")
+
+    , intP ("a" * "b") "x" := ((-) ((*) "a" (intP "b" "x")) (intP ((*) (diffP "x" "a") (intP "b" "x")) "x"))
 
     ]
 
@@ -376,4 +404,32 @@ symTests = testGroup "Symbolic"
     , testCase "d5" $
         rewrite (Fix $ BinOp Diff "x" (Fix $ UnOp Ln "x")) @?= 1/"x"
 
+    , testCase "d5" $
+        rewrite (Fix $ BinOp Diff "x" (Fix $ UnOp Ln "x")) @?= 1/"x"
+
+    , testCase "i1" $
+        rewrite (Fix $ BinOp Integral 1 "x") @?= "x"
+
+    , testCase "i2" $
+        rewrite (Fix $ BinOp Integral (Fix $ UnOp Cos "x") "x") @?= Fix (UnOp Sin "x")
+
+
+    -- This doesn't work because the back off scheduler is stuck, and some results aren't being further simplified
+    -- , testCase "i3" $
+    --     rewrite (Fix $ BinOp Integral (Fix $ BinOp Pow "x" 1) "x") @?= Fix (BinOp Pow "x" 2) / 2
+
+    , testCase "i4" $
+        rewrite (_i ((*) "x" (_cos "x")) "x") @?= ((+) (_cos "x") ((*) "x" (_sin "x")))
+
+    -- , testCase "i5" $
+    --     rewrite (_i ((*) (_cos "x") "x") "x") @?= ((+) ((*) "x" (_sin "x")) (_cos "x"))
+
+    -- , testCase "i6" $
+    --     rewrite (_i (_ln "x") "x") @?= ((-) ((*) "x" (_ln "x")) "x")
+
     ]
+
+_i a b = Fix (BinOp Integral a b)
+_ln a = Fix (UnOp Ln a)
+_cos a = Fix (UnOp Cos a)
+_sin a = Fix (UnOp Sin a)

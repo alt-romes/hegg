@@ -173,11 +173,14 @@ newtype Name = Name { un :: String }
 instance Arbitrary Name where
   arbitrary = oneof (return . Name . (:[]) <$> ['a'..'l'])
 
+instance Num (Pattern SimpleExpr) where
+    fromInteger = NonVariablePattern . SE . Const . fromInteger
+
 invariants :: TestTree
 invariants = testGroup "Invariants"
   [ QC.testProperty "Compile to query" (testCompileToQuery @SimpleExpr)
   , QC.testProperty "Singleton variable matches all" (ematchSingletonVar @SimpleExpr)
   , QC.testProperty "Hash Cons Invariant" (hashConsInvariant @SimpleExpr)
-  -- , QC.testProperty "Fold all classes with x:=0" (patFoldAllClasses @SimpleExpr)
+  , QC.testProperty "Fold all classes with x:=c" (patFoldAllClasses @SimpleExpr)
   ]
 

@@ -161,8 +161,8 @@ updateStats i rw currentStat stats matches =
       -- TODO: Overall difficult, and buggy at the moment.
       total_len = sum (map (length . matchSubst) matches)
 
-      defaultMatchLimit = 120 -- they're using 1000...
-      defaultBanLength  = 5
+      defaultMatchLimit = 140 -- they're using 1000...
+      defaultBanLength  = 10
 
       bannedN = case currentStat of
                   Nothing -> 0;

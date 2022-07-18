@@ -10,7 +10,7 @@ module Data.Equality.Graph
     , module Data.Equality.Graph.Classes
     , module Data.Equality.Graph.Nodes
     , module Data.Equality.Language
-    , modify
+    , modify, get
     ) where
 
 import GHC.Conc
@@ -106,7 +106,13 @@ add uncanon_e = do
         -- analysis) I think there might be another way to ensure math analysis
         -- pruning to work without having this line here.  Comment it out to
         -- check the result on the unit tests.
-        addToWorklist [(new_en, new_eclass_id)]
+        -- 
+        -- Update: I found a fix for that case: the modifyA function must add
+        -- the parents of the pruned class to the worklist for them to be
+        -- upward merged. I think it's a good compromise for requiring the user
+        -- to do this. Adding the added node to the worklist everytime creates
+        -- too much unnecessary work.
+        -- addToWorklist [(new_en, new_eclass_id)]
 
         -- Add new e-class to existing e-classes
         modifyClasses (IM.insert new_eclass_id new_eclass)

@@ -211,6 +211,8 @@ instance Analysis Expr where
 
             -- Prune all except leaf e-nodes
             modify (_class i._nodes %~ S.filter (null . children))
+            egr2 <- get
+            addToWorklist (egr2^._class i._parents)
 
 
 

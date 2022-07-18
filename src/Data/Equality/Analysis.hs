@@ -26,5 +26,19 @@ class Analysis l where
     -- | Optionaly modify the e-class c (based on d_c), typically by adding an
     -- e-node to c. Modify should be idempotent if no other changes occur to
     -- the e-class, i.e., modify(modify(c)) = modify(c)
+    --
+    -- Note: if modifyA does something to the e-classes that might have them
+    -- require updates, modifyA itself should add the parents of the modified
+    -- e-class to the worklist.
+    --
+    -- For example, when pruning an e-class with a constant value of all its
+    -- nodes except for the leaf values, we must make sure to add the parents
+    -- of the pruned e-class to the worklist.
+    --
+    -- @
+    --  -- Prune all except leaf e-nodes
+    --  modify (_class i._nodes %~ S.filter (null . children))
+    --  get >>= \egr2 -> addToWorklist (egr2^._class i._parents)
+    -- @
     modifyA :: ClassId -> EGraph l -> EGraph l
     modifyA _ = id

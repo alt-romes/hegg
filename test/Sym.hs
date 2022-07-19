@@ -140,13 +140,13 @@ instance Show1 Expr where
 
 symCost :: Expr Cost -> Cost
 symCost = \case
-    BinOp Pow e1 e2 -> e1 + e2 + 20
+    BinOp Pow e1 e2 -> e1 + e2 + 6
     BinOp Div e1 e2 -> e1 + e2 + 5
-    BinOp Sub e1 e2 -> e1 + e2 + 5
+    BinOp Sub e1 e2 -> e1 + e2 + 4
     BinOp Mul e1 e2 -> e1 + e2 + 4
     BinOp Add e1 e2 -> e1 + e2 + 2
     BinOp Diff e1 e2 -> e1 + e2 + 500
-    BinOp Integral e1 e2 -> e1 + e2 + 2000
+    BinOp Integral e1 e2 -> e1 + e2 + 20000
     UnOp Sin e1 -> e1 + 20
     UnOp Cos e1 -> e1 + 20
     UnOp Sqrt e1 -> e1 + 30
@@ -327,6 +327,10 @@ rewrites =
 
     , intP ("a" * "b") "x" := ((-) ((*) "a" (intP "b" "x")) (intP ((*) (diffP "x" "a") (intP "b" "x")) "x"))
 
+    -- Additional ad-hoc
+    , (-1)*"x" := -"x"
+    , "a"-(-"b") := "a"+"b"
+
     ]
 
 rewrite :: Fix Expr -> Fix Expr
@@ -404,9 +408,6 @@ symTests = testGroup "Symbolic"
     , testCase "d5" $
         rewrite (Fix $ BinOp Diff "x" (Fix $ UnOp Ln "x")) @?= 1/"x"
 
-    , testCase "d5" $
-        rewrite (Fix $ BinOp Diff "x" (Fix $ UnOp Ln "x")) @?= 1/"x"
-
     , testCase "i1" $
         rewrite (Fix $ BinOp Integral 1 "x") @?= "x"
 
@@ -415,21 +416,24 @@ symTests = testGroup "Symbolic"
 
 
     -- This doesn't work because the back off scheduler is stuck, and some results aren't being further simplified
-    -- , testCase "i3" $
-    --     rewrite (Fix $ BinOp Integral (Fix $ BinOp Pow "x" 1) "x") @?= Fix (BinOp Pow "x" 2) / 2
+    , testCase "i3" $
+        rewrite (Fix $ BinOp Integral (Fix $ BinOp Pow "x" 1) "x") @?= "x"*("x"*0.5)
 
     , testCase "i4" $
         rewrite (_i ((*) "x" (_cos "x")) "x") @?= ((+) (_cos "x") ((*) "x" (_sin "x")))
 
-    -- , testCase "i5" $
-    --     rewrite (_i ((*) (_cos "x") "x") "x") @?= ((+) ((*) "x" (_sin "x")) (_cos "x"))
+    , testCase "i5" $
+        rewrite (_i ((*) (_cos "x") "x") "x") @?= ((+) (_cos "x") ((*) "x" (_sin "x")))
 
+    -- TODO: How is this supposed to work ?
     -- , testCase "i6" $
     --     rewrite (_i (_ln "x") "x") @?= ((-) ((*) "x" (_ln "x")) "x")
 
     ]
 
+_i :: Fix Expr -> Fix Expr -> Fix Expr
 _i a b = Fix (BinOp Integral a b)
+_ln, _cos, _sin :: Fix Expr -> Fix Expr
 _ln a = Fix (UnOp Ln a)
 _cos a = Fix (UnOp Cos a)
 _sin a = Fix (UnOp Sin a)

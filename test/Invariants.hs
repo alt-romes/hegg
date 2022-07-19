@@ -142,8 +142,7 @@ instance Arbitrary BOp where
                       , return Div ]
 
 instance Arbitrary UOp where
-    arbitrary = oneof [ return Negate
-                      , return Sin
+    arbitrary = oneof [ return Sin
                       , return Cos
                       ]
 

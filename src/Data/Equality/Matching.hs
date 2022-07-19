@@ -104,6 +104,8 @@ data Pattern lang
     = NonVariablePattern (lang (Pattern lang))
     | VariablePattern Var
 
+pat = NonVariablePattern
+
 instance Eq1 l => (Eq (Pattern l)) where
     (==) (NonVariablePattern a) (NonVariablePattern b) = liftEq (==) a b
     (==) (VariablePattern a) (VariablePattern b) = a == b 

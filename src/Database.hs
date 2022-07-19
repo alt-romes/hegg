@@ -15,7 +15,9 @@ import qualified Data.IntMap as IM
 
 -- import GHC.Data.TrieMap
 
-import Data.Equality.Graph
+import Data.Equality.Graph.Classes.Id
+import Data.Equality.Graph.Nodes
+import Data.Equality.Language
 
 -- | Query variable
 type Var = String

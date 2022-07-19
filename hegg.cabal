@@ -58,7 +58,7 @@ test-suite hegg-test
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          Test.hs
-    other-modules:    Invariants, Sym
+    other-modules:    Invariants, Sym, Lambda
     other-extensions: OverloadedStrings
     build-depends:    base,
                       data-fix,

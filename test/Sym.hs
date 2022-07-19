@@ -200,7 +200,8 @@ instance Analysis Expr where
         b <- mb
         -- this assertion only seemed to be triggering when using bogus
         -- constant assignments for "Fold all classes with x:=c"
-        !_ <- unless (a == b) (error "Merged non-equal constants!")
+        -- 0 bug found by property checking
+        !_ <- unless (a == b || (a == 0 && b == (-0)) || (a == (-0) && b == 0)) (error "Merged non-equal constants!")
         return a
 
     modifyA i egr =

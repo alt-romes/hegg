@@ -34,6 +34,7 @@ import Data.Equality.Graph.Classes
 import Data.Equality.Graph.Nodes
 import Data.Equality.Language
 import Data.Equality.Graph.Lens
+-- import Data.Equality.Graph.Database
 
 -- | E-graph stateful computation
 type EGS s = State (EGraph s)

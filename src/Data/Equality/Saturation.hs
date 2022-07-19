@@ -10,11 +10,12 @@ module Data.Equality.Saturation
     , Cost
     ) where
 
+import GHC.Conc
+
 import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 
 import Data.Bifunctor
-import Data.Traversable
 import Control.Monad
 import Control.Monad.State
 
@@ -22,6 +23,7 @@ import Data.Fix
 
 import Data.Equality.Graph
 import Data.Equality.Matching
+import Database
 import Data.Equality.Extraction
 
 data Rewrite lang = Pattern lang := Pattern lang
@@ -60,11 +62,13 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
         equalitySaturation' 30 _ = return () -- Stop after X iterations
         equalitySaturation' i stats = do
 
-            EGraph { memo = beforeMemo, classes = beforeClasses } <- get
+            egr@EGraph{ memo = beforeMemo, classes = beforeClasses } <- get
+
+            let db = eGraphToDatabase egr
 
             -- Read-only phase, invariants are preserved
             -- With backoff scheduler
-            (matches, newStats) <- mconcat <$> forM (zip [1..] rewrites) (matchWithBackoffScheduler i stats)
+            let (matches, newStats) = mconcat (parMap (matchWithBackoffScheduler db i stats) (zip [1..] rewrites))
 
             -- Write-only phase, temporarily break invariants
             forM_ matches applyMatchesRhs
@@ -82,25 +86,25 @@ equalitySaturation expr rewrites cost = runEGS emptyEGraph $ do
                       && IM.size afterClasses == IM.size beforeClasses)
                 (equalitySaturation' (i+1) newStats)
 
-        matchWithBackoffScheduler :: Int -> IM.IntMap Stat -> (Int, Rewrite l) -> EGS l ([(Rewrite l, Match)], IM.IntMap Stat)
-        matchWithBackoffScheduler i stats = \case
-            (rw_id, rw :| cnd) -> first (map (first (:| cnd))) <$> matchWithBackoffScheduler i stats (rw_id, rw)
+        matchWithBackoffScheduler :: Database l -> Int -> IM.IntMap Stat -> (Int, Rewrite l) -> ([(Rewrite l, Match)], IM.IntMap Stat)
+        matchWithBackoffScheduler db i stats = \case
+            (rw_id, rw :| cnd) -> first (map (first (:| cnd))) $ matchWithBackoffScheduler db i stats (rw_id, rw)
             (rw_id, lhs := rhs) -> do 
                 case IM.lookup rw_id stats of
                   -- If it's banned until some iteration, don't match this rule
                   -- against anything.
-                  Just s | i < bannedUntil s -> return ([], stats)
+                  Just s | i < bannedUntil s -> ([], stats)
 
                   -- Otherwise, match and update stats
                   x -> do
 
                       -- Match pattern
-                      matches' <- ematchM lhs -- Add rewrite to the e-match substitutions
+                      let matches' = ematch db lhs -- Add rewrite to the e-match substitutions
 
                       -- Backoff scheduler: update stats
                       let newStats = updateStats i rw_id x stats matches'
 
-                      return (map (lhs := rhs,) matches', newStats)
+                      (map (lhs := rhs,) matches', newStats)
 
         applyMatchesRhs :: (Rewrite l, Match) -> EGS l ()
         applyMatchesRhs =
@@ -176,3 +180,8 @@ updateStats i rw currentStat stats matches =
         Nothing -> Just (Stat (i + ban_length) 1)
         Just (Stat _ n)  -> Just (Stat (i + ban_length) (n+1))
 
+
+-- We don't have the parallel package, so roll our own simple parMap
+parMap _ [] = []
+parMap f (x:xs) = fx `par` (fxs `pseq` (fx : fxs))
+    where fx = f x; fxs = parMap f xs

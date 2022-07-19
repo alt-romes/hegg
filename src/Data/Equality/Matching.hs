@@ -32,21 +32,19 @@ data Match = Match
     , matchClassId :: {-# UNPACK #-} !ClassId
     }
 
--- | EGS version of 'ematch'
-ematchM :: Language l
-       => Pattern l
-       -> EGS l [Match]
-ematchM pat = gets (ematch pat)
-
 -- | Match a pattern against an AST, returnin a list of equivalence classes
 -- that match the pattern and the corresponding substitution
+--
+-- ematch takes the built database because it can be shared accross matching.
+-- One can convert an e-graph to a database with 'eGraphToDatabase'
+--
+-- TODO: Perhaps e-graph could carry database and rebuild it on rebuild
 ematch :: Language l
-       => Pattern l
-       -> EGraph l
+       => Database l
+       -> Pattern l
        -> [Match]
-ematch pat eg =
-    let db = eGraphToDatabase eg
-        q = compileToQuery pat
+ematch db pat =
+    let q = compileToQuery pat
      in mapMaybe copyOutEClass (genericJoin db q)
     where
         -- Given a substitution in which the first element is the pair

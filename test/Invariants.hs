@@ -83,7 +83,8 @@ testCompileToQuery p = case compileToQuery p of
 ematchSingletonVar :: Language lang => Var -> EGraph lang -> Bool
 ematchSingletonVar v eg =
     let
-        matches = S.fromList $ map matchClassId $ ematch (VariablePattern v) eg
+        db = eGraphToDatabase eg
+        matches = S.fromList $ map matchClassId $ ematch db (VariablePattern v)
         eclasses = S.fromList $ map fst $ IM.toList $ classes eg
     in
         matches == eclasses 
@@ -119,6 +120,12 @@ hashConsInvariant eg@EGraph{..} =
             Nothing -> error "how can we not find canonical thing in map? :)" -- False
             Just i' -> i' == find i eg 
 
+benchSaturate :: forall l. Language l
+              => [Rewrite l] -> (l Cost -> Cost) -> Fix l -> Bool
+benchSaturate rws cost expr =
+    equalitySaturation expr rws cost `seq` True
+
+
 -- ROMES:TODO: Property: Extract expression after equality saturation is always better or equal to the original expression
 
 -- ROMES:TODO: Use action trick https://jaspervdj.be/posts/2015-03-13-practical-testing-in-haskell.html
@@ -147,18 +154,24 @@ instance Arbitrary UOp where
                       ]
 
 instance Arbitrary a => Arbitrary (SimpleExpr a) where
+    arbitrary = SE <$> arbitrary
+
+instance Arbitrary a => Arbitrary (Expr a) where
     arbitrary = sized expr'
         where
-            expr' :: Int -> Gen (SimpleExpr a)
-            expr' 0 = SE <$> oneof [ Sym . un <$> arbitrary
-                                   , Const . fromInteger <$> arbitrary
-                                   ]
+            expr' :: Int -> Gen (Expr a)
+            expr' 0 = oneof [ Sym . un <$> arbitrary
+                            , Const . fromInteger <$> arbitrary
+                            ]
             expr' n
-              | n > 0 = SE <$> oneof [ BinOp <$> arbitrary <*> resize (n `div` 2) arbitrary <*> resize (n `div` 2) arbitrary
-                                     , UnOp <$> arbitrary <*> resize (n - 1) arbitrary ]
+              | n > 0 = oneof [ BinOp <$> arbitrary <*> resize (n `div` 2) arbitrary <*> resize (n `div` 2) arbitrary
+                              , UnOp <$> arbitrary <*> resize (n - 1) arbitrary ]
             expr' _ = error "size is negative?"
 
 instance Arbitrary (Fix SimpleExpr) where
+    arbitrary = Fix <$> arbitrary
+
+instance Arbitrary (Fix Expr) where
     arbitrary = Fix <$> arbitrary
 
 instance Arbitrary (Pattern SimpleExpr) where
@@ -178,6 +191,9 @@ instance Num (Pattern SimpleExpr) where
 invariants :: TestTree
 invariants = testGroup "Invariants"
   [ QC.testProperty "Compile to query" (testCompileToQuery @SimpleExpr)
+    -- TODO: This bench is still failing because of the bad rewrite scheduler
+    -- TODO: Much infinite looping ...
+  -- , QC.testProperty "Bench saturation @Expr" (withMaxSuccess 10 (benchSaturate @Expr rewrites symCost))
   , QC.testProperty "Singleton variable matches all" (ematchSingletonVar @SimpleExpr)
   , QC.testProperty "Hash Cons Invariant" (hashConsInvariant @SimpleExpr)
   , QC.testProperty "Fold all classes with x:=c" (patFoldAllClasses @SimpleExpr)

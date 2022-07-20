@@ -1,5 +1,4 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -99,7 +98,7 @@ instance Show UOp where
         Negate -> "-"
 
 instance {-# OVERLAPPING #-} Show (Fix Expr) where
-    show = foldFix $ \case
+    show = cata $ \case
         BinOp Diff a b -> show Diff <> a <> " " <> b
         BinOp Integral a b -> show Integral <> a <> " " <> b
         BinOp op a b -> "(" <> a <> " " <> show op <> " " <> b <> ")"

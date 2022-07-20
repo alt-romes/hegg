@@ -37,7 +37,8 @@ library
                       Data.Equality.Language,
                       Data.Equality.Analysis,
                       Data.Equality.Saturation.Scheduler,
-                      Data.Equality.Saturation.Rewrites
+                      Data.Equality.Saturation.Rewrites,
+                      Data.Equality.Utils
 
     if flag(vizdot)
         exposed-modules: Data.Equality.Graph.Dot
@@ -47,9 +48,7 @@ library
 
     -- LANGUAGE extensions used by modules in this package.
     build-depends:    base >= 4.4 && < 5,
-                      text, mtl,
-                      data-fix,
-                      containers
+                      mtl, containers
     if flag(vizdot)
         build-depends: graphviz
     hs-source-dirs:   src
@@ -64,7 +63,6 @@ test-suite hegg-test
     other-modules:    Invariants, Sym, Lambda
     other-extensions: OverloadedStrings
     build-depends:    base,
-                      data-fix,
                       hegg,
                       containers,
                       tasty,

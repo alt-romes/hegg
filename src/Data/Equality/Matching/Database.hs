@@ -3,8 +3,6 @@
 {-# LANGUAGE TupleSections #-}
 module Data.Equality.Matching.Database where
 
-import Data.Fix
-
 import Data.Maybe (mapMaybe)
 import Data.List (intersect, union, nub)
 import Control.Monad
@@ -18,6 +16,7 @@ import qualified Data.IntMap as IM
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 import Data.Equality.Language
+import Data.Equality.Utils
 
 -- | Query variable
 type Var = String

@@ -1,10 +1,8 @@
-Conditional rewrites
-~~Unlifted ReprUnionFind~~ Not doable because of IntMap
 Analysis should take a type level Symbol to identify it, so we can have multiple analysis for the same language
 Continue testing
 Test that e-classes are never empty
 Should all nodes in maps be canonical? Or better to keep finding them when need to use? Must check which is more common, probably checking is done way less so it's better to just find them when needed
-Drop dependencies
 Continuous database carried in the e-graph, also updated when rebuilding... (how?)
 If already reached optimal solution (cost == 1) can stop searching?
 Delete represented nodes after canonicalizing the id
+How to make Fix compatible with Data.Fix

@@ -17,7 +17,7 @@ module Data.Equality.Saturation
     , CostFunction, Cost, depthCost
 
       -- ** Fix
-    , Fix(..), foldFix, unfoldFix
+    , Fix(..), cata
 
     ) where
 
@@ -31,8 +31,8 @@ import Control.Monad
 import Control.Monad.State
 
 import Data.Proxy
-import Data.Fix
 
+import Data.Equality.Utils
 import Data.Equality.Graph
 import Data.Equality.Matching
 import Data.Equality.Extraction

@@ -13,8 +13,7 @@ import qualified Data.IntMap as IM
 
 import Control.Monad.State
 
-import Data.Fix
-
+import Data.Equality.Utils
 import Data.Equality.Graph
 
 -- | A cost function is used to attribute a cost to representations in the
@@ -111,7 +110,7 @@ findCosts g@EGraph{..} cost = do
 nodeTotalCost :: Traversable lang => EGraph lang -> CostFunction lang -> ENode lang -> Extraction lang (Maybe (Cost, Fix lang))
 nodeTotalCost g cost (Node n) = get >>= \m -> return $ do
     expr <- Fix <$> traverse (fmap snd . (`IM.lookup` m) . flip find g) n
-    return (foldFix cost expr, expr)
+    return (cata cost expr, expr)
 
 -- | Find the current best node and its cost in an equivalence class given only the class and the current extraction
 -- This is not necessarily the best node in the e-graph, only the best in the current extraction state

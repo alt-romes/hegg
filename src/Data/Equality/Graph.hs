@@ -17,8 +17,6 @@ module Data.Equality.Graph
 
 import Data.Function
 
-import Data.Fix
-
 import Data.Functor.Classes
 
 import Control.Monad
@@ -29,12 +27,12 @@ import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 import qualified Data.Set    as S
 
+import Data.Equality.Utils
 import Data.Equality.Graph.ReprUnionFind
 import Data.Equality.Graph.Classes
 import Data.Equality.Graph.Nodes
 import Data.Equality.Language
 import Data.Equality.Graph.Lens
--- import Data.Equality.Graph.Database
 
 -- | E-graph stateful computation
 type EGS s = State (EGraph s)
@@ -77,7 +75,7 @@ instance (Show (Domain l), Show1 l) => Show (EGraph l) where
 -- | Represent an expression (@Fix lang@) in an e-graph
 represent :: Language lang => Fix lang -> EGS lang ClassId
 -- Represent each sub-expression and add the resulting e-node to the e-graph
-represent = foldFix $ sequence >=> add . Node
+represent = cata $ sequence >=> add . Node
 
 -- | Add an e-node to the e-graph
 --

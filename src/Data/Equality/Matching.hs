@@ -13,14 +13,13 @@ import Data.Functor.Classes
 import Data.List (nub)
 import Data.Foldable (toList)
 
-import Data.Fix
-
 import Control.Monad
 import Control.Monad.State
 
 import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 
+import Data.Equality.Utils
 import Data.Equality.Graph
 import Data.Equality.Matching.Database
 
@@ -168,4 +167,3 @@ next = do
     i <- get
     put (i+1)
     return i
-

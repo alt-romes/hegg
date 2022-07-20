@@ -37,10 +37,12 @@ newtype Operator l = Operator { unOperator :: l () }
 -- | Get the children class ids of an e-node
 children :: Traversable l => ENode l -> [ClassId]
 children = toList . unNode
+{-# INLINE children #-}
 
 -- | Get the operator (function symbol) of an e-node
 operator :: Traversable l => ENode l -> Operator l
 operator = Operator . void . unNode
+{-# INLINE operator #-}
 
 instance Eq1 l => (Eq (ENode l)) where
     (==) (Node a) (Node b) = liftEq (==) a b

@@ -10,7 +10,6 @@ module Lambda where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Data.Fix
 import qualified Data.Set as S
 
 import Control.Applicative ((<|>))

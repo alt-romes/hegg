@@ -1,4 +1,12 @@
 {-# LANGUAGE TypeFamilies #-}
+{-|
+
+Definition of e-nodes, instances and some operations on them.
+
+Additionally, defines the 'Operator' of an e-node as the language functor
+parametrised over @()@.
+
+-}
 module Data.Equality.Graph.Nodes where
 
 import Data.Functor.Classes
@@ -22,8 +30,8 @@ newtype ENode l = Node { unNode :: l ClassId }
 
 -- | Operator
 --
--- An operator is solely the function symbol part of the e-node, that is, there
--- are no children e-classes.
+-- An operator is solely the function symbol part of the e-node, that is,
+-- children e-classes are ignored.
 newtype Operator l = Operator { unOperator :: l () }
 
 -- | Get the children class ids of an e-node

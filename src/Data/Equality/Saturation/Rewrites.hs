@@ -1,3 +1,9 @@
+{-|
+
+Definition of the 'Rewrite' datatype used to define rewrite rules that are to
+be used with and applied during equality saturation.
+
+-}
 module Data.Equality.Saturation.Rewrites where
 
 import Data.Equality.Graph

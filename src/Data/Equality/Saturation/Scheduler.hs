@@ -2,6 +2,14 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE AllowAmbiguousTypes #-} -- Scheduler
 {-# LANGUAGE TypeFamilies #-}
+{-|
+
+Definition of 'Scheduler' as a way to control application of rewrite rules.
+
+The 'BackoffScheduler' is a scheduler which implements exponential rule backoff
+and is used by default in 'Data.Equality.Saturation.equalitySaturation'
+
+-}
 module Data.Equality.Saturation.Scheduler
     ( Scheduler(..), BackoffScheduler
     ) where
@@ -9,6 +17,9 @@ module Data.Equality.Saturation.Scheduler
 import qualified Data.IntMap as IM
 import Data.Equality.Matching
 
+-- | A 'Scheduler' determines whether a certain rewrite rule is banned from
+-- being used based on statistics it defines and collects on applied rewrite
+-- rules.
 class Scheduler s where
     type Stat s
 

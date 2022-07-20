@@ -1,4 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
+{-|
+
+Union-find like data structure that defines equivalence classes of e-class ids
+
+-}
 module Data.Equality.Graph.ReprUnionFind where
 
 import qualified Data.IntMap as IM
@@ -23,10 +28,15 @@ data Repr
   | Canonical -- ^ @Canonical x@ is the canonical representation, meaning @find(x) == x@
   deriving Show
 
+-- | The empty 'ReprUnionFind'.
+--
+-- TODO: Instance of 'ReprUnionFind' as Monoid, this is 'mempty'
 emptyUF :: ReprUnionFind
 emptyUF = RUF mempty
 
-makeNewSet :: ReprUnionFind -> (ClassId, ReprUnionFind)
+-- | Create a new e-class id in the given 'ReprUnionFind'.
+makeNewSet :: ReprUnionFind
+           -> (ClassId, ReprUnionFind) -- ^ Newly created e-class id and updated 'ReprUnionFind'
 makeNewSet (RUF im) = (new_id, RUF $ IM.insert new_id Canonical im)
     where
         new_id = IM.size im
@@ -37,7 +47,7 @@ makeNewSet (RUF im) = (new_id, RUF $ IM.insert new_id Canonical im)
 unionSets :: ClassId -> ClassId -> ReprUnionFind -> (ClassId, ReprUnionFind)
 unionSets a b (RUF im) = (a, RUF $ IM.update (\case Canonical -> Just $ Represented a; Represented _ -> error "unionSets should be called on canonical ids") b im)
 
--- | Find the canonical representation of an id
+-- | Find the canonical representation of an e-class id
 findRepr :: ClassId -> ReprUnionFind -> Maybe ClassId
 findRepr v (RUF m) =
     -- ROMES:TODO: Path compression in immutable data structure? Is it worth

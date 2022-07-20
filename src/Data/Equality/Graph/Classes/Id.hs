@@ -1,4 +1,8 @@
-{-| Equivalence classes ids -}
+{-|
+
+Types for e-class ids
+
+-}
 module Data.Equality.Graph.Classes.Id
     ( ClassId
     , ClassIdMap
@@ -6,8 +10,8 @@ module Data.Equality.Graph.Classes.Id
 
 import qualified Data.IntMap as IM
 
--- | Class Id
+-- | Type for e-class ids
 type ClassId = Int
 
--- | Map from class ids to values
+-- | A map from e-class ids to values
 type ClassIdMap = IM.IntMap

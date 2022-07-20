@@ -101,9 +101,6 @@ instance Language Lambda
 instance Num (Fix Lambda) where
     fromInteger = Fix . Num . fromInteger
 
-lambdaCost :: Lambda Cost -> Cost
-lambdaCost = (+1) . sum . toList
-
 rules :: [Rewrite Lambda]
 rules =
     [ ifP trP "x" "y" := "x"
@@ -112,7 +109,7 @@ rules =
     ]
 
 rewrite :: Fix Lambda -> Fix Lambda
-rewrite e = fst $ equalitySaturation e rules lambdaCost
+rewrite e = fst $ equalitySaturation e rules depthCost
 
 lambdaTests :: TestTree
 lambdaTests = testGroup "Lambda"

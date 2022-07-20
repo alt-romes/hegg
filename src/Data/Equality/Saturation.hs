@@ -6,9 +6,19 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE BlockArguments #-}
 module Data.Equality.Saturation
-    ( module Data.Equality.Saturation
+    (
+      -- * Equality saturation
+      equalitySaturation, equalitySaturation'
+
+      -- ** Writing rewrite rules
+    , Rewrite(..), RewriteCondition
+
+      -- ** Cost
+    , CostFunction, Cost, depthCost
+
+      -- ** Fix
     , Fix(..), foldFix, unfoldFix
-    , Cost
+
     ) where
 
 import GHC.Conc
@@ -25,15 +35,16 @@ import Data.Fix
 
 import Data.Equality.Graph
 import Data.Equality.Matching
-import Database
 import Data.Equality.Extraction
 
+import Data.Equality.Saturation.Rewrites
 import Data.Equality.Saturation.Scheduler
 
+-- | Equality saturation with defaults
 equalitySaturation :: forall l. Language l
                    => Fix l             -- ^ Expression to run equality saturation on
                    -> [Rewrite l]       -- ^ List of rewrite rules
-                   -> (l Cost -> Cost)  -- ^ Cost function to extract the best equivalent representation
+                   -> CostFunction l    -- ^ Cost function to extract the best equivalent representation
                    -> (Fix l, EGraph l) -- ^ Best equivalent expression and resulting e-graph
 equalitySaturation = equalitySaturation' (Proxy @BackoffScheduler)
 
@@ -47,7 +58,7 @@ equalitySaturation' :: forall l schd
                     => Proxy schd        -- ^ Proxy for the scheduler to use
                     -> Fix l             -- ^ Expression to run equality saturation on
                     -> [Rewrite l]       -- ^ List of rewrite rules
-                    -> (l Cost -> Cost)  -- ^ Cost function to extract the best equivalent representation
+                    -> CostFunction l    -- ^ Cost function to extract the best equivalent representation
                     -> (Fix l, EGraph l) -- ^ Best equivalent expression and resulting e-graph
 equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
 
@@ -149,16 +160,6 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
                     Nothing -> error "impossible: couldn't find v in subst?"
                     Just i  -> return i
             NonVariablePattern p -> reprPat subst p
-
-data Rewrite lang = Pattern lang := Pattern lang
-                  | Rewrite lang :| RewriteCondition lang -- Conditional rewrites
-infix 3 :=
-infixl 2 :|
-
--- | A rewrite condition. With a substitution from bound variables to e-classes
--- and with the e-graph, return true when a condition is satisfied
-type RewriteCondition lang = Subst -> EGraph lang -> Bool
-
 
 -- We don't have the parallel package, so roll our own simple parMap
 parMap :: (a -> b) -> [a] -> [b]

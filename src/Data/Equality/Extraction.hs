@@ -4,8 +4,7 @@
 {-# LANGUAGE ViewPatterns #-}
 module Data.Equality.Extraction where
 
-import Debug.Trace (trace)
-
+import Data.Foldable (toList)
 import Data.Maybe (catMaybes)
 
 import qualified Data.List as L
@@ -18,9 +17,31 @@ import Data.Fix
 
 import Data.Equality.Graph
 
+-- | A cost function is used to attribute a cost to representations in the
+-- e-graph and to extract the best one.
+--
+-- === Example
+-- @
+-- symCost :: Expr Cost -> Cost
+-- symCost = \case
+--     BinOp Integral e1 e2 -> e1 + e2 + 20000
+--     BinOp Diff e1 e2 -> e1 + e2 + 500
+--     BinOp x e1 e2 -> e1 + e2 + 3
+--     UnOp Negate e1 -> e1 + 5
+--     UnOp x e1 -> e1 + 30
+--     Sym _ -> 1
+--     Const _ -> 1
+-- @
+type CostFunction l = l Cost -> Cost
+
+-- | 'Cost' is simply an integer
 type Cost = Int
 
 type Extraction lang = State (ClassIdMap (Cost, Fix lang))
+
+-- | Simple cost function: the deeper the expression, the bigger the cost
+depthCost :: Language l => CostFunction l
+depthCost = (+1) . sum . toList
 
 runExtraction :: Extraction lang a -> a
 runExtraction = flip evalState mempty
@@ -30,7 +51,7 @@ runExtraction = flip evalState mempty
 --
 -- Receives a class id, a cost function, and an e-graph
 extractBest :: Language lang
-            => EGraph lang -> (lang Cost -> Cost) -> ClassId -> Fix lang
+            => EGraph lang -> CostFunction lang -> ClassId -> Fix lang
 extractBest g cost (flip find g -> i) = runExtraction $ do
 
     -- Use `egg`s strategy of find costs for all possible classes and then just
@@ -46,7 +67,7 @@ extractBest g cost (flip find g -> i) = runExtraction $ do
 
 -- | Find the lowest cost of all e-classes in an e-graph in an extraction
 findCosts :: forall lang. Language lang
-          => EGraph lang -> (lang Cost -> Cost) -> Extraction lang ()
+          => EGraph lang -> CostFunction lang -> Extraction lang ()
 findCosts g@EGraph{..} cost = do
 
     modified <- forM (IM.toList classes) $ \(i, eclass) -> do
@@ -68,7 +89,7 @@ findCosts g@EGraph{..} cost = do
         else -- otherwise, finish with debug warnings
             forM_ (IM.toList classes) $ \(i, _) -> do
                 gets (IM.lookup i) >>= \case
-                    Nothing -> trace ("Faild to compute cost for e-class " <> show i) $ return ()
+                    Nothing -> error $ "Faild to compute cost for e-class " <> show i
                     Just _  -> return ()
 
     where
@@ -87,7 +108,7 @@ findCosts g@EGraph{..} cost = do
 -- For a node to have a cost, all its (canonical) sub-classes have a cost and
 -- an associated better expression. We return the constructed best expression
 -- with its cost
-nodeTotalCost :: Traversable lang => EGraph lang -> (lang Cost -> Cost) -> ENode lang -> Extraction lang (Maybe (Cost, Fix lang))
+nodeTotalCost :: Traversable lang => EGraph lang -> CostFunction lang -> ENode lang -> Extraction lang (Maybe (Cost, Fix lang))
 nodeTotalCost g cost (Node n) = get >>= \m -> return $ do
     expr <- Fix <$> traverse (fmap snd . (`IM.lookup` m) . flip find g) n
     return (foldFix cost expr, expr)

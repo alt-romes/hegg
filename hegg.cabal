@@ -31,12 +31,14 @@ library
                       Data.Equality.Graph.Nodes,
                       Data.Equality.Graph.Lens,
                       Data.Equality.Matching,
+                      Data.Equality.Matching.Database,
                       Data.Equality.Saturation,
                       Data.Equality.Extraction,
                       Data.Equality.Language,
                       Data.Equality.Analysis,
                       Data.Equality.Saturation.Scheduler,
-                      Database
+                      Data.Equality.Saturation.Rewrites
+
     if flag(vizdot)
         exposed-modules: Data.Equality.Graph.Dot
 

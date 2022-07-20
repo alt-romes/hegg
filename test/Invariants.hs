@@ -26,7 +26,7 @@ import qualified Data.Map    as M
 import Data.Equality.Graph
 import Data.Equality.Saturation
 import Data.Equality.Matching
-import Database
+import Data.Equality.Matching.Database
 import Sym
 
 -- | Newtype deriving via Expr to be able to define a different analysis

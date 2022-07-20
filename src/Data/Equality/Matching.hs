@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Data.Equality.Matching
     ( module Data.Equality.Matching
-    , Subst
+    , Database, Subst
     )
     where
 
@@ -22,8 +22,7 @@ import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 
 import Data.Equality.Graph
-
-import Database
+import Data.Equality.Matching.Database
 
 -- |  Matching a pattern on an e-graph returns substitutions for every variable
 -- in the pattern and the e-class that matched the pattern

@@ -1,7 +1,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
-module Database where
+module Data.Equality.Matching.Database where
 
 import Data.Fix
 

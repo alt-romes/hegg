@@ -2,7 +2,9 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE AllowAmbiguousTypes #-} -- Scheduler
 {-# LANGUAGE TypeFamilies #-}
-module Data.Equality.Saturation.Scheduler where
+module Data.Equality.Saturation.Scheduler
+    ( Scheduler(..), BackoffScheduler
+    ) where
 
 import qualified Data.IntMap as IM
 import Data.Equality.Matching
@@ -23,17 +25,20 @@ class Scheduler s where
              -> Stat s -- ^ Stats for the rewrite rule
              -> Bool -- ^ Whether the rule should be applied or not
 
+-- | A 'Scheduler' that implements exponentional rule backoff.
+--
+-- For each rewrite, there exists a configurable initial match limit. If a rewrite
+-- search yield more than this limit, then we ban this rule for number of
+-- iterations, double its limit, and double the time it will be banned next time.
+--
+-- This seems effective at preventing explosive rules like associativity from
+-- taking an unfair amount of resources.
+--
+-- Originaly in [egg](https://docs.rs/egg/0.6.0/egg/struct.BackoffScheduler.html)
 data BackoffScheduler
 instance Scheduler BackoffScheduler where
     type Stat BackoffScheduler = BoSchStat
 
-    -- | Backoff scheduler: update stats
-    -- updateStats :: Int            -- ^ Iteration we're in
-    --             -> Int            -- ^ Index of rewrite rule we're updating
-    --             -> Maybe BoSchStat     -- ^ Current stat for this rewrite rule (we already got it so no point in doing a lookup again)
-    --             -> IM.IntMap BoSchStat -- ^ The map to update
-    --             -> [Match]        -- ^ The list of matches resulting from matching this rewrite rule
-    --             -> IM.IntMap BoSchStat -- ^ The updated map
     updateStats i rw currentStat stats matches =
 
         if total_len > threshold
@@ -64,7 +69,7 @@ instance Scheduler BackoffScheduler where
             Nothing -> Just (BSS (i + ban_length) 1)
             Just (BSS _ n)  -> Just (BSS (i + ban_length) (n+1))
 
-    i `isBanned` s = i < bannedUntil s
+    isBanned i s = i < bannedUntil s
 
 
 data BoSchStat = BSS { bannedUntil :: {-# UNPACK #-} !Int

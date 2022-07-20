@@ -35,6 +35,7 @@ library
                       Data.Equality.Extraction,
                       Data.Equality.Language,
                       Data.Equality.Analysis,
+                      Data.Equality.Saturation.Scheduler,
                       Database
     if flag(vizdot)
         exposed-modules: Data.Equality.Graph.Dot

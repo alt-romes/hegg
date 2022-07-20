@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-} -- joinA
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Data.Equality.Analysis where
@@ -8,7 +9,7 @@ import Data.Equality.Graph.Nodes
 
 import {-# SOURCE #-} Data.Equality.Graph (EGraph)
 
-class Analysis l where
+class Eq (Domain l) => Analysis l where
 
     -- | Domain of data stored in e-class according to e-class analysis
     type Domain l

@@ -65,7 +65,7 @@ instance Scheduler BackoffScheduler where
           -- TODO: Overall difficult, and buggy at the moment.
           total_len = sum (map (length . matchSubst) matches)
 
-          defaultMatchLimit = 140 -- they're using 1000...
+          defaultMatchLimit = 1000
           defaultBanLength  = 10
 
           bannedN = case currentStat of

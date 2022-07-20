@@ -414,10 +414,8 @@ symTests = testGroup "Symbolic"
     , testCase "i2" $
         rewrite (Fix $ BinOp Integral (Fix $ UnOp Cos "x") "x") @?= Fix (UnOp Sin "x")
 
-
-    -- This doesn't work because the back off scheduler is stuck, and some results aren't being further simplified
     , testCase "i3" $
-        rewrite (Fix $ BinOp Integral (Fix $ BinOp Pow "x" 1) "x") @?= "x"*("x"*0.5)
+        rewrite (Fix $ BinOp Integral (Fix $ BinOp Pow "x" 1) "x") @?= "x"
 
     , testCase "i4" $
         rewrite (_i ((*) "x" (_cos "x")) "x") @?= ((+) (_cos "x") ((*) "x" (_sin "x")))

@@ -42,8 +42,8 @@ ematch :: Language l
        => Database l
        -> Pattern l
        -> [Match]
-ematch db pat =
-    let q = compileToQuery pat
+ematch db patr =
+    let q = compileToQuery patr
      in mapMaybe copyOutEClass (genericJoin db q)
     where
         -- Given a substitution in which the first element is the pair
@@ -103,6 +103,7 @@ data Pattern lang
     = NonVariablePattern (lang (Pattern lang))
     | VariablePattern Var
 
+pat :: lang (Pattern lang) -> Pattern lang
 pat = NonVariablePattern
 
 instance Eq1 l => (Eq (Pattern l)) where

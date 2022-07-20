@@ -13,7 +13,7 @@ module Data.Equality.Graph
     , modify, get
     ) where
 
-import GHC.Conc
+-- import GHC.Conc
 
 import Data.Function
 

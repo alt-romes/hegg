@@ -13,7 +13,6 @@ import Test.Tasty.HUnit
 import Data.Fix
 import qualified Data.Set as S
 
-import Data.Foldable
 import Control.Applicative ((<|>))
 
 import Data.Eq.Deriving
@@ -100,6 +99,11 @@ instance Language Lambda
 
 instance Num (Fix Lambda) where
     fromInteger = Fix . Num . fromInteger
+    (+) = error "todo..."
+    (-) = error "todo..."
+    (*) = error "todo..."
+    abs = error "todo..."
+    signum = error "todo..."
 
 rules :: [Rewrite Lambda]
 rules =
@@ -123,13 +127,17 @@ lambdaTests = testGroup "Lambda"
 
 
 
-
+ifP :: Pattern Lambda -> Pattern Lambda -> Pattern Lambda -> Pattern Lambda
 ifP a b c = pat (If a b c)
+trP, flP :: Pattern Lambda
 trP = pat (Bool True)
 flP = pat (Bool False)
+varP :: Pattern Lambda -> Pattern Lambda
 varP x = pat (Var x)
 
--- recursion-schemes extension in separate package
+-- TODO: recursion-schemes extension in separate package
+ifL :: Fix Lambda -> Fix Lambda -> Fix Lambda -> Fix Lambda
 ifL a b c = Fix (If a b c)
+tr, fl :: Fix Lambda
 tr = Fix $ Bool True
 fl = Fix $ Bool False

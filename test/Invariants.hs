@@ -187,6 +187,11 @@ instance Arbitrary Name where
 
 instance Num (Pattern SimpleExpr) where
     fromInteger = NonVariablePattern . SE . Const . fromInteger
+    (+) = error "Should use @Expr or have other way to switch analysis"
+    (*) = error "Should use @Expr or have other way to switch analysis"
+    (-) = error "Should use @Expr or have other way to switch analysis"
+    abs = error "Should use @Expr or have other way to switch analysis"
+    signum = error "Should use @Expr or have other way to switch analysis"
 
 invariants :: TestTree
 invariants = testGroup "Invariants"

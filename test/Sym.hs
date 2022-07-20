@@ -76,7 +76,6 @@ data UOp = Sin
          | Cos
          | Sqrt
          | Ln
-         | Negate
     deriving (Eq, Ord)
 
 instance Show BOp where
@@ -95,7 +94,6 @@ instance Show UOp where
         Cos -> "cos"
         Sqrt -> "√"
         Ln -> "ln"
-        Negate -> "-"
 
 instance {-# OVERLAPPING #-} Show (Fix Expr) where
     show = cata $ \case
@@ -117,7 +115,7 @@ instance Num (Fix Expr) where
     (-) a b = Fix (BinOp Sub a b)
     (*) a b = Fix (BinOp Mul a b)
     fromInteger = Fix . Const . fromInteger
-    negate = Fix . UnOp Negate
+    negate = Fix . BinOp Mul (fromInteger $ -1)
     abs = error "abs"
     signum = error "signum"
 
@@ -150,7 +148,6 @@ symCost = \case
     UnOp Cos e1 -> e1 + 20
     UnOp Sqrt e1 -> e1 + 30
     UnOp Ln   e1 -> e1 + 30
-    UnOp Negate e1 -> e1 + 5
     Sym _ -> 1
     Const _ -> 1
 
@@ -158,8 +155,8 @@ instance Num (Pattern Expr) where
     (+) a b = NonVariablePattern $ BinOp Add a b
     (-) a b = NonVariablePattern $ BinOp Sub a b
     (*) a b = NonVariablePattern $ BinOp Mul a b
-    negate x = NonVariablePattern $ UnOp Negate x
     fromInteger = NonVariablePattern . Const . fromInteger
+    negate = NonVariablePattern. BinOp Mul (fromInteger $ -1)
     abs = error "abs"
     signum = error "signum"
 
@@ -233,7 +230,6 @@ evalConstant = \case
     UnOp Cos e1 -> cos <$> e1
     UnOp Sqrt e1 -> sqrt <$> e1
     UnOp Ln   _  -> Nothing
-    UnOp Negate e1 -> (\e -> -e) <$> e1
     Sym _ -> Nothing
     Const x -> Just x
     
@@ -269,7 +265,7 @@ rewrites =
     , "x"+("y"+"z") := ("x"+"y")+"z" -- assoc add
     , "x"*("y"*"z") := ("x"*"y")*"z" -- assoc mul
 
-    , "x"-"y" := "x"+((-1)*"y") -- sub cannon
+    , "x"-"y" := "x"+(-1*"y") -- sub cannon
     , "x"/"y" := "x"*powP "y" (-1) :| is_not_zero "y" -- div cannon
 
     -- identities
@@ -310,25 +306,24 @@ rewrites =
 
     -- diff-power
     , diffP "x" (powP "f" "g") := powP "f" "g" * ((diffP "x" "f" * ("g" / "f")) +
-        (diffP "x" "g" * (lnP "f"))) :| is_not_zero "f" :| is_not_zero "g"
+        (diffP "x" "g" * lnP "f")) :| is_not_zero "f" :| is_not_zero "g"
 
     -- i-one
     , intP 1 "x" := "x"
 
     -- i power const
-    , intP (powP "x" "c") "x" := ((/) (powP "x" ((+) "c" 1)) ((+) "c" 1)) :| is_const "c"
+    , intP (powP "x" "c") "x" := (/) (powP "x" ((+) "c" 1)) ((+) "c" 1) :| is_const "c"
 
     , intP (cosP "x") "x" := sinP "x"
-    , intP (sinP "x") "x" := (-1) * (cosP "x")
+    , intP (sinP "x") "x" := (-1) * cosP "x"
 
-    , intP ("f" + "g") "x" := (intP "f" "x") + (intP "g" "x")
+    , intP ("f" + "g") "x" := intP "f" "x" + intP "g" "x"
 
-    , intP ("f" - "g") "x" := (intP "f" "x") - (intP "g" "x")
+    , intP ("f" - "g") "x" := intP "f" "x" - intP "g" "x"
 
-    , intP ("a" * "b") "x" := ((-) ((*) "a" (intP "b" "x")) (intP ((*) (diffP "x" "a") (intP "b" "x")) "x"))
+    , intP ("a" * "b") "x" := (-) ((*) "a" (intP "b" "x")) (intP ((*) (diffP "x" "a") (intP "b" "x")) "x")
 
-    -- Additional ad-hoc
-    , (-1)*"x" := -"x"
+    -- Additional ad-hoc: because of negate representations?
     , "a"-(-"b") := "a"+"b"
 
     ]
@@ -384,9 +379,8 @@ symTests = testGroup "Symbolic"
     , testCase "1+(a-a*(2-1)) = 1 (all + constant f.)" $
         rewrite ("a" - "a"*(4-1)) @?= "a"*(Fix . Const $ -2)
 
-    -- TODO: How ?
-    -- , testCase "x + x + x + x = 4*x" $
-    --     rewrite ("a"+"a"+"a"+"a") @?= "a"*4
+    , testCase "x + x + x + x = 4*x" $
+        rewrite ("a"+"a"+"a"+"a") @?= "a"*4
 
     , testCase "math powers" $
         rewrite (Fix (BinOp Pow 2 "x")*Fix (BinOp Pow 2 "y")) @?= Fix (BinOp Pow 2 ("x" + "y"))
@@ -397,8 +391,6 @@ symTests = testGroup "Symbolic"
     , testCase "d2" $
         rewrite (Fix $ BinOp Diff "a" "b") @?= 0
 
-    -- This only passes when defaultMatchLimit = 120, before I had 100
-    -- TODO back off scheduler not so good...
     , testCase "d3" $
         rewrite (Fix $ BinOp Diff "x" (1 + 2*"x")) @?= 2
 
@@ -418,10 +410,10 @@ symTests = testGroup "Symbolic"
         rewrite (Fix $ BinOp Integral (Fix $ BinOp Pow "x" 1) "x") @?= "x"
 
     , testCase "i4" $
-        rewrite (_i ((*) "x" (_cos "x")) "x") @?= ((+) (_cos "x") ((*) "x" (_sin "x")))
+        rewrite (_i ((*) "x" (_cos "x")) "x") @?= (+) (_cos "x") ((*) "x" (_sin "x"))
 
     , testCase "i5" $
-        rewrite (_i ((*) (_cos "x") "x") "x") @?= ((+) (_cos "x") ((*) "x" (_sin "x")))
+        rewrite (_i ((*) (_cos "x") "x") "x") @?= (+) (_cos "x") ((*) "x" (_sin "x"))
 
     -- TODO: How is this supposed to work ?
     -- , testCase "i6" $

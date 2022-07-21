@@ -20,6 +20,7 @@ import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 
 import Data.Equality.Utils
+import qualified Data.Equality.Graph.Memo as Memo
 import Data.Equality.Graph
 import Data.Equality.Matching.Database
 
@@ -67,15 +68,15 @@ ematch db patr =
 --     }
 -- @
 eGraphToDatabase :: Language l => EGraph l -> Database l
-eGraphToDatabase eg@EGraph{..} = M.foldrWithKey (addENodeToDB eg) (DB mempty) memo
+eGraphToDatabase eg@EGraph{..} = M.foldrWithKey (addENodeToDB eg) (DB mempty) (unwrapId <$> Memo.unMemo memo)
   where
 
     -- Add an enode in an e-graph, given its class, to a database
-    addENodeToDB :: Language l => EGraph l -> ENode l -> ClassId -> Database l -> Database l
+    addENodeToDB :: Language l => EGraph l -> ENode k l -> ClassId -> Database l -> Database l
     addENodeToDB _ enode classid (DB m) =
         -- ROMES:TODO map find
         -- Insert or create a relation R_f(i1,i2,...,in) for lang in which 
-        DB $ M.alter (populate (classid:children enode)) (operator enode) m
+        DB $ M.alter (populate (classid:fmap unwrapId (children enode))) (operator enode) m
 
     -- Populate or create a triemap given the population D_x (ClassIds)
     populate :: [ClassId] -> Maybe (Fix ClassIdMap) -> Maybe (Fix ClassIdMap)

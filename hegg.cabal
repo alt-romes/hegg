@@ -30,6 +30,8 @@ library
                       Data.Equality.Graph.Classes.Id,
                       Data.Equality.Graph.Nodes,
                       Data.Equality.Graph.Lens,
+                      Data.Equality.Graph.Memo,
+                      Data.Equality.Graph.ClassList,
                       Data.Equality.Matching,
                       Data.Equality.Matching.Database,
                       Data.Equality.Saturation,

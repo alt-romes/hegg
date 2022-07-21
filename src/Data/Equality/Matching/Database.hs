@@ -13,7 +13,7 @@ import qualified Data.IntMap as IM
 
 -- import GHC.Data.TrieMap
 
-import Data.Equality.Graph.Classes.Id
+import Data.Equality.Graph.Classes.Id (ClassId, ClassIdMap)
 import Data.Equality.Graph.Nodes
 import Data.Equality.Language
 import Data.Equality.Utils

@@ -14,6 +14,7 @@ import qualified Data.IntMap as IM
 import Control.Monad.State
 
 import Data.Equality.Utils
+import Data.Equality.Graph.ClassList
 import Data.Equality.Graph
 
 -- | A cost function is used to attribute a cost to representations in the
@@ -50,7 +51,7 @@ runExtraction = flip evalState mempty
 --
 -- Receives a class id, a cost function, and an e-graph
 extractBest :: Language lang
-            => EGraph lang -> CostFunction lang -> ClassId -> Fix lang
+            => EGraph lang -> CostFunction lang -> ClassId' k -> Fix lang
 extractBest g cost (flip find g -> i) = runExtraction $ do
 
     -- Use `egg`s strategy of find costs for all possible classes and then just
@@ -69,7 +70,7 @@ findCosts :: forall lang. Language lang
           => EGraph lang -> CostFunction lang -> Extraction lang ()
 findCosts g@EGraph{..} cost = do
 
-    modified <- forM (IM.toList classes) $ \(i, eclass) -> do
+    modified <- forM (IM.toList (unClassList classes)) $ \(i, eclass) -> do
         pass <- makePass eclass 
         currentCost <- gets (IM.lookup i)
         case (currentCost, pass) of
@@ -86,7 +87,7 @@ findCosts g@EGraph{..} cost = do
     if or modified
         then findCosts g cost
         else -- otherwise, finish with debug warnings
-            forM_ (IM.toList classes) $ \(i, _) -> do
+            forM_ (IM.toList (unClassList classes)) $ \(i, _) -> do
                 gets (IM.lookup i) >>= \case
                     Nothing -> error $ "Faild to compute cost for e-class " <> show i
                     Just _  -> return ()
@@ -107,25 +108,15 @@ findCosts g@EGraph{..} cost = do
 -- For a node to have a cost, all its (canonical) sub-classes have a cost and
 -- an associated better expression. We return the constructed best expression
 -- with its cost
-nodeTotalCost :: Traversable lang => EGraph lang -> CostFunction lang -> ENode lang -> Extraction lang (Maybe (Cost, Fix lang))
+nodeTotalCost :: Traversable lang => EGraph lang -> CostFunction lang -> ENode k lang -> Extraction lang (Maybe (Cost, Fix lang))
 nodeTotalCost g cost (Node n) = get >>= \m -> return $ do
-    expr <- Fix <$> traverse (fmap snd . (`IM.lookup` m) . flip find g) n
+    expr <- Fix <$> traverse (fmap snd . (`IM.lookup` m) . unwrapId . flip find g) n
     return (cata cost expr, expr)
 
 -- | Find the current best node and its cost in an equivalence class given only the class and the current extraction
 -- This is not necessarily the best node in the e-graph, only the best in the current extraction state
 --
 -- TODO: doesn't really need state here, just read
-findBest :: ClassId -> Extraction lang (Maybe (Cost, Fix lang))
-findBest i = gets (IM.lookup i)
-
--- Remove recursive e-nodes from e-class @x@
-remove :: Language lang => ClassId -> EGraph lang -> EGraph lang
-remove i g = snd $ runEGS g $
-    modifyClasses $ flip IM.update i $ \ec@(EClass {eClassNodes = nodes }) ->
-        Just ec { eClassNodes = S.filter (not . toRemove) nodes }
-            where
-                toRemove :: Language lang => ENode lang -> Bool
-                toRemove (children -> c) | i `elem` c = True
-                toRemove _ = False
+findBest :: ClassId' k -> Extraction lang (Maybe (Cost, Fix lang))
+findBest i = gets (IM.lookup (unwrapId i))
 

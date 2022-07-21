@@ -23,10 +23,12 @@ import qualified Data.Set    as S
 import qualified Data.IntMap as IM
 import qualified Data.Map    as M
 
+import Data.Equality.Graph.Memo
+import Data.Equality.Graph.ClassList
 import Data.Equality.Graph
 import Data.Equality.Saturation
 import Data.Equality.Matching
-import Data.Equality.Matching.Database
+import Data.Equality.Matching.Database hiding (ClassId)
 import Sym
 
 -- | Newtype deriving via Expr to be able to define a different analysis
@@ -48,7 +50,7 @@ instance Analysis SimpleExpr where
 patFoldAllClasses :: forall l. (Language l, Num (Pattern l))
                   => Fix l -> Integer -> Bool
 patFoldAllClasses expr i =
-    case IM.toList $ classes eg of
+    case IM.toList $ unClassList $ classes eg of
         [_] -> True
         _   -> False
     where
@@ -85,7 +87,7 @@ ematchSingletonVar v eg =
     let
         db = eGraphToDatabase eg
         matches = S.fromList $ map matchClassId $ ematch db (VariablePattern v)
-        eclasses = S.fromList $ map fst $ IM.toList $ classes eg
+        eclasses = S.fromList $ map fst $ IM.toList $ unClassList $ classes eg
     in
         matches == eclasses 
 
@@ -111,14 +113,14 @@ ematchSingletonVar v eg =
 hashConsInvariant :: forall l. Language l
                   => EGraph l -> Bool
 hashConsInvariant eg@EGraph{..} =
-    all f (IM.toList classes)
+    all f (IM.toList $ unClassList classes)
     where
       -- e-node 𝑛 ∈ 𝑀 [𝑎] ⇐⇒ 𝐻 [canonicalize(𝑛)] = find(𝑎)
-      f (i, EClass _ nodes _ _) = all g nodes
+      f (i, EClass _ nodes _ _) = all g (S.map loseNodeCanon nodes)
         where
-          g en = case M.lookup (canonicalize en eg) memo of
+          g en = case M.lookup (canonicalize en eg) $ unMemo memo of
             Nothing -> error "how can we not find canonical thing in map? :)" -- False
-            Just i' -> i' == find i eg 
+            Just i' -> i' == find (ClassId i) eg 
 
 benchSaturate :: forall l. Language l
               => [Rewrite l] -> (l Cost -> Cost) -> Fix l -> Bool

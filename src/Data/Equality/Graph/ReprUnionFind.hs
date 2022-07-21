@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
 {-|
 
 Union-find like data structure that defines equivalence classes of e-class ids
@@ -24,7 +25,7 @@ newtype ReprUnionFind = RUF (ClassIdMap Repr)
 -- @(x, Represented y)@ would mean x is represented by y
 -- @(x, Canonical)@ would mean x is canonical -- represents itself
 data Repr
-  = Represented {-# UNPACK #-} !ClassId -- ^ @Represented x@ is represented by @x@
+  = Represented {-# UNPACK #-} !(ClassId' 'Uncanon) -- ^ @Represented x@ is represented by @x@, an uncanonicalized id
   | Canonical -- ^ @Canonical x@ is the canonical representation, meaning @find(x) == x@
   deriving Show
 
@@ -36,22 +37,33 @@ emptyUF = RUF mempty
 
 -- | Create a new e-class id in the given 'ReprUnionFind'.
 makeNewSet :: ReprUnionFind
-           -> (ClassId, ReprUnionFind) -- ^ Newly created e-class id and updated 'ReprUnionFind'
-makeNewSet (RUF im) = (new_id, RUF $ IM.insert new_id Canonical im)
+           -> (ClassId' 'Canon, ReprUnionFind) -- ^ Newly created e-class id and updated 'ReprUnionFind'
+makeNewSet (RUF im) = (ClassId new_id, RUF $ IM.insert new_id Canonical im)
     where
         new_id = IM.size im
 
 -- | Union operation of the union find.
 --
 -- Given two leader ids, unions the two eclasses making root1 the leader.
-unionSets :: ClassId -> ClassId -> ReprUnionFind -> (ClassId, ReprUnionFind)
-unionSets a b (RUF im) = (a, RUF $ IM.update (\case Canonical -> Just $ Represented a; Represented _ -> error "unionSets should be called on canonical ids") b im)
+--
+-- TODO: Remove panic with types! Lookup with Uncanon should always result in
+-- Represented and vice versa
+unionSets :: ClassId' 'Canon -> ClassId' 'Canon -> ReprUnionFind -> (ClassId' 'Canon, ReprUnionFind)
+unionSets a (ClassId b) (RUF im) =
+    ( a
+    , RUF $ IM.update
+        (\case Canonical     -> pure (Represented (ClassId $ fromCanon a))
+               Represented _ -> error "impossible: b is proved to be canon")
+        b im
+    )
 
 -- | Find the canonical representation of an e-class id
-findRepr :: ClassId -> ReprUnionFind -> Maybe ClassId
-findRepr v (RUF m) =
+--
+-- TODO: Should be just from uncanon nodes?
+findRepr :: ClassId' k -> ReprUnionFind -> Maybe (ClassId' 'Canon)
+findRepr (ClassId v) (RUF m) =
     -- ROMES:TODO: Path compression in immutable data structure? Is it worth
     -- the copy + threading?
     IM.lookup v m >>= \case
         Represented x -> findRepr x (RUF m)
-        Canonical     -> Just v
+        Canonical     -> Just (ClassId v)

@@ -1,4 +1,7 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE DataKinds #-}
 {-|
 
 Definition of e-nodes, instances and some operations on them.
@@ -11,6 +14,7 @@ module Data.Equality.Graph.Nodes where
 
 import Data.Functor.Classes
 import Data.Foldable
+import Data.Kind
 
 import Control.Monad (void)
 
@@ -26,7 +30,12 @@ import Data.Equality.Graph.Classes.Id
 -- When @l@ is an expression-like data type, @ENode l = l ClassId@ means every
 -- recursive field (so, every argument passed to this expr) is a 'ClassId'
 -- rather than an explicit expression
-newtype ENode l = Node { unNode :: l ClassId }
+--
+-- An e-node carries a type indicating whether the node is canonicalized or
+-- not. The 'Memo' structure requires that e-nodes prove to be canonicalized on
+-- lookup and insertion
+type ENode :: Canonicality -> (Type -> Type) -> Type
+newtype ENode k l = Node { unNode :: l (ClassId' k) }
 
 -- | Operator
 --
@@ -35,22 +44,30 @@ newtype ENode l = Node { unNode :: l ClassId }
 newtype Operator l = Operator { unOperator :: l () }
 
 -- | Get the children class ids of an e-node
-children :: Traversable l => ENode l -> [ClassId]
+children :: Traversable l => ENode k l -> [ClassId' k]
 children = toList . unNode
 {-# INLINE children #-}
 
 -- | Get the operator (function symbol) of an e-node
-operator :: Traversable l => ENode l -> Operator l
+operator :: Traversable l => ENode k l -> Operator l
 operator = Operator . void . unNode
 {-# INLINE operator #-}
 
-instance Eq1 l => (Eq (ENode l)) where
+loseNodeCanon :: Functor l => ENode k1 l -> ENode k2 l
+loseNodeCanon = \case
+    Node l -> Node (fmap (ClassId . unwrapId) l)
+{-# INLINE loseNodeCanon #-}
+
+
+-- Instances
+
+instance Eq1 l => (Eq (ENode k l)) where
     (==) (Node a) (Node b) = liftEq (==) a b
 
-instance Ord1 l => (Ord (ENode l)) where
+instance Ord1 l => (Ord (ENode k l)) where
     compare (Node a) (Node b) = liftCompare compare a b
 
-instance Show1 l => (Show (ENode l)) where
+instance Show1 l => (Show (ENode k l)) where
     showsPrec p (Node l) = liftShowsPrec showsPrec showList p l
 
 instance Eq1 l => (Eq (Operator l)) where

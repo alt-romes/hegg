@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -233,10 +234,10 @@ evalConstant = \case
     Sym _ -> Nothing
     Const x -> Just x
     
-unsafeGetSubst :: String -> Subst -> ClassId
+unsafeGetSubst :: String -> Subst -> ClassId' k
 unsafeGetSubst v subst = case L.lookup v subst of
       Nothing -> error "Searching for non existent bound var in conditional"
-      Just class_id -> class_id
+      Just class_id -> ClassId class_id
 
 is_not_zero :: String -> RewriteCondition Expr
 is_not_zero v subst egr =
@@ -265,7 +266,7 @@ rewrites =
     , "x"+("y"+"z") := ("x"+"y")+"z" -- assoc add
     , "x"*("y"*"z") := ("x"*"y")*"z" -- assoc mul
 
-    , "x"-"y" := "x"+(-1*"y") -- sub cannon
+    , "x"-"y" := "x"+(-"y") -- sub cannon
     , "x"/"y" := "x"*powP "y" (-1) :| is_not_zero "y" -- div cannon
 
     -- identities
@@ -273,9 +274,9 @@ rewrites =
     , "x"*0 := 0
     , "x"*1 := "x"
 
-    -- TODO: This collapses all classes...
+    -- TODO: This makes results wrong
     -- , "x" := "x"+0
-    -- , "x" := "x"*1
+    , "x" := "x"*1
 
     , "a"-"a" := 1 -- cancel sub
     , "a"/"a" := 1 :| is_not_zero "a" -- cancel div

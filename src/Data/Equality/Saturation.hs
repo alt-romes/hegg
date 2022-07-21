@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -23,7 +24,6 @@ module Data.Equality.Saturation
 
 import GHC.Conc
 
-import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 
 import Data.Bifunctor
@@ -33,6 +33,8 @@ import Control.Monad.State
 import Data.Proxy
 
 import Data.Equality.Utils
+import qualified Data.Equality.Graph.Memo as M
+import qualified Data.Equality.Graph.ClassList as CL
 import Data.Equality.Graph
 import Data.Equality.Matching
 import Data.Equality.Extraction
@@ -101,7 +103,7 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
             -- ROMES:TODO Better saturation (see Runner)
             -- Apply rewrites until saturated or ROMES:TODO: timeout
             unless (M.size afterMemo == M.size beforeMemo
-                      && IM.size afterClasses == IM.size beforeClasses)
+                      && CL.size afterClasses == CL.size beforeClasses)
                 (equalitySaturation'' (i+1) newStats)
 
         matchWithScheduler :: Database l -> Int -> IM.IntMap (Stat schd) -> (Int, Rewrite l) -> ([(Rewrite l, Match)], IM.IntMap (Stat schd))
@@ -140,7 +142,7 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
                     case lookup v subst of
                       Nothing -> error "impossible: couldn't find v in subst"
                       Just n  -> do
-                          _ <- merge n eclass
+                          _ <- merge (ClassId n) (ClassId eclass)
                           return ()
 
                 (_ := NonVariablePattern rhs, Match subst eclass) -> do
@@ -149,16 +151,16 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
                     -- e-class that represents it), then merge the e-class of the
                     -- substituted rhs with the class that matched the left hand side
                     eclass' <- reprPat subst rhs
-                    _ <- merge eclass eclass'
+                    _ <- merge (ClassId eclass) eclass'
                     return ()
 
         -- | Represent a pattern in the e-graph a pattern given substitions
-        reprPat :: Subst -> l (Pattern l) -> EGS l ClassId
+        reprPat :: Subst -> l (Pattern l) -> EGS l (ClassId' 'Canon)
         reprPat subst = add . Node <=< traverse \case
             VariablePattern v ->
                 case lookup v subst of
                     Nothing -> error "impossible: couldn't find v in subst?"
-                    Just i  -> return i
+                    Just i  -> return (ClassId i)
             NonVariablePattern p -> reprPat subst p
 
 -- We don't have the parallel package, so roll our own simple parMap

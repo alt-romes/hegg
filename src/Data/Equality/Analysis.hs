@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-} -- joinA
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-|
@@ -31,7 +32,7 @@ class Eq (Domain l) => Analysis l where
     -- | When a new e-node is added into a new, singleton e-class, construct a
     -- new value of the domain to be associated with the new e-class, typically
     -- by accessing the associated data of n's children
-    makeA :: ENode l -> EGraph l -> Domain l
+    makeA :: ENode 'Canon l -> EGraph l -> Domain l
 
     -- | When e-classes c1 c2 are being merged into c, join d_c1 and
     -- d_c2 into a new value d_c to be associated with the new
@@ -55,5 +56,5 @@ class Eq (Domain l) => Analysis l where
     --  modify (_class i._nodes %~ S.filter (null . children))
     --  get >>= \egr2 -> addToWorklist (egr2^._class i._parents)
     -- @
-    modifyA :: ClassId -> EGraph l -> EGraph l
+    modifyA :: ClassId' 'Canon -> EGraph l -> EGraph l
     modifyA _ = id

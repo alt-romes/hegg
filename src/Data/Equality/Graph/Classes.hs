@@ -1,4 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-|
    Equivalence classes
@@ -21,11 +23,13 @@ import Data.Equality.Analysis
 --
 -- @cid@ type of e-class ids
 -- @nid@ type of e-node ids
-data EClass l = EClass
+--
+-- TODO: REVIEW Canonicality
+data EClass l = forall k. EClass
     { eClassId      :: {-# UNPACK #-} !ClassId -- ^ E-class Id
-    , eClassNodes   :: !(S.Set (ENode l))      -- ^ E-nodes in this class
+    , eClassNodes   :: !(S.Set (ENode k l))      -- ^ E-nodes in this class
     , eClassData    :: Domain l                -- ^ The analysis data associated with this eclass.
-    , eClassParents :: ![(ENode l, ClassId)]   -- ^ E-nodes which are parents of (reference) this e-class and their e-class ids. (See EGraph.ENode for why @s ClassId@)
+    , eClassParents :: ![(ENode 'Canon l, ClassId' 'Canon)]   -- ^ E-nodes which are parents of (reference) this e-class and their e-class ids. (See EGraph.ENode for why @s ClassId@)
     }
 
 instance (Show (Domain l), Show1 l) => Show (EClass l) where

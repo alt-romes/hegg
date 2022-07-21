@@ -111,7 +111,15 @@ add uncanon_e = do
         -- upward merged. I think it's a good compromise for requiring the user
         -- to do this. Adding the added node to the worklist everytime creates
         -- too much unnecessary work.
-        -- addToWorklist [(new_en, new_eclass_id)]
+        --
+        -- Actually I've found more bugs regarding this, and can't fix them
+        -- there, so indeed this seems to be necessary for sanity with 'modifyA'
+        --
+        -- This way we also liberate the user from caring about the worklist
+        --
+        -- The hash cons invariants test suffer from this greatly but the
+        -- saturation tests seem mostly fine?
+        addToAnalysisWorklist [(new_en, new_eclass_id)]
 
         -- Add new e-class to existing e-classes
         modifyClasses (IM.insert new_eclass_id new_eclass)

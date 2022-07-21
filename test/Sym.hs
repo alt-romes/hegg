@@ -211,8 +211,6 @@ instance Analysis Expr where
 
             -- Prune all except leaf e-nodes
             modify (_class i._nodes %~ S.filter (null . children))
-            egr2 <- get
-            addToWorklist (egr2^._class i._parents)
 
 
 
@@ -265,7 +263,7 @@ rewrites =
     , "x"+("y"+"z") := ("x"+"y")+"z" -- assoc add
     , "x"*("y"*"z") := ("x"*"y")*"z" -- assoc mul
 
-    , "x"-"y" := "x"+(-1*"y") -- sub cannon
+    , "x"-"y" := "x"+(-"y") -- sub cannon
     , "x"/"y" := "x"*powP "y" (-1) :| is_not_zero "y" -- div cannon
 
     -- identities
@@ -275,7 +273,7 @@ rewrites =
 
     -- TODO: This collapses all classes...
     -- , "x" := "x"+0
-    -- , "x" := "x"*1
+    , "x" := "x"*1
 
     , "a"-"a" := 1 -- cancel sub
     , "a"/"a" := 1 :| is_not_zero "a" -- cancel div
@@ -342,7 +340,7 @@ symTests = testGroup "Symbolic"
         rewrite (("a"/2)*2) @?= "a"
 
     , testCase "(a+a)/2 = a (extra rules)" $
-        fst (equalitySaturation (("a"+"a")/2) (["x"+"x" := 2*"x"] <> rewrites) symCost) @?= "a"
+        rewrite (("a"+"a")/2) @?= "a"
 
     , testCase "x/y (custom rules)" $
         -- without backoff scheduler this will loop forever

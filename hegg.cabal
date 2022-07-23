@@ -48,7 +48,7 @@ library
 
     -- LANGUAGE extensions used by modules in this package.
     build-depends:    base >= 4.4 && < 5,
-                      mtl, containers
+                      mtl, containers, array
     if flag(vizdot)
         build-depends: graphviz
     hs-source-dirs:   src

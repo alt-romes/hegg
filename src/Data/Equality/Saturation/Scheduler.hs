@@ -79,6 +79,7 @@ instance Scheduler BackoffScheduler where
           updateBans = \case
             Nothing -> Just (BSS (i + ban_length) 1)
             Just (BSS _ n)  -> Just (BSS (i + ban_length) (n+1))
+    {-# SCC updateStats #-}
 
     isBanned i s = i < bannedUntil s
 

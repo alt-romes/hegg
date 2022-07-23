@@ -160,6 +160,7 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
                     Nothing -> error "impossible: couldn't find v in subst?"
                     Just i  -> return i
             NonVariablePattern p -> reprPat subst p
+{-# SCC equalitySaturation' #-}
 
 -- We don't have the parallel package, so roll our own simple parMap
 parMap :: (a -> b) -> [a] -> [b]

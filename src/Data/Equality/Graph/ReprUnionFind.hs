@@ -55,3 +55,5 @@ findRepr v (RUF m) =
     IM.lookup v m >>= \case
         Represented x -> findRepr x (RUF m)
         Canonical     -> Just v
+{-# SCC findRepr #-}
+

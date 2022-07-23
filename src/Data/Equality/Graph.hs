@@ -136,6 +136,7 @@ add uncanon_e = do
         modify (modifyA new_eclass_id)
 
         return new_eclass_id
+{-# SCC add #-}
 
 
 -- | Merge 2 e-classes by id
@@ -202,6 +203,7 @@ merge a b = get >>= \egr0 -> do
 
            modify (modifyA new_id)
            return new_id
+{-# SCC merge #-}
             
 
 -- | Canonicalize an E-Node
@@ -238,6 +240,7 @@ rebuild = do
     wl'  <- gets worklist
     awl' <- gets analysisWorklist
     unless (null wl' && null awl') rebuild
+{-# SCC rebuild #-}
 
 repair :: forall l. Language l => (ENode l, ClassId) -> EGS l ()
 repair (node, repair_id) = do
@@ -254,6 +257,7 @@ repair (node, repair_id) = do
           modify (_memo .~ egrMemo1)
           _ <- merge existing_class repair_id
           return ()
+{-# SCC repair #-}
 
 repairAnal :: forall l. Language l => (ENode l, ClassId) -> EGS l ()
 repairAnal (node, repair_id) = do
@@ -272,6 +276,7 @@ repairAnal (node, repair_id) = do
         put (egr & _class canon_id._data .~ new_data)
         addToAnalysisWorklist (c^._parents)
         modify (modifyA canon_id)
+{-# SCC repairAnal #-}
 
 
 

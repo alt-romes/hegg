@@ -101,6 +101,7 @@ genericJoin d q@(Query qv atoms)
                            Var vi
                              | vi == r -> ClassId i
                            vi -> vi
+{-# SCC genericJoin #-}
 
 elemOfAtom :: Foldable lang => Var -> Atom lang -> Bool
 elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
@@ -160,4 +161,5 @@ intersectAtoms var (DB db) atoms =
 
         subst :: Var -> ClassId -> [ClassIdOrVar] -> [ClassIdOrVar]
         subst v i = map (\case Var v' | v == v' -> ClassId i; x -> x)
+{-# SCC intersectAtoms #-}
 

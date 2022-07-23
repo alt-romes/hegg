@@ -93,6 +93,7 @@ eGraphToDatabase eg@EGraph{..} = M.foldrWithKey (addENodeToDB eg) (DB mempty) me
         alterPopulation ids Nothing = Just $ populate' ids (Fix mempty)
         -- If trie map entry already exists, populate the existing map with the remaining ids
         alterPopulation ids (Just f) = Just $ populate' ids f
+{-# SCC eGraphToDatabase #-}
 
 
 
@@ -156,6 +157,7 @@ compileToQuery = flip evalState 0 . compile_to_query'
                     -- taking from the bound vars array
                     subPatsToVars :: Traversable lang => lang (Pattern lang) -> [Var] -> State Int (lang Var)
                     subPatsToVars p' boundVars = traverse (const $ (boundVars !!) <$> next) p'
+{-# SCC compileToQuery #-}
 
 fresh :: State Int String
 fresh = ('$':) . ('~':) . (letters !!) <$> next

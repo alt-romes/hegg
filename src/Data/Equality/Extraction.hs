@@ -63,6 +63,7 @@ extractBest g cost (flip find g -> i) = runExtraction $ do
     findBest i >>= \case
         Just (_,n) -> return n
         Nothing    -> error $ "Couldn't find a best node for e-class " <> show i
+{-# SCC extractBest #-}
 
 -- | Find the lowest cost of all e-classes in an e-graph in an extraction
 findCosts :: forall lang. Language lang
@@ -100,6 +101,7 @@ findCosts g@EGraph{..} cost = do
           where
             getBest []    = Nothing -- No costs exist for this class, fail to assign a cost
             getBest (x:_) = Just x  -- Cost is the lowest found (list is sorted)
+{-# SCC findCosts #-}
 
 -- | Get the total cost of a node in an e-graph if possible at this stage of
 -- the extraction

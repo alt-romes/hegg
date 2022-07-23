@@ -1,16 +1,16 @@
-	Sat Jul 23 11:40 2022 Time and Allocation Profiling Report  (Final)
+	Sat Jul 23 12:01 2022 Time and Allocation Profiling Report  (Final)
 
 	   hegg-test +RTS -p -RTS
 
-	total time  =        7.56 secs   (7558 ticks @ 1000 us, 1 processor)
-	total alloc = 15,610,248,680 bytes  (excludes profiling overheads)
+	total time  =        5.10 secs   (5096 ticks @ 1000 us, 1 processor)
+	total alloc = 15,648,365,616 bytes  (excludes profiling overheads)
 
-COST CENTRE                                    MODULE                          SRC                                              %time %alloc
+COST CENTRE                                    MODULE                          SRC                                               %time %alloc
 
-Data.Equality.Matching.Database.intersectAtoms Data.Equality.Matching.Database src/Data/Equality/Matching/Database.hs:117:1-14   56.1   93.1
-clearWorkList                                  Data.Equality.Graph             src/Data/Equality/Graph.hs:(289,1)-(292,21)       18.7    0.0
-liftEq                                         Sym                             test/Sym.hs:(36,5)-(41,18)                        13.2    0.0
-==                                             Sym                             test/Sym.hs:73:19-20                               1.8    0.0
+Data.Equality.Matching.Database.intersectAtoms Data.Equality.Matching.Database src/Data/Equality/Matching/Database.hs:117:1-14    84.9   93.0
+liftCompare                                    Sym                             test/Sym.hs:(44,5)-(62,25)                          1.7    0.0
+nodeTotalCost                                  Data.Equality.Extraction        src/Data/Equality/Extraction.hs:(113,1)-(115,33)    1.3    0.7
+Data.Equality.Matching.Database.genericJoin    Data.Equality.Matching.Database src/Data/Equality/Matching/Database.hs:78:1-11      1.2    1.0
 
 
                                                                                                                                                                            individual      inherited
@@ -34,255 +34,269 @@ MAIN                                                         MAIN               
    cosP                                                      Sym                               test/Sym.hs:177:1-40                                     842           1    0.0    0.0     0.0    0.0
    sinP                                                      Sym                               test/Sym.hs:180:1-40                                     841           1    0.0    0.0     0.0    0.0
    fromInteger                                               Sym                               test/Sym.hs:158:5-58                                     708           0    0.0    0.0     0.0    0.0
-  show                                                       Sym                               test/Sym.hs:(82,5)-(89,23)                              1105           1    0.0    0.0     0.0    0.0
+  show                                                       Sym                               test/Sym.hs:(82,5)-(89,23)                              1123           1    0.0    0.0     0.0    0.0
   show                                                       Sym                               test/Sym.hs:(99,5)-(105,18)                              538           1    0.0    0.0     0.0    0.0
-  symCost                                                    Sym                               test/Sym.hs:(139,1)-(152,16)                            1100           1    0.0    0.0     0.0    0.0
+  symCost                                                    Sym                               test/Sym.hs:(139,1)-(152,16)                            1118           1    0.0    0.0     0.0    0.0
   modifyA                                                    Sym                               test/Sym.hs:(203,5)-(213,66)                             593           0    0.0    0.0     0.0    0.0
-   represent                                                 Data.Equality.Graph               src/Data/Equality/Graph.hs:78:1-42                       594           1    0.0    0.0     0.0    0.0
+   represent                                                 Data.Equality.Graph               src/Data/Equality/Graph.hs:77:1-42                       594           1    0.0    0.0     0.0    0.0
  CAF                                                         Main                              <entire-module>                                          532           0    0.0    0.0   100.0  100.0
   main                                                       Main                              test/Test.hs:(20,1)-(21,74)                              536           1    0.0    0.0   100.0  100.0
    rewrite                                                   Sym                               test/Sym.hs:330:1-55                                     542           1    0.0    0.0   100.0  100.0
     equalitySaturation                                       Data.Equality.Saturation          src/Data/Equality/Saturation.hs:49:1-66                  543           1    0.0    0.0   100.0  100.0
      equalitySaturation'                                     Data.Equality.Saturation          src/Data/Equality/Saturation.hs:(63,1)-(162,51)          544           1    0.0    0.0   100.0  100.0
       Data.Equality.Saturation.equalitySaturation'           Data.Equality.Saturation          src/Data/Equality/Saturation.hs:63:1-19                  545           1    0.0    0.0   100.0  100.0
-       represent                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:78:1-42                       548           1    0.0    0.0     0.0    0.0
+       represent                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:77:1-42                       548           1    0.0    0.0     0.0    0.0
         fmap                                                 Sym                               test/Sym.hs:31:33-39                                     551           5    0.0    0.0     0.0    0.0
          traverse                                            Sym                               test/Sym.hs:32:34-44                                     555           4    0.0    0.0     0.0    0.0
          unFix                                               Data.Equality.Utils               src/Data/Equality/Utils.hs:6:23-27                       556           4    0.0    0.0     0.0    0.0
         traverse                                             Sym                               test/Sym.hs:32:34-44                                     550           1    0.0    0.0     0.0    0.0
         unFix                                                Data.Equality.Utils               src/Data/Equality/Utils.hs:6:23-27                       552           1    0.0    0.0     0.0    0.0
-       runEGS                                                Data.Equality.Graph               src/Data/Equality/Graph.hs:41:1-22                       547           0    0.1    0.0   100.0  100.0
-        traverse                                             Sym                               test/Sym.hs:32:34-44                                     702       50473    0.3    0.2     1.7    0.6
-         add                                                 Data.Equality.Graph               src/Data/Equality/Graph.hs:(84,1)-(138,28)               703       34055    0.0    0.0     1.4    0.4
-          Data.Equality.Graph.add                            Data.Equality.Graph               src/Data/Equality/Graph.hs:84:1-3                        704       34055    0.4    0.1     1.4    0.4
-           liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               707      457098    0.1    0.0     0.2    0.0
-            compare                                          Sym                               test/Sym.hs:73:23-25                                     856      393557    0.0    0.0     0.0    0.0
-            compare                                          Sym                               test/Sym.hs:79:19-21                                    1075        1223    0.0    0.0     0.0    0.0
-           canonicalize                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:218:1-60                      705       34055    0.0    0.0     0.1    0.0
-            fmap                                             Sym                               test/Sym.hs:31:33-39                                     706       34055    0.0    0.0     0.1    0.0
-             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              877       58449    0.0    0.0     0.1    0.0
-              findRepr                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  879       60573    0.0    0.0     0.1    0.0
-               Data.Equality.Graph.ReprUnionFind.findRepr    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          880       60573    0.0    0.0     0.0    0.0
-              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       878       58449    0.0    0.0     0.0    0.0
-           getClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              875       24506    0.2    0.0     0.3    0.0
-            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       976       24506    0.0    0.0     0.0    0.0
-            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              876       24506    0.0    0.0     0.0    0.0
+       runEGS                                                Data.Equality.Graph               src/Data/Equality/Graph.hs:40:1-22                       547           0    0.1    0.0   100.0  100.0
+        traverse                                             Sym                               test/Sym.hs:32:34-44                                     702       50595    0.4    0.2     2.6    0.7
+         add                                                 Data.Equality.Graph               src/Data/Equality/Graph.hs:(83,1)-(137,28)               703       34114    0.0    0.0     2.2    0.5
+          Data.Equality.Graph.add                            Data.Equality.Graph               src/Data/Equality/Graph.hs:83:1-3                        704       34114    0.4    0.1     2.2    0.5
+           liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               707      451541    0.4    0.0     0.4    0.0
+            compare                                          Sym                               test/Sym.hs:73:23-25                                     856      391530    0.0    0.0     0.0    0.0
+            compare                                          Sym                               test/Sym.hs:79:19-21                                    1093        1223    0.0    0.0     0.0    0.0
+           canonicalize                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:217:1-60                      705       34114    0.0    0.0     0.2    0.0
+            fmap                                             Sym                               test/Sym.hs:31:33-39                                     706       34114    0.0    0.0     0.2    0.0
+             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              877       58443    0.1    0.0     0.2    0.0
+              findRepr                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  879       60602    0.0    0.0     0.1    0.0
+               Data.Equality.Graph.ReprUnionFind.findRepr    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          880       60602    0.1    0.0     0.1    0.0
+              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       878       58443    0.0    0.0     0.0    0.0
+           getClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              875       24506    0.3    0.0     0.4    0.0
+            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       985       24506    0.0    0.0     0.0    0.0
+            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              876       24506    0.0    0.0     0.0    0.0
              findRepr                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  882       24506    0.0    0.0     0.0    0.0
               Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          883       24506    0.0    0.0     0.0    0.0
-             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       881       24506    0.0    0.0     0.0    0.0
-           setClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:317:1-64                      869       24506    0.1    0.1     0.1    0.1
-            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       874       24506    0.0    0.0     0.0    0.0
-           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              742       21799    0.0    0.0     0.0    0.0
-            findRepr                                         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  744       22666    0.0    0.0     0.0    0.0
-             Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          745       22666    0.0    0.0     0.0    0.0
-            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       743       21799    0.0    0.0     0.0    0.0
+             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       881       24506    0.0    0.0     0.0    0.0
+           setClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:316:1-64                      869       24506    0.1    0.1     0.1    0.1
+            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       874       24506    0.0    0.0     0.0    0.0
+           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              742       21858    0.0    0.0     0.0    0.0
+            findRepr                                         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  744       22193    0.0    0.0     0.0    0.0
+             Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          745       22193    0.0    0.0     0.0    0.0
+            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       743       21858    0.0    0.0     0.0    0.0
            modifyA                                           Sym                               test/Sym.hs:(203,5)-(213,66)                             863       12257    0.0    0.0     0.0    0.0
-            getClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              864       12261    0.0    0.0     0.0    0.0
-             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       872       12261    0.0    0.0     0.0    0.0
-             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              865       12261    0.0    0.0     0.0    0.0
+            getClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              864       12261    0.0    0.0     0.0    0.0
+             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       872       12261    0.0    0.0     0.0    0.0
+             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              865       12261    0.0    0.0     0.0    0.0
               findRepr                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  870       12261    0.0    0.0     0.0    0.0
                Data.Equality.Graph.ReprUnionFind.findRepr    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          871       12261    0.0    0.0     0.0    0.0
-              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       868       12261    0.0    0.0     0.0    0.0
+              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       868       12261    0.0    0.0     0.0    0.0
             foldr                                            Sym                               test/Sym.hs:32:24-31                                     918           5    0.0    0.0     0.0    0.0
             liftCompare                                      Sym                               test/Sym.hs:(44,5)-(62,25)                               930           5    0.0    0.0     0.0    0.0
             unNode                                           Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31                919           5    0.0    0.0     0.0    0.0
-            merge                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(144,1)-(205,24)              901           4    0.0    0.0     0.0    0.0
-             Data.Equality.Graph.merge                       Data.Equality.Graph               src/Data/Equality/Graph.hs:144:1-5                       902           4    0.0    0.0     0.0    0.0
-              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              903           8    0.0    0.0     0.0    0.0
+            merge                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(143,1)-(204,24)              901           4    0.0    0.0     0.0    0.0
+             Data.Equality.Graph.merge                       Data.Equality.Graph               src/Data/Equality/Graph.hs:143:1-5                       902           4    0.0    0.0     0.0    0.0
+              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              903           8    0.0    0.0     0.0    0.0
                findRepr                                      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  908           8    0.0    0.0     0.0    0.0
                 Data.Equality.Graph.ReprUnionFind.findRepr   Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          909           8    0.0    0.0     0.0    0.0
-               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       904           8    0.0    0.0     0.0    0.0
-              getClass                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              911           3    0.0    0.0     0.0    0.0
-               find                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              912           3    0.0    0.0     0.0    0.0
+               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       904           8    0.0    0.0     0.0    0.0
+              getClass                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              911           3    0.0    0.0     0.0    0.0
+               find                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              912           3    0.0    0.0     0.0    0.0
                 findRepr                                     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  914           3    0.0    0.0     0.0    0.0
                  Data.Equality.Graph.ReprUnionFind.findRepr  Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          915           3    0.0    0.0     0.0    0.0
-                unionFind                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       913           3    0.0    0.0     0.0    0.0
-               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       916           2    0.0    0.0     0.0    0.0
-              addToWorklist                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:(284,1)-(285,57)              922           1    0.0    0.0     0.0    0.0
-               worklist                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-14                       958           1    0.0    0.0     0.0    0.0
+                unionFind                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       913           3    0.0    0.0     0.0    0.0
+               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       916           2    0.0    0.0     0.0    0.0
+              addToWorklist                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:(283,1)-(284,57)              922           1    0.0    0.0     0.0    0.0
+               worklist                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-14                       941           1    0.0    0.0     0.0    0.0
               joinA                                          Sym                               test/Sym.hs:(194,5)-(201,16)                             923           1    0.0    0.0     0.0    0.0
-              mergeUnionFindClasses                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(330,1)-(334,17)              920           1    0.0    0.0     0.0    0.0
-               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       925           1    0.0    0.0     0.0    0.0
+              mergeUnionFindClasses                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(329,1)-(333,17)              920           1    0.0    0.0     0.0    0.0
+               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       925           1    0.0    0.0     0.0    0.0
                unionSets                                     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:48:1-168        926           1    0.0    0.0     0.0    0.0
-              modifyClasses                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:338:1-68                      921           1    0.0    0.0     0.0    0.0
-               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       929           1    0.0    0.0     0.0    0.0
-              modifyMemo                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:341:1-59                      924           1    0.0    0.0     0.0    0.0
-               memo                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-10                       931           1    0.0    0.0     0.0    0.0
-              setClass                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:317:1-64                      927           1    0.0    0.0     0.0    0.0
-               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       928           1    0.0    0.0     0.0    0.0
-            setClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:317:1-64                      910           4    0.0    0.0     0.0    0.0
-             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       917           4    0.0    0.0     0.0    0.0
-            represent                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:78:1-42                       893           0    0.0    0.0     0.0    0.0
+              modifyClasses                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:337:1-68                      921           1    0.0    0.0     0.0    0.0
+               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       929           1    0.0    0.0     0.0    0.0
+              modifyMemo                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:340:1-59                      924           1    0.0    0.0     0.0    0.0
+               memo                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-10                       931           1    0.0    0.0     0.0    0.0
+              setClass                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:316:1-64                      927           1    0.0    0.0     0.0    0.0
+               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       928           1    0.0    0.0     0.0    0.0
+            setClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:316:1-64                      910           4    0.0    0.0     0.0    0.0
+             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       917           4    0.0    0.0     0.0    0.0
+            represent                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:77:1-42                       893           0    0.0    0.0     0.0    0.0
              fmap                                            Sym                               test/Sym.hs:31:33-39                                     894           4    0.0    0.0     0.0    0.0
              unFix                                           Data.Equality.Utils               src/Data/Equality/Utils.hs:6:23-27                       895           4    0.0    0.0     0.0    0.0
-           addToWorklist                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:(284,1)-(285,57)              860       12256    0.0    0.0     0.0    0.0
-            worklist                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-14                       957       12256    0.0    0.0     0.0    0.0
+           addToWorklist                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:(283,1)-(284,57)              860       12256    0.2    0.1     0.3    0.1
+            liftCompare                                      Sym                               test/Sym.hs:(44,5)-(62,25)                               949      165505    0.1    0.0     0.1    0.0
+             compare                                         Sym                               test/Sym.hs:73:23-25                                     950      165486    0.0    0.0     0.0    0.0
+            worklist                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-14                       940       12256    0.0    0.0     0.0    0.0
+            modifyA                                          Sym                               test/Sym.hs:(203,5)-(213,66)                             951           0    0.0    0.0     0.0    0.0
+             represent                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:77:1-42                       952           0    0.0    0.0     0.0    0.0
+              liftCompare                                    Sym                               test/Sym.hs:(44,5)-(62,25)                               953           4    0.0    0.0     0.0    0.0
            foldr                                             Sym                               test/Sym.hs:32:24-31                                     858       12256    0.0    0.0     0.0    0.0
            makeA                                             Sym                               test/Sym.hs:191:5-73                                     884       12256    0.0    0.0     0.0    0.0
             fmap                                             Sym                               test/Sym.hs:31:33-39                                     886       12256    0.0    0.0     0.0    0.0
-             getClass                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              887        9044    0.0    0.0     0.0    0.0
-              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       892        9044    0.0    0.0     0.0    0.0
-              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              888        9044    0.0    0.0     0.0    0.0
+             getClass                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              887        9044    0.0    0.0     0.0    0.0
+              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       892        9044    0.0    0.0     0.0    0.0
+              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              888        9044    0.0    0.0     0.0    0.0
                findRepr                                      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  890        9044    0.0    0.0     0.0    0.0
                 Data.Equality.Graph.ReprUnionFind.findRepr   Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          891        9044    0.0    0.0     0.0    0.0
-               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       889        9044    0.0    0.0     0.0    0.0
+               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       889        9044    0.0    0.0     0.0    0.0
             evalConstant                                     Sym                               test/Sym.hs:(218,1)-(232,21)                             885           0    0.0    0.0     0.0    0.0
-           modifyClasses                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:338:1-68                      861       12256    0.0    0.0     0.0    0.0
-            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       873       12256    0.0    0.0     0.0    0.0
-           modifyMemo                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:341:1-59                      862       12256    0.2    0.1     0.3    0.1
-            liftCompare                                      Sym                               test/Sym.hs:(44,5)-(62,25)                               897      201057    0.1    0.0     0.1    0.0
-             compare                                         Sym                               test/Sym.hs:73:23-25                                     898      201031    0.0    0.0     0.0    0.0
-             compare                                         Sym                               test/Sym.hs:79:19-21                                    1076           1    0.0    0.0     0.0    0.0
-            memo                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-10                       896       12256    0.0    0.0     0.0    0.0
+           modifyClasses                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:337:1-68                      861       12256    0.0    0.0     0.0    0.0
+            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       873       12256    0.0    0.0     0.0    0.0
+           modifyMemo                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:340:1-59                      862       12256    0.3    0.1     0.4    0.1
+            liftCompare                                      Sym                               test/Sym.hs:(44,5)-(62,25)                               897      198354    0.1    0.0     0.1    0.0
+             compare                                         Sym                               test/Sym.hs:73:23-25                                     898      198329    0.0    0.0     0.0    0.0
+             compare                                         Sym                               test/Sym.hs:79:19-21                                    1094           1    0.0    0.0     0.0    0.0
+            memo                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-10                       896       12256    0.0    0.0     0.0    0.0
             modifyA                                          Sym                               test/Sym.hs:(203,5)-(213,66)                             905           0    0.0    0.0     0.0    0.0
-             represent                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:78:1-42                       906           0    0.0    0.0     0.0    0.0
+             represent                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:77:1-42                       906           0    0.0    0.0     0.0    0.0
               liftCompare                                    Sym                               test/Sym.hs:(44,5)-(62,25)                               907           3    0.0    0.0     0.0    0.0
            unNode                                            Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31                859       12256    0.0    0.0     0.0    0.0
-           createUnionFindClass                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(322,1)-(326,17)              857           0    0.0    0.0     0.0    0.0
+           createUnionFindClass                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(321,1)-(325,17)              857           0    0.0    0.0     0.0    0.0
             makeNewSet                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:42:1-69         867       12256    0.0    0.0     0.0    0.0
-            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       866       12256    0.0    0.0     0.0    0.0
-        matchSubst                                           Data.Equality.Matching            src/Data/Equality/Matching.hs:29:7-16                    971       20010    0.0    0.0     0.0    0.0
-        merge                                                Data.Equality.Graph               src/Data/Equality/Graph.hs:(144,1)-(205,24)              723       17872    0.0    0.0     1.0    1.0
-         Data.Equality.Graph.merge                           Data.Equality.Graph               src/Data/Equality/Graph.hs:144:1-5                       724       17872    0.5    0.7     1.0    0.9
-          liftCompare                                        Sym                               test/Sym.hs:(44,5)-(62,25)                               789       55315    0.0    0.0     0.0    0.0
-           compare                                           Sym                               test/Sym.hs:73:23-25                                     833       55290    0.0    0.0     0.0    0.0
-          find                                               Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              725       35744    0.0    0.0     0.1    0.0
-           findRepr                                          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  763       37492    0.0    0.0     0.1    0.0
-            Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          764       37492    0.1    0.0     0.1    0.0
-           unionFind                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       726       35744    0.0    0.0     0.0    0.0
-          getClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              765       31977    0.0    0.0     0.0    0.0
-           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              766       31977    0.0    0.0     0.0    0.0
+            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       866       12256    0.0    0.0     0.0    0.0
+        matchSubst                                           Data.Equality.Matching            src/Data/Equality/Matching.hs:29:7-16                    984       20061    0.0    0.0     0.0    0.0
+        merge                                                Data.Equality.Graph               src/Data/Equality/Graph.hs:(143,1)-(204,24)              723       17935    0.0    0.0     1.4    1.0
+         Data.Equality.Graph.merge                           Data.Equality.Graph               src/Data/Equality/Graph.hs:143:1-5                       724       17935    0.8    0.7     1.4    1.0
+          liftCompare                                        Sym                               test/Sym.hs:(44,5)-(62,25)                               789       57331    0.1    0.0     0.1    0.0
+           compare                                           Sym                               test/Sym.hs:73:23-25                                     833       57306    0.0    0.0     0.0    0.0
+          find                                               Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              725       35870    0.0    0.0     0.1    0.0
+           findRepr                                          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  763       37433    0.0    0.0     0.1    0.0
+            Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          764       37433    0.1    0.0     0.1    0.0
+           unionFind                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       726       35870    0.0    0.0     0.0    0.0
+          getClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              765       31977    0.0    0.0     0.1    0.0
+           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              766       31977    0.0    0.0     0.0    0.0
             findRepr                                         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  768       31977    0.0    0.0     0.0    0.0
              Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          769       31977    0.0    0.0     0.0    0.0
-            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       767       31977    0.0    0.0     0.0    0.0
-           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       770       21318    0.0    0.0     0.0    0.0
-          modifyMemo                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:341:1-59                      776       10853    0.1    0.1     0.1    0.1
-           liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               794      168721    0.0    0.0     0.1    0.0
-            compare                                          Sym                               test/Sym.hs:73:23-25                                     795      168696    0.0    0.0     0.0    0.0
-           memo                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-10                       790       10853    0.0    0.0     0.0    0.0
-          addToWorklist                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:(284,1)-(285,57)              774       10659    0.0    0.0     0.0    0.0
-           worklist                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-14                       937       10659    0.0    0.0     0.0    0.0
+            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       767       31977    0.0    0.0     0.0    0.0
+           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       770       21318    0.0    0.0     0.0    0.0
+          modifyMemo                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:340:1-59                      776       10853    0.1    0.1     0.1    0.1
+           liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               794      171446    0.0    0.0     0.0    0.0
+            compare                                          Sym                               test/Sym.hs:73:23-25                                     795      171431    0.0    0.0     0.0    0.0
+           memo                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-10                       790       10853    0.0    0.0     0.0    0.0
+          addToWorklist                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:(283,1)-(284,57)              774       10659    0.0    0.0     0.1    0.0
+           worklist                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-14                       938       10659    0.0    0.0     0.0    0.0
+           liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               947        6441    0.0    0.0     0.0    0.0
+            compare                                          Sym                               test/Sym.hs:73:23-25                                     948        6441    0.0    0.0     0.0    0.0
           joinA                                              Sym                               test/Sym.hs:(194,5)-(201,16)                             775       10659    0.0    0.0     0.0    0.0
-          mergeUnionFindClasses                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(330,1)-(334,17)              772       10659    0.0    0.0     0.0    0.0
-           unionFind                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       780       10659    0.0    0.0     0.0    0.0
+          mergeUnionFindClasses                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(329,1)-(333,17)              772       10659    0.0    0.0     0.0    0.0
+           unionFind                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       780       10659    0.0    0.0     0.0    0.0
            unionSets                                         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:48:1-168        781       10659    0.0    0.0     0.0    0.0
-          modifyA                                            Sym                               test/Sym.hs:(203,5)-(213,66)                             777       10659    0.0    0.0     0.1    0.0
-           getClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              778       10659    0.0    0.0     0.1    0.0
-            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       786       10659    0.0    0.0     0.0    0.0
-            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              779       10659    0.0    0.0     0.1    0.0
-             findRepr                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  784       10659    0.0    0.0     0.1    0.0
+          modifyA                                            Sym                               test/Sym.hs:(203,5)-(213,66)                             777       10659    0.1    0.0     0.1    0.0
+           getClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              778       10659    0.0    0.0     0.0    0.0
+            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       786       10659    0.0    0.0     0.0    0.0
+            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              779       10659    0.0    0.0     0.0    0.0
+             findRepr                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  784       10659    0.0    0.0     0.0    0.0
               Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          785       10659    0.0    0.0     0.0    0.0
-             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       782       10659    0.0    0.0     0.0    0.0
-          modifyClasses                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:338:1-68                      773       10659    0.0    0.0     0.0    0.0
-           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       788       10659    0.0    0.0     0.0    0.0
-          setClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:317:1-64                      783       10659    0.0    0.0     0.0    0.0
-           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       787       10659    0.0    0.0     0.0    0.0
-          addToAnalysisWorklist                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(295,1)-(296,73)              988           2    0.0    0.0     0.0    0.0
-           analysisWorklist                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:55:7-22                      1070           2    0.0    0.0     0.0    0.0
-        add                                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:(84,1)-(138,28)               709       16429    0.0    0.0     0.9    0.3
-         Data.Equality.Graph.add                             Data.Equality.Graph               src/Data/Equality/Graph.hs:84:1-3                        710       16429    0.2    0.1     0.9    0.3
-          liftCompare                                        Sym                               test/Sym.hs:(44,5)-(62,25)                               713      227233    0.0    0.0     0.0    0.0
-           compare                                           Sym                               test/Sym.hs:73:23-25                                     714      226912    0.0    0.0     0.0    0.0
-          getClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              739       20878    0.1    0.0     0.1    0.0
-           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       771       20878    0.0    0.0     0.0    0.0
-           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              740       20878    0.0    0.0     0.0    0.0
+             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       782       10659    0.0    0.0     0.0    0.0
+          modifyClasses                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:337:1-68                      773       10659    0.0    0.0     0.0    0.0
+           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       788       10659    0.0    0.0     0.0    0.0
+          setClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:316:1-64                      783       10659    0.1    0.0     0.1    0.0
+           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       787       10659    0.0    0.0     0.0    0.0
+          addToAnalysisWorklist                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(294,1)-(295,73)              997           2    0.0    0.0     0.0    0.0
+           liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                              1049          10    0.0    0.0     0.0    0.0
+            compare                                          Sym                               test/Sym.hs:73:23-25                                    1050          10    0.0    0.0     0.0    0.0
+           analysisWorklist                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-22                      1048           2    0.0    0.0     0.0    0.0
+        add                                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:(83,1)-(137,28)               709       16492    0.0    0.0     1.8    0.4
+         Data.Equality.Graph.add                             Data.Equality.Graph               src/Data/Equality/Graph.hs:83:1-3                        710       16492    0.4    0.1     1.8    0.4
+          liftCompare                                        Sym                               test/Sym.hs:(44,5)-(62,25)                               713      229746    0.2    0.0     0.2    0.0
+           compare                                           Sym                               test/Sym.hs:73:23-25                                     714      229448    0.0    0.0     0.0    0.0
+          getClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              739       20878    0.2    0.0     0.3    0.0
+           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       771       20878    0.0    0.0     0.0    0.0
+           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              740       20878    0.0    0.0     0.0    0.0
             findRepr                                         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  750       20878    0.0    0.0     0.0    0.0
              Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          751       20878    0.0    0.0     0.0    0.0
-            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       749       20878    0.0    0.0     0.0    0.0
-          setClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:317:1-64                      733       20878    0.0    0.1     0.0    0.1
-           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       738       20878    0.0    0.0     0.0    0.0
-          canonicalize                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:218:1-60                      711       16429    0.0    0.0     0.1    0.0
-           fmap                                              Sym                               test/Sym.hs:31:33-39                                     712       16429    0.0    0.0     0.1    0.0
-            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              741       32804    0.0    0.0     0.0    0.0
-             findRepr                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  747       33665    0.0    0.0     0.0    0.0
-              Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          748       33665    0.0    0.0     0.0    0.0
-             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       746       32804    0.0    0.0     0.0    0.0
+            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       749       20878    0.0    0.0     0.0    0.0
+          setClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:316:1-64                      733       20878    0.1    0.1     0.1    0.1
+           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       738       20878    0.0    0.0     0.0    0.0
+          canonicalize                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:217:1-60                      711       16492    0.0    0.0     0.0    0.0
+           fmap                                              Sym                               test/Sym.hs:31:33-39                                     712       16492    0.0    0.0     0.0    0.0
+            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              741       32930    0.0    0.0     0.0    0.0
+             findRepr                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  747       33907    0.0    0.0     0.0    0.0
+              Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          748       33907    0.0    0.0     0.0    0.0
+             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       746       32930    0.0    0.0     0.0    0.0
           modifyA                                            Sym                               test/Sym.hs:(203,5)-(213,66)                             727       10445    0.0    0.0     0.0    0.0
-           getClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              728       10456    0.0    0.0     0.0    0.0
-            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       736       10456    0.0    0.0     0.0    0.0
-            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              729       10456    0.0    0.0     0.0    0.0
+           getClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              728       10456    0.0    0.0     0.0    0.0
+            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       736       10456    0.0    0.0     0.0    0.0
+            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              729       10456    0.0    0.0     0.0    0.0
              findRepr                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  734       10460    0.0    0.0     0.0    0.0
               Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          735       10460    0.0    0.0     0.0    0.0
-             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       732       10456    0.0    0.0     0.0    0.0
-           liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               829          28    0.0    0.0     0.0    0.0
-            compare                                          Sym                               test/Sym.hs:73:23-25                                     831          18    0.0    0.0     0.0    0.0
+             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       732       10456    0.0    0.0     0.0    0.0
+           liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               829          29    0.0    0.0     0.0    0.0
+            compare                                          Sym                               test/Sym.hs:73:23-25                                     831          19    0.0    0.0     0.0    0.0
            foldr                                             Sym                               test/Sym.hs:32:24-31                                     854          16    0.0    0.0     0.0    0.0
            unNode                                            Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31                855          16    0.0    0.0     0.0    0.0
-           merge                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(144,1)-(205,24)              802          11    0.0    0.0     0.0    0.0
-            Data.Equality.Graph.merge                        Data.Equality.Graph               src/Data/Equality/Graph.hs:144:1-5                       803          11    0.0    0.0     0.0    0.0
-             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              804          22    0.0    0.0     0.0    0.0
+           merge                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(143,1)-(204,24)              802          11    0.0    0.0     0.0    0.0
+            Data.Equality.Graph.merge                        Data.Equality.Graph               src/Data/Equality/Graph.hs:143:1-5                       803          11    0.0    0.0     0.0    0.0
+             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              804          22    0.0    0.0     0.0    0.0
               findRepr                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  806          22    0.0    0.0     0.0    0.0
                Data.Equality.Graph.ReprUnionFind.findRepr    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          807          22    0.0    0.0     0.0    0.0
-              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       805          22    0.0    0.0     0.0    0.0
-             getClass                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              812          15    0.0    0.0     0.0    0.0
-              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              813          15    0.0    0.0     0.0    0.0
+              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       805          22    0.0    0.0     0.0    0.0
+             getClass                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              812          15    0.0    0.0     0.0    0.0
+              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              813          15    0.0    0.0     0.0    0.0
                findRepr                                      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  815          15    0.0    0.0     0.0    0.0
                 Data.Equality.Graph.ReprUnionFind.findRepr   Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          816          15    0.0    0.0     0.0    0.0
-               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       814          15    0.0    0.0     0.0    0.0
-              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       817          10    0.0    0.0     0.0    0.0
-             addToWorklist                                   Data.Equality.Graph               src/Data/Equality/Graph.hs:(284,1)-(285,57)              820           5    0.0    0.0     0.0    0.0
-              worklist                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-14                       965           5    0.0    0.0     0.0    0.0
+               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       814          15    0.0    0.0     0.0    0.0
+              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       817          10    0.0    0.0     0.0    0.0
+             addToWorklist                                   Data.Equality.Graph               src/Data/Equality/Graph.hs:(283,1)-(284,57)              820           5    0.0    0.0     0.0    0.0
+              worklist                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-14                       942           5    0.0    0.0     0.0    0.0
              joinA                                           Sym                               test/Sym.hs:(194,5)-(201,16)                             821           5    0.0    0.0     0.0    0.0
-             mergeUnionFindClasses                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(330,1)-(334,17)              818           5    0.0    0.0     0.0    0.0
-              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       824           5    0.0    0.0     0.0    0.0
+             mergeUnionFindClasses                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(329,1)-(333,17)              818           5    0.0    0.0     0.0    0.0
+              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       824           5    0.0    0.0     0.0    0.0
               unionSets                                      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:48:1-168        825           5    0.0    0.0     0.0    0.0
-             modifyClasses                                   Data.Equality.Graph               src/Data/Equality/Graph.hs:338:1-68                      819           5    0.0    0.0     0.0    0.0
-              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       828           5    0.0    0.0     0.0    0.0
-             modifyMemo                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:341:1-59                      822           5    0.0    0.0     0.0    0.0
-              memo                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-10                       830           5    0.0    0.0     0.0    0.0
-             setClass                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:317:1-64                      826           5    0.0    0.0     0.0    0.0
-              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       827           5    0.0    0.0     0.0    0.0
-           setClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:317:1-64                      823          11    0.0    0.0     0.0    0.0
-            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       832          11    0.0    0.0     0.0    0.0
-           represent                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:78:1-42                       798           0    0.0    0.0     0.0    0.0
+             modifyClasses                                   Data.Equality.Graph               src/Data/Equality/Graph.hs:337:1-68                      819           5    0.0    0.0     0.0    0.0
+              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       828           5    0.0    0.0     0.0    0.0
+             modifyMemo                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:340:1-59                      822           5    0.0    0.0     0.0    0.0
+              memo                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-10                       830           5    0.0    0.0     0.0    0.0
+             setClass                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:316:1-64                      826           5    0.0    0.0     0.0    0.0
+              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       827           5    0.0    0.0     0.0    0.0
+           setClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:316:1-64                      823          11    0.0    0.0     0.0    0.0
+            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       832          11    0.0    0.0     0.0    0.0
+           represent                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:77:1-42                       798           0    0.0    0.0     0.0    0.0
             fmap                                             Sym                               test/Sym.hs:31:33-39                                     800          11    0.0    0.0     0.0    0.0
             traverse                                         Sym                               test/Sym.hs:32:34-44                                     799          11    0.0    0.0     0.0    0.0
             unFix                                            Data.Equality.Utils               src/Data/Equality/Utils.hs:6:23-27                       801          11    0.0    0.0     0.0    0.0
-          addToWorklist                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:(284,1)-(285,57)              720       10440    0.0    0.0     0.0    0.0
-           worklist                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-14                       950       10440    0.0    0.0     0.0    0.0
+          addToWorklist                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:(283,1)-(284,57)              720       10440    0.3    0.0     0.4    0.0
+           liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               945      134984    0.1    0.0     0.1    0.0
+            compare                                          Sym                               test/Sym.hs:73:23-25                                     946      134979    0.0    0.0     0.0    0.0
+           worklist                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-14                       939       10440    0.0    0.0     0.0    0.0
+           modifyA                                           Sym                               test/Sym.hs:(203,5)-(213,66)                            1016           0    0.0    0.0     0.0    0.0
+            represent                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:77:1-42                      1017           0    0.0    0.0     0.0    0.0
+             liftCompare                                     Sym                               test/Sym.hs:(44,5)-(62,25)                              1018           3    0.0    0.0     0.0    0.0
           foldr                                              Sym                               test/Sym.hs:32:24-31                                     718       10440    0.0    0.0     0.0    0.0
           makeA                                              Sym                               test/Sym.hs:191:5-73                                     752       10440    0.0    0.0     0.0    0.0
            fmap                                              Sym                               test/Sym.hs:31:33-39                                     754       10440    0.0    0.0     0.0    0.0
-            getClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              755        9205    0.0    0.0     0.0    0.0
-             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       760        9205    0.0    0.0     0.0    0.0
-             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              756        9205    0.0    0.0     0.0    0.0
+            getClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              755        9205    0.0    0.0     0.0    0.0
+             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       760        9205    0.0    0.0     0.0    0.0
+             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              756        9205    0.0    0.0     0.0    0.0
               findRepr                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  758        9205    0.0    0.0     0.0    0.0
                Data.Equality.Graph.ReprUnionFind.findRepr    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          759        9205    0.0    0.0     0.0    0.0
-              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       757        9205    0.0    0.0     0.0    0.0
+              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       757        9205    0.0    0.0     0.0    0.0
            evalConstant                                      Sym                               test/Sym.hs:(218,1)-(232,21)                             753           0    0.0    0.0     0.0    0.0
-          modifyClasses                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:338:1-68                      721       10440    0.0    0.0     0.0    0.0
-           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       737       10440    0.0    0.0     0.0    0.0
-          modifyMemo                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:341:1-59                      722       10440    0.2    0.1     0.2    0.1
-           liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               792      164721    0.0    0.0     0.1    0.0
-            compare                                          Sym                               test/Sym.hs:73:23-25                                     793      164696    0.0    0.0     0.0    0.0
-           memo                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-10                       791       10440    0.0    0.0     0.0    0.0
-           modifyA                                           Sym                               test/Sym.hs:(203,5)-(213,66)                             985           0    0.0    0.0     0.0    0.0
-            represent                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:78:1-42                       986           0    0.0    0.0     0.0    0.0
-             liftCompare                                     Sym                               test/Sym.hs:(44,5)-(62,25)                               987           4    0.0    0.0     0.0    0.0
+          modifyClasses                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:337:1-68                      721       10440    0.0    0.0     0.0    0.0
+           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       737       10440    0.0    0.0     0.0    0.0
+          modifyMemo                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:340:1-59                      722       10440    0.3    0.1     0.5    0.1
+           liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               792      166703    0.2    0.0     0.2    0.0
+            compare                                          Sym                               test/Sym.hs:73:23-25                                     793      166690    0.0    0.0     0.0    0.0
+           memo                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-10                       791       10440    0.0    0.0     0.0    0.0
+           modifyA                                           Sym                               test/Sym.hs:(203,5)-(213,66)                             994           0    0.0    0.0     0.0    0.0
+            represent                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:77:1-42                       995           0    0.0    0.0     0.0    0.0
+             liftCompare                                     Sym                               test/Sym.hs:(44,5)-(62,25)                               996           5    0.0    0.0     0.0    0.0
           unNode                                             Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31                719       10440    0.0    0.0     0.0    0.0
-          find                                               Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              808        5989    0.0    0.0     0.0    0.0
-           findRepr                                          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  810        6311    0.0    0.0     0.0    0.0
-            Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          811        6311    0.0    0.0     0.0    0.0
-           unionFind                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       809        5989    0.0    0.0     0.0    0.0
-          createUnionFindClass                               Data.Equality.Graph               src/Data/Equality/Graph.hs:(322,1)-(326,17)              715           0    0.0    0.0     0.0    0.0
+          find                                               Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              808        6052    0.0    0.0     0.0    0.0
+           findRepr                                          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  810        6513    0.0    0.0     0.0    0.0
+            Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          811        6513    0.0    0.0     0.0    0.0
+           unionFind                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       809        6052    0.0    0.0     0.0    0.0
+          createUnionFindClass                               Data.Equality.Graph               src/Data/Equality/Graph.hs:(321,1)-(325,17)              715           0    0.0    0.0     0.0    0.0
            makeNewSet                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:42:1-69         731       10440    0.0    0.0     0.0    0.0
-           unionFind                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       730       10440    0.0    0.0     0.0    0.0
-        ematch                                               Data.Equality.Matching            src/Data/Equality/Matching.hs:(44,1)-(57,81)             658         317    0.0    0.0    58.2   95.5
-         genericJoin                                         Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(78,1)-(103,35)   660      182169    0.0    0.0    58.2   95.5
-          Data.Equality.Matching.Database.genericJoin        Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:78:1-11           661      182169    0.7    1.0    58.2   95.5
-           elemOfAtom                                        Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:107:1-61          680      377542    0.3    0.0     0.3    0.1
-            foldr                                            Sym                               test/Sym.hs:32:24-31                                     695      290955    0.1    0.1     0.1    0.1
-           varsInQuery                                       Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(55,1)-(62,35)    667      289797    0.6    1.0     0.7    1.1
-            toVar                                            Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(31,1)-(32,27)    674      516028    0.0    0.0     0.0    0.0
-            foldr                                            Sym                               test/Sym.hs:32:24-31                                     672      363955    0.1    0.1     0.1    0.1
-           fmap                                              Sym                               test/Sym.hs:31:33-39                                     838      267547    0.1    0.1     0.1    0.1
-           intersectAtoms                                    Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(117,1)-(166,69)  678      182162    0.0    0.0    56.3   93.2
-            Data.Equality.Matching.Database.intersectAtoms   Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:117:1-14          679      182162   56.1   93.1    56.3   93.2
-             liftCompare                                     Sym                               test/Sym.hs:(44,5)-(62,25)                               690     1051719    0.2    0.0     0.2    0.0
-              compare                                        Sym                               test/Sym.hs:73:23-25                                     691      559095    0.0    0.0     0.0    0.0
-              compare                                        Sym                               test/Sym.hs:79:19-21                                    1074       32418    0.0    0.0     0.0    0.0
-             <$                                              Sym                               test/Sym.hs:31:33-39                                     681      303988    0.0    0.0     0.0    0.0
-             foldr                                           Sym                               test/Sym.hs:32:24-31                                     836      238113    0.0    0.1     0.0    0.1
+           unionFind                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       730       10440    0.0    0.0     0.0    0.0
+        ematch                                               Data.Equality.Matching            src/Data/Equality/Matching.hs:(44,1)-(57,81)             658         317    0.0    0.0    88.2   95.4
+         genericJoin                                         Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(78,1)-(103,35)   660      182421    0.0    0.0    88.2   95.4
+          Data.Equality.Matching.Database.genericJoin        Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:78:1-11           661      182421    1.2    1.0    88.2   95.4
+           elemOfAtom                                        Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:107:1-61          680      378025    0.4    0.0     0.5    0.1
+            foldr                                            Sym                               test/Sym.hs:32:24-31                                     695      291537    0.0    0.1     0.0    0.1
+           varsInQuery                                       Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(55,1)-(62,35)    667      290180    0.9    1.0     0.9    1.1
+            toVar                                            Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(31,1)-(32,27)    674      516576    0.0    0.0     0.0    0.0
+            foldr                                            Sym                               test/Sym.hs:32:24-31                                     672      364413    0.0    0.1     0.0    0.1
+           fmap                                              Sym                               test/Sym.hs:31:33-39                                     838      267894    0.1    0.1     0.1    0.1
+           intersectAtoms                                    Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(117,1)-(166,69)  678      182414    0.0    0.0    85.5   93.1
+            Data.Equality.Matching.Database.intersectAtoms   Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:117:1-14          679      182414   84.9   93.0    85.5   93.1
+             liftCompare                                     Sym                               test/Sym.hs:(44,5)-(62,25)                               690     1052823    0.4    0.0     0.5    0.0
+              compare                                        Sym                               test/Sym.hs:73:23-25                                     691      559824    0.1    0.0     0.1    0.0
+              compare                                        Sym                               test/Sym.hs:79:19-21                                    1092       32274    0.0    0.0     0.0    0.0
+             <$                                              Sym                               test/Sym.hs:31:33-39                                     681      304164    0.0    0.0     0.0    0.0
+             foldr                                           Sym                               test/Sym.hs:32:24-31                                     836      238312    0.1    0.1     0.1    0.1
          compileToQuery                                      Data.Equality.Matching            src/Data/Equality/Matching.hs:(135,1)-(159,94)           664           0    0.0    0.0     0.0    0.0
           Data.Equality.Matching.compileToQuery              Data.Equality.Matching            src/Data/Equality/Matching.hs:135:1-14                   665           0    0.0    0.0     0.0    0.0
            fmap                                              Sym                               test/Sym.hs:31:33-39                                     669        1168    0.0    0.0     0.0    0.0
@@ -296,271 +310,273 @@ MAIN                                                         MAIN               
             next                                             Data.Equality.Matching            src/Data/Equality/Matching.hs:(168,1)-(171,12)           837           0    0.0    0.0     0.0    0.0
            fresh                                             Data.Equality.Matching            src/Data/Equality/Matching.hs:(163,1)-(165,56)           671           0    0.0    0.0     0.0    0.0
             next                                             Data.Equality.Matching            src/Data/Equality/Matching.hs:(168,1)-(171,12)           694           0    0.0    0.0     0.0    0.0
-        rebuild                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(229,1)-(242,42)              932          23    0.0    0.0    35.2    0.4
-         Data.Equality.Graph.rebuild                         Data.Equality.Graph               src/Data/Equality/Graph.hs:229:1-7                       933          23    0.0    0.0    35.2    0.4
-          repair                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(246,1)-(259,19)              938       23780    0.0    0.0     1.5    0.3
-           Data.Equality.Graph.repair                        Data.Equality.Graph               src/Data/Equality/Graph.hs:246:1-6                       939       23780    0.1    0.0     1.5    0.3
-            canonicalize                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:218:1-60                      941       23780    0.0    0.0     0.2    0.0
-             fmap                                            Sym                               test/Sym.hs:31:33-39                                     942       23780    0.0    0.0     0.2    0.0
-              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              953       46575    0.0    0.0     0.2    0.0
-               findRepr                                      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  955       48619    0.0    0.0     0.2    0.0
-                Data.Equality.Graph.ReprUnionFind.findRepr   Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          956       48619    0.1    0.0     0.1    0.0
-               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       954       46575    0.0    0.0     0.0    0.0
-            insertLookup                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:347:1-50                      947       23780    0.3    0.1     0.4    0.1
-             liftCompare                                     Sym                               test/Sym.hs:(44,5)-(62,25)                               948      333579    0.1    0.0     0.1    0.0
-              compare                                        Sym                               test/Sym.hs:73:23-25                                     949      333519    0.0    0.0     0.0    0.0
-              compare                                        Sym                               test/Sym.hs:79:19-21                                    1077           1    0.0    0.0     0.0    0.0
-            memo                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-10                       943       23780    0.0    0.0     0.0    0.0
-            modifyMemo                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:341:1-59                      940       23780    0.4    0.1     0.6    0.1
-             liftCompare                                     Sym                               test/Sym.hs:(44,5)-(62,25)                               945      314453    0.2    0.0     0.2    0.0
-              compare                                        Sym                               test/Sym.hs:73:23-25                                     946      314404    0.0    0.0     0.0    0.0
-              compare                                        Sym                               test/Sym.hs:79:19-21                                    1035           3    0.0    0.0     0.0    0.0
-             memo                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-10                       944       23780    0.0    0.0     0.0    0.0
-            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              972       23131    0.0    0.0     0.1    0.0
-             findRepr                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  974       34334    0.0    0.0     0.1    0.0
-              Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          975       34334    0.1    0.0     0.1    0.0
-             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       973       23131    0.0    0.0     0.0    0.0
-            merge                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(144,1)-(205,24)              959        1638    0.0    0.0     0.1    0.0
-             Data.Equality.Graph.merge                       Data.Equality.Graph               src/Data/Equality/Graph.hs:144:1-5                       960        1638    0.0    0.0     0.1    0.0
-              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              961        3276    0.0    0.0     0.0    0.0
-               findRepr                                      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  963        4887    0.0    0.0     0.0    0.0
-                Data.Equality.Graph.ReprUnionFind.findRepr   Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          964        4887    0.0    0.0     0.0    0.0
-               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       962        3276    0.0    0.0     0.0    0.0
-              liftCompare                                    Sym                               test/Sym.hs:(44,5)-(62,25)                              1030        1892    0.0    0.0     0.0    0.0
-               compare                                       Sym                               test/Sym.hs:73:23-25                                    1031        1891    0.0    0.0     0.0    0.0
-              getClass                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)             1007        1221    0.0    0.0     0.0    0.0
-               find                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)             1008        1221    0.0    0.0     0.0    0.0
-                findRepr                                     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1010        1221    0.0    0.0     0.0    0.0
-                 Data.Equality.Graph.ReprUnionFind.findRepr  Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1011        1221    0.0    0.0     0.0    0.0
-                unionFind                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                      1009        1221    0.0    0.0     0.0    0.0
-               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                      1012         814    0.0    0.0     0.0    0.0
-              modifyMemo                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:341:1-59                     1017         513    0.0    0.0     0.0    0.0
-               liftCompare                                   Sym                               test/Sym.hs:(44,5)-(62,25)                              1033        6074    0.0    0.0     0.0    0.0
-                compare                                      Sym                               test/Sym.hs:73:23-25                                    1034        6074    0.0    0.0     0.0    0.0
-               memo                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-10                      1032         513    0.0    0.0     0.0    0.0
-              addToWorklist                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:(284,1)-(285,57)             1015         407    0.0    0.0     0.0    0.0
-               worklist                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-14                      1071         407    0.0    0.0     0.0    0.0
-              joinA                                          Sym                               test/Sym.hs:(194,5)-(201,16)                            1016         407    0.0    0.0     0.0    0.0
-              mergeUnionFindClasses                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(330,1)-(334,17)             1013         407    0.0    0.0     0.0    0.0
-               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                      1021         407    0.0    0.0     0.0    0.0
-               unionSets                                     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:48:1-168       1022         407    0.0    0.0     0.0    0.0
-              modifyA                                        Sym                               test/Sym.hs:(203,5)-(213,66)                            1018         407    0.0    0.0     0.0    0.0
-               getClass                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)             1019         407    0.0    0.0     0.0    0.0
-                classes                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                      1027         407    0.0    0.0     0.0    0.0
-                find                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)             1020         407    0.0    0.0     0.0    0.0
-                 findRepr                                    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1025         407    0.0    0.0     0.0    0.0
-                  Data.Equality.Graph.ReprUnionFind.findRepr Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1026         407    0.0    0.0     0.0    0.0
-                 unionFind                                   Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                      1023         407    0.0    0.0     0.0    0.0
-              modifyClasses                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:338:1-68                     1014         407    0.0    0.0     0.0    0.0
-               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                      1029         407    0.0    0.0     0.0    0.0
-              setClass                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:317:1-64                     1024         407    0.0    0.0     0.0    0.0
-               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                      1028         407    0.0    0.0     0.0    0.0
-          repairAnal                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(263,1)-(278,33)             1036          31    0.0    0.0     0.0    0.0
-           Data.Equality.Graph.repairAnal                    Data.Equality.Graph               src/Data/Equality/Graph.hs:263:1-10                     1037          31    0.0    0.0     0.0    0.0
-            getClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)             1038          33    0.0    0.0     0.0    0.0
-             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                      1047          33    0.0    0.0     0.0    0.0
-             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)             1039          33    0.0    0.0     0.0    0.0
-              findRepr                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1045          33    0.0    0.0     0.0    0.0
-               Data.Equality.Graph.ReprUnionFind.findRepr    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1046          33    0.0    0.0     0.0    0.0
-              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                      1044          33    0.0    0.0     0.0    0.0
-            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)             1040          31    0.0    0.0     0.0    0.0
-             findRepr                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1042          64    0.0    0.0     0.0    0.0
-              Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1043          64    0.0    0.0     0.0    0.0
-             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                      1041          31    0.0    0.0     0.0    0.0
-            joinA                                            Sym                               test/Sym.hs:(194,5)-(201,16)                            1048          31    0.0    0.0     0.0    0.0
-            addToAnalysisWorklist                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(295,1)-(296,73)             1060           2    0.0    0.0     0.0    0.0
-             analysisWorklist                                Data.Equality.Graph               src/Data/Equality/Graph.hs:55:7-22                      1072           2    0.0    0.0     0.0    0.0
-            makeA                                            Sym                               test/Sym.hs:191:5-73                                    1051           2    0.0    0.0     0.0    0.0
-             fmap                                            Sym                               test/Sym.hs:31:33-39                                    1053           2    0.0    0.0     0.0    0.0
-              getClass                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)             1054           3    0.0    0.0     0.0    0.0
-               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                      1059           3    0.0    0.0     0.0    0.0
-               find                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)             1055           3    0.0    0.0     0.0    0.0
-                findRepr                                     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1057           3    0.0    0.0     0.0    0.0
-                 Data.Equality.Graph.ReprUnionFind.findRepr  Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1058           3    0.0    0.0     0.0    0.0
-                unionFind                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                      1056           3    0.0    0.0     0.0    0.0
-            modifyA                                          Sym                               test/Sym.hs:(203,5)-(213,66)                            1061           2    0.0    0.0     0.0    0.0
-             getClass                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)             1062           2    0.0    0.0     0.0    0.0
-              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                      1068           2    0.0    0.0     0.0    0.0
-              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)             1063           2    0.0    0.0     0.0    0.0
-               findRepr                                      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1066           2    0.0    0.0     0.0    0.0
-                Data.Equality.Graph.ReprUnionFind.findRepr   Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1067           2    0.0    0.0     0.0    0.0
-               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                      1064           2    0.0    0.0     0.0    0.0
-            setClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:317:1-64                     1065           2    0.0    0.0     0.0    0.0
-             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                      1069           2    0.0    0.0     0.0    0.0
-          clearAnalysisWorkList                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(299,1)-(302,21)              935          23    0.0    0.0     0.0    0.0
-           liftEq                                            Sym                               test/Sym.hs:(36,5)-(41,18)                              1049         305    0.0    0.0     0.0    0.0
-            ==                                               Sym                               test/Sym.hs:73:19-20                                    1050         305    0.0    0.0     0.0    0.0
-           analysisWorklist                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:55:7-22                       968          23    0.0    0.0     0.0    0.0
-          clearWorkList                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:(289,1)-(292,21)              934          23   18.7    0.0    33.7    0.0
-           liftEq                                            Sym                               test/Sym.hs:(36,5)-(41,18)                               951    63860787   13.2    0.0    15.0    0.0
-            ==                                               Sym                               test/Sym.hs:73:19-20                                     952    63857535    1.8    0.0     1.8    0.0
-           worklist                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-14                       936          23    0.0    0.0     0.0    0.0
-          worklist                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-14                       969          23    0.0    0.0     0.0    0.0
-          analysisWorklist                                   Data.Equality.Graph               src/Data/Equality/Graph.hs:55:7-22                       970          11    0.0    0.0     0.0    0.0
-        eGraphToDatabase                                     Data.Equality.Matching            src/Data/Equality/Matching.hs:(70,1)-(95,61)             682          11    0.0    0.0     0.5    0.5
-         Data.Equality.Matching.eGraphToDatabase             Data.Equality.Matching            src/Data/Equality/Matching.hs:70:1-16                    683          11    0.5    0.5     0.5    0.5
-          liftCompare                                        Sym                               test/Sym.hs:(44,5)-(62,25)                               688      193489    0.0    0.0     0.0    0.0
-           compare                                           Sym                               test/Sym.hs:73:23-25                                     689      193249    0.0    0.0     0.0    0.0
-           compare                                           Sym                               test/Sym.hs:79:19-21                                    1078           5    0.0    0.0     0.0    0.0
-          unNode                                             Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31                687      142431    0.0    0.0     0.0    0.0
-          <$                                                 Sym                               test/Sym.hs:31:33-39                                     686       71240    0.0    0.0     0.0    0.0
-          foldr                                              Sym                               test/Sym.hs:32:24-31                                     839       71191    0.0    0.0     0.0    0.0
-        extractBest                                          Data.Equality.Extraction          src/Data/Equality/Extraction.hs:(54,1)-(65,80)          1079           1    0.0    0.0     2.3    1.6
-         Data.Equality.Extraction.extractBest                Data.Equality.Extraction          src/Data/Equality/Extraction.hs:54:1-11                 1080           1    0.0    0.0     2.3    1.6
-          findCosts                                          Data.Equality.Extraction          src/Data/Equality/Extraction.hs:(71,1)-(103,34)         1089           3    0.0    0.0     0.3    0.4
-           Data.Equality.Extraction.findCosts                Data.Equality.Extraction          src/Data/Equality/Extraction.hs:71:1-9                  1090           3    0.2    0.1     0.3    0.4
-            nodeTotalCost                                    Data.Equality.Extraction          src/Data/Equality/Extraction.hs:(113,1)-(115,33)        1093       68082    0.1    0.3     0.1    0.3
-          find                                               Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)             1085           1    0.0    0.0     0.0    0.0
-           findRepr                                          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1087           1    0.0    0.0     0.0    0.0
-            Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1088           1    0.0    0.0     0.0    0.0
-           unionFind                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                      1086           1    0.0    0.0     0.0    0.0
-          findBest                                           Data.Equality.Extraction          src/Data/Equality/Extraction.hs:122:1-31                1083           1    0.0    0.0     0.0    0.0
-          runExtraction                                      Data.Equality.Extraction          src/Data/Equality/Extraction.hs:46:1-37                 1082           0    0.0    0.0     2.0    1.2
-           findBest                                          Data.Equality.Extraction          src/Data/Equality/Extraction.hs:122:1-31                1084           0    0.0    0.0     0.0    0.0
-           findCosts                                         Data.Equality.Extraction          src/Data/Equality/Extraction.hs:(71,1)-(103,34)         1091           0    0.0    0.0     2.0    1.2
-            Data.Equality.Extraction.findCosts               Data.Equality.Extraction          src/Data/Equality/Extraction.hs:71:1-9                  1092           0    0.2    0.3     2.0    1.2
-             nodeTotalCost                                   Data.Equality.Extraction          src/Data/Equality/Extraction.hs:(113,1)-(115,33)        1094           0    0.7    0.4     1.8    1.0
-              fmap                                           Sym                               test/Sym.hs:31:33-39                                    1102     1093568    0.3    0.3     0.3    0.3
-              unFix                                          Data.Equality.Utils               src/Data/Equality/Utils.hs:6:23-27                      1103     1093568    0.0    0.0     0.0    0.0
-              traverse                                       Sym                               test/Sym.hs:32:34-44                                    1095       68082    0.3    0.1     0.5    0.2
-               find                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)             1096      129404    0.0    0.0     0.1    0.0
-                findRepr                                     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1098      133913    0.0    0.0     0.1    0.0
-                 Data.Equality.Graph.ReprUnionFind.findRepr  Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1099      133913    0.1    0.0     0.1    0.0
-                unionFind                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                      1097      129404    0.0    0.0     0.0    0.0
-              symCost                                        Sym                               test/Sym.hs:(139,1)-(152,16)                            1101           0    0.3    0.1     0.3    0.1
-        represent                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:78:1-42                       549           0    0.0    0.0     0.0    0.0
+        rebuild                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(228,1)-(241,42)              932          25    0.0    0.0     1.4    0.4
+         Data.Equality.Graph.rebuild                         Data.Equality.Graph               src/Data/Equality/Graph.hs:228:1-7                       933          25    0.0    0.0     1.4    0.4
+          repair                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(245,1)-(258,19)              954       23785    0.0    0.0     1.4    0.3
+           Data.Equality.Graph.repair                        Data.Equality.Graph               src/Data/Equality/Graph.hs:245:1-6                       955       23785    0.0    0.0     1.4    0.3
+            canonicalize                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:217:1-60                      957       23785    0.0    0.0     0.2    0.0
+             fmap                                            Sym                               test/Sym.hs:31:33-39                                     958       23785    0.0    0.0     0.2    0.0
+              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              967       46586    0.0    0.0     0.2    0.0
+               findRepr                                      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  969       48555    0.0    0.0     0.2    0.0
+                Data.Equality.Graph.ReprUnionFind.findRepr   Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          970       48555    0.2    0.0     0.2    0.0
+               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       968       46586    0.0    0.0     0.0    0.0
+            insertLookup                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:346:1-50                      963       23785    0.4    0.1     0.5    0.1
+             liftCompare                                     Sym                               test/Sym.hs:(44,5)-(62,25)                               964      329816    0.0    0.0     0.1    0.0
+              compare                                        Sym                               test/Sym.hs:73:23-25                                     966      329765    0.0    0.0     0.0    0.0
+              compare                                        Sym                               test/Sym.hs:79:19-21                                    1095           1    0.0    0.0     0.0    0.0
+            memo                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-10                       959       23785    0.0    0.0     0.0    0.0
+            modifyMemo                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:340:1-59                      956       23785    0.3    0.1     0.5    0.1
+             liftCompare                                     Sym                               test/Sym.hs:(44,5)-(62,25)                               962      254771    0.1    0.0     0.1    0.0
+              compare                                        Sym                               test/Sym.hs:73:23-25                                     965      254723    0.0    0.0     0.0    0.0
+              compare                                        Sym                               test/Sym.hs:79:19-21                                    1019           3    0.0    0.0     0.0    0.0
+             memo                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-10                       961       23785    0.0    0.0     0.0    0.0
+            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              974       23302    0.0    0.0     0.1    0.0
+             findRepr                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  976       34614    0.0    0.0     0.1    0.0
+              Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          977       34614    0.1    0.0     0.1    0.0
+             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       975       23302    0.0    0.0     0.0    0.0
+            merge                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(143,1)-(204,24)              971        1579    0.0    0.0     0.1    0.0
+             Data.Equality.Graph.merge                       Data.Equality.Graph               src/Data/Equality/Graph.hs:143:1-5                       972        1579    0.0    0.0     0.1    0.0
+              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              973        3158    0.0    0.0     0.0    0.0
+               findRepr                                      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  979        4722    0.0    0.0     0.0    0.0
+                Data.Equality.Graph.ReprUnionFind.findRepr   Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          980        4722    0.0    0.0     0.0    0.0
+               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       978        3158    0.0    0.0     0.0    0.0
+              liftCompare                                    Sym                               test/Sym.hs:(44,5)-(62,25)                              1043        2852    0.0    0.0     0.0    0.0
+               compare                                       Sym                               test/Sym.hs:73:23-25                                    1044        2851    0.0    0.0     0.0    0.0
+              getClass                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)             1020        1221    0.0    0.0     0.0    0.0
+               find                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)             1021        1221    0.0    0.0     0.0    0.0
+                findRepr                                     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1023        1221    0.0    0.0     0.0    0.0
+                 Data.Equality.Graph.ReprUnionFind.findRepr  Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1024        1221    0.0    0.0     0.0    0.0
+                unionFind                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                      1022        1221    0.0    0.0     0.0    0.0
+               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                      1025         814    0.0    0.0     0.0    0.0
+              modifyMemo                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:340:1-59                     1030         511    0.0    0.0     0.0    0.0
+               liftCompare                                   Sym                               test/Sym.hs:(44,5)-(62,25)                              1046        6076    0.0    0.0     0.0    0.0
+                compare                                      Sym                               test/Sym.hs:73:23-25                                    1047        6076    0.0    0.0     0.0    0.0
+               memo                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-10                      1045         511    0.0    0.0     0.0    0.0
+              addToWorklist                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:(283,1)-(284,57)             1028         407    0.0    0.0     0.0    0.0
+               liftCompare                                   Sym                               test/Sym.hs:(44,5)-(62,25)                              1084        3401    0.0    0.0     0.0    0.0
+                compare                                      Sym                               test/Sym.hs:73:23-25                                    1085        3401    0.0    0.0     0.0    0.0
+               worklist                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-14                      1083         407    0.0    0.0     0.0    0.0
+              joinA                                          Sym                               test/Sym.hs:(194,5)-(201,16)                            1029         407    0.0    0.0     0.0    0.0
+              mergeUnionFindClasses                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(329,1)-(333,17)             1026         407    0.0    0.0     0.0    0.0
+               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                      1034         407    0.0    0.0     0.0    0.0
+               unionSets                                     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:48:1-168       1035         407    0.0    0.0     0.0    0.0
+              modifyA                                        Sym                               test/Sym.hs:(203,5)-(213,66)                            1031         407    0.0    0.0     0.0    0.0
+               getClass                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)             1032         407    0.0    0.0     0.0    0.0
+                classes                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                      1040         407    0.0    0.0     0.0    0.0
+                find                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)             1033         407    0.0    0.0     0.0    0.0
+                 findRepr                                    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1038         407    0.0    0.0     0.0    0.0
+                  Data.Equality.Graph.ReprUnionFind.findRepr Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1039         407    0.0    0.0     0.0    0.0
+                 unionFind                                   Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                      1036         407    0.0    0.0     0.0    0.0
+              modifyClasses                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:337:1-68                     1027         407    0.0    0.0     0.0    0.0
+               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                      1042         407    0.0    0.0     0.0    0.0
+              setClass                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:316:1-64                     1037         407    0.0    0.0     0.0    0.0
+               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                      1041         407    0.0    0.0     0.0    0.0
+          repairAnal                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(262,1)-(277,33)             1051          31    0.0    0.0     0.0    0.0
+           Data.Equality.Graph.repairAnal                    Data.Equality.Graph               src/Data/Equality/Graph.hs:262:1-10                     1052          31    0.0    0.0     0.0    0.0
+            getClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)             1053          33    0.0    0.0     0.0    0.0
+             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                      1062          33    0.0    0.0     0.0    0.0
+             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)             1054          33    0.0    0.0     0.0    0.0
+              findRepr                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1060          33    0.0    0.0     0.0    0.0
+               Data.Equality.Graph.ReprUnionFind.findRepr    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1061          33    0.0    0.0     0.0    0.0
+              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                      1059          33    0.0    0.0     0.0    0.0
+            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)             1055          31    0.0    0.0     0.0    0.0
+             findRepr                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1057          64    0.0    0.0     0.0    0.0
+              Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1058          64    0.0    0.0     0.0    0.0
+             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                      1056          31    0.0    0.0     0.0    0.0
+            joinA                                            Sym                               test/Sym.hs:(194,5)-(201,16)                            1063          31    0.0    0.0     0.0    0.0
+            liftCompare                                      Sym                               test/Sym.hs:(44,5)-(62,25)                              1087          14    0.0    0.0     0.0    0.0
+             compare                                         Sym                               test/Sym.hs:73:23-25                                    1088          14    0.0    0.0     0.0    0.0
+            addToAnalysisWorklist                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(294,1)-(295,73)             1073           2    0.0    0.0     0.0    0.0
+             liftCompare                                     Sym                               test/Sym.hs:(44,5)-(62,25)                              1089           7    0.0    0.0     0.0    0.0
+              compare                                        Sym                               test/Sym.hs:73:23-25                                    1090           7    0.0    0.0     0.0    0.0
+             analysisWorklist                                Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-22                      1086           2    0.0    0.0     0.0    0.0
+            makeA                                            Sym                               test/Sym.hs:191:5-73                                    1064           2    0.0    0.0     0.0    0.0
+             fmap                                            Sym                               test/Sym.hs:31:33-39                                    1066           2    0.0    0.0     0.0    0.0
+              getClass                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)             1067           3    0.0    0.0     0.0    0.0
+               classes                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                      1072           3    0.0    0.0     0.0    0.0
+               find                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)             1068           3    0.0    0.0     0.0    0.0
+                findRepr                                     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1070           3    0.0    0.0     0.0    0.0
+                 Data.Equality.Graph.ReprUnionFind.findRepr  Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1071           3    0.0    0.0     0.0    0.0
+                unionFind                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                      1069           3    0.0    0.0     0.0    0.0
+            modifyA                                          Sym                               test/Sym.hs:(203,5)-(213,66)                            1074           2    0.0    0.0     0.0    0.0
+             getClass                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)             1075           2    0.0    0.0     0.0    0.0
+              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                      1081           2    0.0    0.0     0.0    0.0
+              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)             1076           2    0.0    0.0     0.0    0.0
+               findRepr                                      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1079           2    0.0    0.0     0.0    0.0
+                Data.Equality.Graph.ReprUnionFind.findRepr   Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1080           2    0.0    0.0     0.0    0.0
+               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                      1077           2    0.0    0.0     0.0    0.0
+            setClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:316:1-64                     1078           2    0.0    0.0     0.0    0.0
+             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                      1082           2    0.0    0.0     0.0    0.0
+          worklist                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-14                       982          25    0.0    0.0     0.0    0.0
+          analysisWorklist                                   Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-22                       983          11    0.0    0.0     0.0    0.0
+          clearAnalysisWorkList                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(298,1)-(301,13)              960           0    0.0    0.0     0.0    0.0
+           analysisWorklist                                  Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-22                       981          25    0.0    0.0     0.0    0.0
+          clearWorkList                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:(288,1)-(291,13)              936           0    0.0    0.0     0.0    0.0
+           worklist                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-14                       937          25    0.0    0.0     0.0    0.0
+        eGraphToDatabase                                     Data.Equality.Matching            src/Data/Equality/Matching.hs:(70,1)-(95,61)             682          11    0.0    0.0     0.9    0.5
+         Data.Equality.Matching.eGraphToDatabase             Data.Equality.Matching            src/Data/Equality/Matching.hs:70:1-16                    683          11    0.8    0.5     0.9    0.5
+          liftCompare                                        Sym                               test/Sym.hs:(44,5)-(62,25)                               688      193567    0.1    0.0     0.1    0.0
+           compare                                           Sym                               test/Sym.hs:73:23-25                                     689      193327    0.0    0.0     0.0    0.0
+           compare                                           Sym                               test/Sym.hs:79:19-21                                    1096           5    0.0    0.0     0.0    0.0
+          unNode                                             Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31                687      142309    0.0    0.0     0.0    0.0
+          <$                                                 Sym                               test/Sym.hs:31:33-39                                     686       71179    0.0    0.0     0.0    0.0
+          foldr                                              Sym                               test/Sym.hs:32:24-31                                     839       71130    0.0    0.0     0.0    0.0
+        extractBest                                          Data.Equality.Extraction          src/Data/Equality/Extraction.hs:(54,1)-(65,80)          1097           1    0.0    0.0     3.5    1.6
+         Data.Equality.Extraction.extractBest                Data.Equality.Extraction          src/Data/Equality/Extraction.hs:54:1-11                 1098           1    0.0    0.0     3.5    1.6
+          findCosts                                          Data.Equality.Extraction          src/Data/Equality/Extraction.hs:(71,1)-(103,34)         1107           3    0.0    0.0     0.4    0.4
+           Data.Equality.Extraction.findCosts                Data.Equality.Extraction          src/Data/Equality/Extraction.hs:71:1-9                  1108           3    0.3    0.1     0.4    0.4
+            nodeTotalCost                                    Data.Equality.Extraction          src/Data/Equality/Extraction.hs:(113,1)-(115,33)        1111       68082    0.1    0.3     0.1    0.3
+          find                                               Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)             1103           1    0.0    0.0     0.0    0.0
+           findRepr                                          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1105           1    0.0    0.0     0.0    0.0
+            Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1106           1    0.0    0.0     0.0    0.0
+           unionFind                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                      1104           1    0.0    0.0     0.0    0.0
+          findBest                                           Data.Equality.Extraction          src/Data/Equality/Extraction.hs:122:1-31                1101           1    0.0    0.0     0.0    0.0
+          runExtraction                                      Data.Equality.Extraction          src/Data/Equality/Extraction.hs:46:1-37                 1100           0    0.0    0.0     3.1    1.2
+           findBest                                          Data.Equality.Extraction          src/Data/Equality/Extraction.hs:122:1-31                1102           0    0.0    0.0     0.0    0.0
+           findCosts                                         Data.Equality.Extraction          src/Data/Equality/Extraction.hs:(71,1)-(103,34)         1109           0    0.0    0.0     3.1    1.2
+            Data.Equality.Extraction.findCosts               Data.Equality.Extraction          src/Data/Equality/Extraction.hs:71:1-9                  1110           0    0.5    0.3     3.1    1.2
+             nodeTotalCost                                   Data.Equality.Extraction          src/Data/Equality/Extraction.hs:(113,1)-(115,33)        1112           0    1.2    0.4     2.6    1.0
+              fmap                                           Sym                               test/Sym.hs:31:33-39                                    1120     1093568    0.4    0.3     0.4    0.3
+              unFix                                          Data.Equality.Utils               src/Data/Equality/Utils.hs:6:23-27                      1121     1093568    0.0    0.0     0.0    0.0
+              traverse                                       Sym                               test/Sym.hs:32:34-44                                    1113       68082    0.5    0.1     0.8    0.2
+               find                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)             1114      129404    0.1    0.0     0.3    0.0
+                findRepr                                     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1116      133907    0.0    0.0     0.2    0.0
+                 Data.Equality.Graph.ReprUnionFind.findRepr  Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1117      133907    0.2    0.0     0.2    0.0
+                unionFind                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                      1115      129404    0.0    0.0     0.0    0.0
+              symCost                                        Sym                               test/Sym.hs:(139,1)-(152,16)                            1119           0    0.3    0.1     0.3    0.1
+        represent                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:77:1-42                       549           0    0.0    0.0     0.0    0.0
          fmap                                                Sym                               test/Sym.hs:31:33-39                                     554           9    0.0    0.0     0.0    0.0
-          add                                                Data.Equality.Graph               src/Data/Equality/Graph.hs:(84,1)-(138,28)               561           0    0.0    0.0     0.0    0.0
-           Data.Equality.Graph.add                           Data.Equality.Graph               src/Data/Equality/Graph.hs:84:1-3                        562           0    0.0    0.0     0.0    0.0
+          add                                                Data.Equality.Graph               src/Data/Equality/Graph.hs:(83,1)-(137,28)               561           0    0.0    0.0     0.0    0.0
+           Data.Equality.Graph.add                           Data.Equality.Graph               src/Data/Equality/Graph.hs:83:1-3                        562           0    0.0    0.0     0.0    0.0
             liftCompare                                      Sym                               test/Sym.hs:(44,5)-(62,25)                               592           7    0.0    0.0     0.0    0.0
-            canonicalize                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:218:1-60                      567           5    0.0    0.0     0.0    0.0
-             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              615           2    0.0    0.0     0.0    0.0
+            canonicalize                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:217:1-60                      567           5    0.0    0.0     0.0    0.0
+             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              615           2    0.0    0.0     0.0    0.0
               findRepr                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  617           2    0.0    0.0     0.0    0.0
                Data.Equality.Graph.ReprUnionFind.findRepr    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          618           2    0.0    0.0     0.0    0.0
-              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       616           2    0.0    0.0     0.0    0.0
-            addToWorklist                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:(284,1)-(285,57)              574           3    0.0    0.0     0.0    0.0
-             worklist                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-14                       967           3    0.0    0.0     0.0    0.0
+              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       616           2    0.0    0.0     0.0    0.0
+            addToWorklist                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:(283,1)-(284,57)              574           3    0.0    0.0     0.0    0.0
+             worklist                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-14                       944           3    0.0    0.0     0.0    0.0
             foldr                                            Sym                               test/Sym.hs:32:24-31                                     572           3    0.0    0.0     0.0    0.0
             makeA                                            Sym                               test/Sym.hs:191:5-73                                     588           3    0.0    0.0     0.0    0.0
              evalConstant                                    Sym                               test/Sym.hs:(218,1)-(232,21)                             590           0    0.0    0.0     0.0    0.0
             modifyA                                          Sym                               test/Sym.hs:(203,5)-(213,66)                             578           3    0.0    0.0     0.0    0.0
-             getClass                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              579           4    0.0    0.0     0.0    0.0
-              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       586           4    0.0    0.0     0.0    0.0
-              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              580           4    0.0    0.0     0.0    0.0
+             getClass                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              579           4    0.0    0.0     0.0    0.0
+              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       586           4    0.0    0.0     0.0    0.0
+              find                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              580           4    0.0    0.0     0.0    0.0
                findRepr                                      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  584           4    0.0    0.0     0.0    0.0
                 Data.Equality.Graph.ReprUnionFind.findRepr   Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          585           4    0.0    0.0     0.0    0.0
-               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       583           4    0.0    0.0     0.0    0.0
+               unionFind                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       583           4    0.0    0.0     0.0    0.0
              foldr                                           Sym                               test/Sym.hs:32:24-31                                     796           1    0.0    0.0     0.0    0.0
-             merge                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(144,1)-(205,24)              600           1    0.0    0.0     0.0    0.0
-              Data.Equality.Graph.merge                      Data.Equality.Graph               src/Data/Equality/Graph.hs:144:1-5                       601           1    0.0    0.0     0.0    0.0
-               find                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              602           2    0.0    0.0     0.0    0.0
+             merge                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(143,1)-(204,24)              600           1    0.0    0.0     0.0    0.0
+              Data.Equality.Graph.merge                      Data.Equality.Graph               src/Data/Equality/Graph.hs:143:1-5                       601           1    0.0    0.0     0.0    0.0
+               find                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              602           2    0.0    0.0     0.0    0.0
                 findRepr                                     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  604           2    0.0    0.0     0.0    0.0
                  Data.Equality.Graph.ReprUnionFind.findRepr  Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          605           2    0.0    0.0     0.0    0.0
-                unionFind                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       603           2    0.0    0.0     0.0    0.0
-             setClass                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:317:1-64                      610           1    0.0    0.0     0.0    0.0
-              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       622           1    0.0    0.0     0.0    0.0
+                unionFind                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       603           2    0.0    0.0     0.0    0.0
+             setClass                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:316:1-64                      610           1    0.0    0.0     0.0    0.0
+              classes                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       622           1    0.0    0.0     0.0    0.0
              unNode                                          Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31                797           1    0.0    0.0     0.0    0.0
              traverse                                        Sym                               test/Sym.hs:32:34-44                                     597           0    0.0    0.0     0.0    0.0
-            modifyClasses                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:338:1-68                      575           3    0.0    0.0     0.0    0.0
-             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       587           3    0.0    0.0     0.0    0.0
-            modifyMemo                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:341:1-59                      576           3    0.0    0.0     0.0    0.0
-             memo                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-10                       591           3    0.0    0.0     0.0    0.0
+            modifyClasses                                    Data.Equality.Graph               src/Data/Equality/Graph.hs:337:1-68                      575           3    0.0    0.0     0.0    0.0
+             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       587           3    0.0    0.0     0.0    0.0
+            modifyMemo                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:340:1-59                      576           3    0.0    0.0     0.0    0.0
+             memo                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-10                       591           3    0.0    0.0     0.0    0.0
             unNode                                           Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31                573           3    0.0    0.0     0.0    0.0
-            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              606           2    0.0    0.0     0.0    0.0
+            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              606           2    0.0    0.0     0.0    0.0
              findRepr                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  608           2    0.0    0.0     0.0    0.0
               Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          609           2    0.0    0.0     0.0    0.0
-             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       607           2    0.0    0.0     0.0    0.0
-            getClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              613           2    0.0    0.0     0.0    0.0
-             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       762           2    0.0    0.0     0.0    0.0
-             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              614           2    0.0    0.0     0.0    0.0
+             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       607           2    0.0    0.0     0.0    0.0
+            getClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              613           2    0.0    0.0     0.0    0.0
+             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       762           2    0.0    0.0     0.0    0.0
+             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              614           2    0.0    0.0     0.0    0.0
               findRepr                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  620           2    0.0    0.0     0.0    0.0
                Data.Equality.Graph.ReprUnionFind.findRepr    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          621           2    0.0    0.0     0.0    0.0
-              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       619           2    0.0    0.0     0.0    0.0
-            setClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:317:1-64                      611           2    0.0    0.0     0.0    0.0
-             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       612           2    0.0    0.0     0.0    0.0
-            createUnionFindClass                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(322,1)-(326,17)              569           0    0.0    0.0     0.0    0.0
+              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       619           2    0.0    0.0     0.0    0.0
+            setClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:316:1-64                      611           2    0.0    0.0     0.0    0.0
+             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       612           2    0.0    0.0     0.0    0.0
+            createUnionFindClass                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(321,1)-(325,17)              569           0    0.0    0.0     0.0    0.0
              makeNewSet                                      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:42:1-69         582           3    0.0    0.0     0.0    0.0
-             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       581           3    0.0    0.0     0.0    0.0
+             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       581           3    0.0    0.0     0.0    0.0
           traverse                                           Sym                               test/Sym.hs:32:34-44                                     557           0    0.0    0.0     0.0    0.0
-         add                                                 Data.Equality.Graph               src/Data/Equality/Graph.hs:(84,1)-(138,28)               559           6    0.0    0.0     0.0    0.0
-          Data.Equality.Graph.add                            Data.Equality.Graph               src/Data/Equality/Graph.hs:84:1-3                        560           6    0.0    0.0     0.0    0.0
-           getClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              645           2    0.0    0.0     0.0    0.0
-            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       761           2    0.0    0.0     0.0    0.0
-            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              646           2    0.0    0.0     0.0    0.0
+         liftCompare                                         Sym                               test/Sym.hs:(44,5)-(62,25)                               598           9    0.0    0.0     0.0    0.0
+          compare                                            Sym                               test/Sym.hs:73:23-25                                     685           2    0.0    0.0     0.0    0.0
+         add                                                 Data.Equality.Graph               src/Data/Equality/Graph.hs:(83,1)-(137,28)               559           6    0.0    0.0     0.0    0.0
+          Data.Equality.Graph.add                            Data.Equality.Graph               src/Data/Equality/Graph.hs:83:1-3                        560           6    0.0    0.0     0.0    0.0
+           getClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              645           2    0.0    0.0     0.0    0.0
+            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       761           2    0.0    0.0     0.0    0.0
+            find                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              646           2    0.0    0.0     0.0    0.0
              findRepr                                        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  652           2    0.0    0.0     0.0    0.0
               Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          653           2    0.0    0.0     0.0    0.0
-             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       651           2    0.0    0.0     0.0    0.0
+             unionFind                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       651           2    0.0    0.0     0.0    0.0
            liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               625           2    0.0    0.0     0.0    0.0
             compare                                          Sym                               test/Sym.hs:73:23-25                                     626           1    0.0    0.0     0.0    0.0
-           setClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:317:1-64                      639           2    0.0    0.0     0.0    0.0
-            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       644           2    0.0    0.0     0.0    0.0
-           addToWorklist                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:(284,1)-(285,57)              630           1    0.0    0.0     0.0    0.0
-            worklist                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:54:7-14                       966           1    0.0    0.0     0.0    0.0
-           canonicalize                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:218:1-60                      623           1    0.0    0.0     0.0    0.0
+           setClass                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:316:1-64                      639           2    0.0    0.0     0.0    0.0
+            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       644           2    0.0    0.0     0.0    0.0
+           addToWorklist                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:(283,1)-(284,57)              630           1    0.0    0.0     0.0    0.0
+            worklist                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-14                       943           1    0.0    0.0     0.0    0.0
+           canonicalize                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:217:1-60                      623           1    0.0    0.0     0.0    0.0
             fmap                                             Sym                               test/Sym.hs:31:33-39                                     624           1    0.0    0.0     0.0    0.0
-             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              647           2    0.0    0.0     0.0    0.0
+             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              647           2    0.0    0.0     0.0    0.0
               findRepr                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  649           2    0.0    0.0     0.0    0.0
                Data.Equality.Graph.ReprUnionFind.findRepr    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          650           2    0.0    0.0     0.0    0.0
-              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       648           2    0.0    0.0     0.0    0.0
+              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       648           2    0.0    0.0     0.0    0.0
            foldr                                             Sym                               test/Sym.hs:32:24-31                                     628           1    0.0    0.0     0.0    0.0
            makeA                                             Sym                               test/Sym.hs:191:5-73                                     654           1    0.0    0.0     0.0    0.0
             fmap                                             Sym                               test/Sym.hs:31:33-39                                     656           1    0.0    0.0     0.0    0.0
            modifyA                                           Sym                               test/Sym.hs:(203,5)-(213,66)                             633           1    0.0    0.0     0.0    0.0
-            getClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              634           1    0.0    0.0     0.0    0.0
-             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       642           1    0.0    0.0     0.0    0.0
-             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              635           1    0.0    0.0     0.0    0.0
+            getClass                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              634           1    0.0    0.0     0.0    0.0
+             classes                                         Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       642           1    0.0    0.0     0.0    0.0
+             find                                            Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              635           1    0.0    0.0     0.0    0.0
               findRepr                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  640           1    0.0    0.0     0.0    0.0
                Data.Equality.Graph.ReprUnionFind.findRepr    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          641           1    0.0    0.0     0.0    0.0
-              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       638           1    0.0    0.0     0.0    0.0
-           modifyClasses                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:338:1-68                      631           1    0.0    0.0     0.0    0.0
-            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       643           1    0.0    0.0     0.0    0.0
-           modifyMemo                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:341:1-59                      632           1    0.0    0.0     0.0    0.0
-            memo                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:53:7-10                       684           1    0.0    0.0     0.0    0.0
+              unionFind                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       638           1    0.0    0.0     0.0    0.0
+           modifyClasses                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:337:1-68                      631           1    0.0    0.0     0.0    0.0
+            classes                                          Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       643           1    0.0    0.0     0.0    0.0
+           modifyMemo                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:340:1-59                      632           1    0.0    0.0     0.0    0.0
+            memo                                             Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-10                       684           1    0.0    0.0     0.0    0.0
            unNode                                            Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31                629           1    0.0    0.0     0.0    0.0
-           createUnionFindClass                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(322,1)-(326,17)              627           0    0.0    0.0     0.0    0.0
+           createUnionFindClass                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(321,1)-(325,17)              627           0    0.0    0.0     0.0    0.0
             makeNewSet                                       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:42:1-69         637           1    0.0    0.0     0.0    0.0
-            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       636           1    0.0    0.0     0.0    0.0
-         liftCompare                                         Sym                               test/Sym.hs:(44,5)-(62,25)                               598           5    0.0    0.0     0.0    0.0
-          compare                                            Sym                               test/Sym.hs:73:23-25                                     685           1    0.0    0.0     0.0    0.0
+            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       636           1    0.0    0.0     0.0    0.0
          traverse                                            Sym                               test/Sym.hs:32:34-44                                     553           1    0.0    0.0     0.0    0.0
          unFix                                               Data.Equality.Utils               src/Data/Equality/Utils.hs:6:23-27                       596           1    0.0    0.0     0.0    0.0
          modifyA                                             Sym                               test/Sym.hs:(203,5)-(213,66)                             595           0    0.0    0.0     0.0    0.0
         rewrites                                             Sym                               test/Sym.hs:(260,1)-(327,5)                              845           0    0.0    0.0     0.1    0.0
-         is_not_zero                                         Sym                               test/Sym.hs:(240,1)-(241,56)                             977        3704    0.0    0.0     0.0    0.0
-          getClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              978        3704    0.0    0.0     0.0    0.0
-           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       984        3704    0.0    0.0     0.0    0.0
-           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              979        3704    0.0    0.0     0.0    0.0
-            findRepr                                         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  982        3707    0.0    0.0     0.0    0.0
-             Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          983        3707    0.0    0.0     0.0    0.0
-            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       981        3704    0.0    0.0     0.0    0.0
-          unsafeGetSubst                                     Sym                               test/Sym.hs:(235,1)-(237,31)                             980        3704    0.0    0.0     0.0    0.0
+         is_not_zero                                         Sym                               test/Sym.hs:(240,1)-(241,56)                             986        3704    0.0    0.0     0.0    0.0
+          getClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              987        3704    0.0    0.0     0.0    0.0
+           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       993        3704    0.0    0.0     0.0    0.0
+           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              988        3704    0.0    0.0     0.0    0.0
+            findRepr                                         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  991        3707    0.0    0.0     0.0    0.0
+             Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          992        3707    0.0    0.0     0.0    0.0
+            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       990        3704    0.0    0.0     0.0    0.0
+          unsafeGetSubst                                     Sym                               test/Sym.hs:(235,1)-(237,31)                             989        3704    0.0    0.0     0.0    0.0
          is_const                                            Sym                               test/Sym.hs:(248,1)-(249,55)                             846        1218    0.0    0.0     0.0    0.0
-          getClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              847        1218    0.0    0.0     0.0    0.0
-           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       853        1218    0.0    0.0     0.0    0.0
-           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              848        1218    0.0    0.0     0.0    0.0
+          getClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              847        1218    0.0    0.0     0.0    0.0
+           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                       853        1218    0.0    0.0     0.0    0.0
+           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)              848        1218    0.0    0.0     0.0    0.0
             findRepr                                         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  851        1221    0.0    0.0     0.0    0.0
              Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          852        1221    0.0    0.0     0.0    0.0
-            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       850        1218    0.0    0.0     0.0    0.0
+            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                       850        1218    0.0    0.0     0.0    0.0
           unsafeGetSubst                                     Sym                               test/Sym.hs:(235,1)-(237,31)                             849        1218    0.0    0.0     0.0    0.0
-         is_const_or_distinct_var                            Sym                               test/Sym.hs:(252,1)-(257,90)                             998         930    0.0    0.0     0.0    0.0
-          unNode                                             Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31               1073       15969    0.0    0.0     0.0    0.0
-          eClassId                                           Data.Equality.Graph.Classes       src/Data/Equality/Graph/Classes.hs:25:7-14               999        1860    0.0    0.0     0.0    0.0
-          getClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)             1000        1860    0.0    0.0     0.0    0.0
-           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                      1006        1860    0.0    0.0     0.0    0.0
-           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)             1001        1860    0.0    0.0     0.0    0.0
-            findRepr                                         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1004        1902    0.0    0.0     0.0    0.0
-             Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1005        1902    0.0    0.0     0.0    0.0
-            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                      1003        1860    0.0    0.0     0.0    0.0
-          unsafeGetSubst                                     Sym                               test/Sym.hs:(235,1)-(237,31)                            1002        1860    0.0    0.0     0.0    0.0
-         is_sym                                              Sym                               test/Sym.hs:(244,1)-(245,100)                            989           9    0.0    0.0     0.0    0.0
-          getClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(312,1)-(314,45)              990           9    0.0    0.0     0.0    0.0
-           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:52:7-13                       996           9    0.0    0.0     0.0    0.0
-           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(223,1)-(226,33)              991           9    0.0    0.0     0.0    0.0
-            findRepr                                         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31)  994           9    0.0    0.0     0.0    0.0
-             Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          995           9    0.0    0.0     0.0    0.0
-            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-15                       993           9    0.0    0.0     0.0    0.0
-          unNode                                             Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31                997           9    0.0    0.0     0.0    0.0
-          unsafeGetSubst                                     Sym                               test/Sym.hs:(235,1)-(237,31)                             992           9    0.0    0.0     0.0    0.0
+         is_const_or_distinct_var                            Sym                               test/Sym.hs:(252,1)-(257,90)                            1007         918    0.0    0.0     0.0    0.0
+          unNode                                             Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31               1091       14430    0.0    0.0     0.0    0.0
+          eClassId                                           Data.Equality.Graph.Classes       src/Data/Equality/Graph/Classes.hs:25:7-14              1008        1836    0.0    0.0     0.0    0.0
+          getClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)             1009        1836    0.0    0.0     0.0    0.0
+           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                      1015        1836    0.0    0.0     0.0    0.0
+           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)             1010        1836    0.0    0.0     0.0    0.0
+            findRepr                                         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1013        1866    0.0    0.0     0.0    0.0
+             Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1014        1866    0.0    0.0     0.0    0.0
+            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                      1012        1836    0.0    0.0     0.0    0.0
+          unsafeGetSubst                                     Sym                               test/Sym.hs:(235,1)-(237,31)                            1011        1836    0.0    0.0     0.0    0.0
+         is_sym                                              Sym                               test/Sym.hs:(244,1)-(245,100)                            998           9    0.0    0.0     0.0    0.0
+          getClass                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:(311,1)-(313,45)              999           9    0.0    0.0     0.0    0.0
+           classes                                           Data.Equality.Graph               src/Data/Equality/Graph.hs:51:7-13                      1005           9    0.0    0.0     0.0    0.0
+           find                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(222,1)-(225,33)             1000           9    0.0    0.0     0.0    0.0
+            findRepr                                         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:(52,1)-(57,31) 1003           9    0.0    0.0     0.0    0.0
+             Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8         1004           9    0.0    0.0     0.0    0.0
+            unionFind                                        Data.Equality.Graph               src/Data/Equality/Graph.hs:50:7-15                      1002           9    0.0    0.0     0.0    0.0
+          unNode                                             Data.Equality.Graph.Nodes         src/Data/Equality/Graph/Nodes.hs:29:26-31               1006           9    0.0    0.0     0.0    0.0
+          unsafeGetSubst                                     Sym                               test/Sym.hs:(235,1)-(237,31)                            1001           9    0.0    0.0     0.0    0.0
      ematch                                                  Data.Equality.Matching            src/Data/Equality/Matching.hs:(44,1)-(57,81)             659           0    0.0    0.0     0.0    0.0
       compileToQuery                                         Data.Equality.Matching            src/Data/Equality/Matching.hs:(135,1)-(159,94)           662           1    0.0    0.0     0.0    0.0
        Data.Equality.Matching.compileToQuery                 Data.Equality.Matching            src/Data/Equality/Matching.hs:135:1-14                   663           1    0.0    0.0     0.0    0.0
@@ -569,12 +585,14 @@ MAIN                                                         MAIN               
    fromInteger                                               Sym                               test/Sym.hs:117:5-43                                     599           0    0.0    0.0     0.0    0.0
    show                                                      Sym                               test/Sym.hs:(99,5)-(105,18)                              539           0    0.0    0.0     0.0    0.0
     fmap                                                     Sym                               test/Sym.hs:31:33-39                                     541           5    0.0    0.0     0.0    0.0
-     unFix                                                   Data.Equality.Utils               src/Data/Equality/Utils.hs:6:23-27                      1104           4    0.0    0.0     0.0    0.0
+     unFix                                                   Data.Equality.Utils               src/Data/Equality/Utils.hs:6:23-27                      1122           4    0.0    0.0     0.0    0.0
     unFix                                                    Data.Equality.Utils               src/Data/Equality/Utils.hs:6:23-27                       540           1    0.0    0.0     0.0    0.0
-    show                                                     Sym                               test/Sym.hs:(82,5)-(89,23)                              1106           0    0.0    0.0     0.0    0.0
+    show                                                     Sym                               test/Sym.hs:(82,5)-(89,23)                              1124           0    0.0    0.0     0.0    0.0
  CAF                                                         Data.Equality.Graph               <entire-module>                                          467           0    0.0    0.0     0.0    0.0
-  createUnionFindClass                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:(322,1)-(326,17)              568           1    0.0    0.0     0.0    0.0
-  runEGS                                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:41:1-22                       546           1    0.0    0.0     0.0    0.0
+  clearAnalysisWorkList                                      Data.Equality.Graph               src/Data/Equality/Graph.hs:(298,1)-(301,13)              935           1    0.0    0.0     0.0    0.0
+  clearWorkList                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:(288,1)-(291,13)              934           1    0.0    0.0     0.0    0.0
+  createUnionFindClass                                       Data.Equality.Graph               src/Data/Equality/Graph.hs:(321,1)-(325,17)              568           1    0.0    0.0     0.0    0.0
+  runEGS                                                     Data.Equality.Graph               src/Data/Equality/Graph.hs:40:1-22                       546           1    0.0    0.0     0.0    0.0
  CAF                                                         Data.Equality.Graph.ReprUnionFind <entire-module>                                          466           0    0.0    0.0     0.0    0.0
   emptyUF                                                    Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:37:1-22         566           1    0.0    0.0     0.0    0.0
  CAF                                                         Data.Equality.Matching            <entire-module>                                          463           0    0.0    0.0     0.0    0.0
@@ -583,9 +601,9 @@ MAIN                                                         MAIN               
  CAF                                                         Data.Equality.Saturation          <entire-module>                                          461           0    0.0    0.0     0.0    0.0
   equalitySaturation'                                        Data.Equality.Saturation          src/Data/Equality/Saturation.hs:(63,1)-(162,51)          563           0    0.0    0.0     0.0    0.0
    Data.Equality.Saturation.equalitySaturation'              Data.Equality.Saturation          src/Data/Equality/Saturation.hs:63:1-19                  564           0    0.0    0.0     0.0    0.0
-    emptyEGraph                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:344:1-56                      565           1    0.0    0.0     0.0    0.0
+    emptyEGraph                                              Data.Equality.Graph               src/Data/Equality/Graph.hs:343:1-56                      565           1    0.0    0.0     0.0    0.0
  CAF                                                         Data.Equality.Extraction          <entire-module>                                          460           0    0.0    0.0     0.0    0.0
-  runExtraction                                              Data.Equality.Extraction          src/Data/Equality/Extraction.hs:46:1-37                 1081           1    0.0    0.0     0.0    0.0
+  runExtraction                                              Data.Equality.Extraction          src/Data/Equality/Extraction.hs:46:1-37                 1099           1    0.0    0.0     0.0    0.0
  CAF                                                         GHC.Conc.Signal                   <entire-module>                                          378           0    0.0    0.0     0.0    0.0
  CAF                                                         GHC.Float                         <entire-module>                                          369           0    0.0    0.0     0.0    0.0
  CAF                                                         GHC.IO.Encoding                   <entire-module>                                          359           0    0.0    0.0     0.0    0.0

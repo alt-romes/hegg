@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 module Data.Equality.Graph where
 
+import qualified Data.Set as S
 import qualified Data.Map as M
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
@@ -22,4 +23,4 @@ getClass :: ClassId -> EGraph s -> (ClassId, EClass s)
 setClass :: EGraph s -> ClassId -> EClass s -> EGraph s
 
 type Memo l = M.Map (ENode l) ClassId
-type Worklist l = [(ENode l, ClassId)]
+type Worklist l = S.Set (ENode l, ClassId)

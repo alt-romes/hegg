@@ -22,7 +22,6 @@ import Data.Functor.Classes
 import Control.Monad
 import Control.Monad.State.Strict
 
-import qualified Data.List   as L
 import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 import qualified Data.Set    as S
@@ -56,7 +55,7 @@ data EGraph l = EGraph
     }
 
 type Memo l = M.Map (ENode l) ClassId
-type Worklist l = [(ENode l, ClassId)]
+type Worklist l = S.Set (ENode l, ClassId)
 
 -- ROMES:TODO: join things built in paralell?
 -- instance Ord1 l => Semigroup (EGraph l) where
@@ -92,8 +91,10 @@ add uncanon_e = do
         new_eclass_id <- createUnionFindClass
 
         -- New singleton e-class stores the e-node and its analysis data
-        new_eclass <- gets $ \egr -> EClass new_eclass_id (S.singleton new_en) (makeA new_en egr) []
+        new_eclass <- gets $ \egr -> EClass new_eclass_id (S.singleton new_en) (makeA new_en egr) mempty
 
+        -- TODO:Performance: All updates can be done to the map first? Parallelize?
+        --
         -- Update e-classes by going through all e-node children and adding
         -- to the e-class parents the new e-node and its e-class id
         forM_ (children new_en) $ \eclass_id -> do
@@ -124,7 +125,7 @@ add uncanon_e = do
         -- something else?
         --
         -- So in the end, we do need to addToWorklist to get correct results
-        addToWorklist [(new_en, new_eclass_id)]
+        addToWorklist $ S.singleton (new_en, new_eclass_id)
 
         -- Add new e-class to existing e-classes
         modifyClasses (IM.insert new_eclass_id new_eclass)
@@ -170,7 +171,7 @@ merge a b = get >>= \egr0 -> do
 
            -- Add all subsumed parents to worklist
            -- We can do this instead of adding the new e-class itself to the worklist because it'll end up in doing this anyway
-           addToWorklist (sub_class^._parents)
+           addToWorklist (S.fromList $ sub_class^._parents)
 
            -- Update leader class with all e-nodes and parents from the
            -- subsumed class
@@ -183,9 +184,9 @@ merge a b = get >>= \egr0 -> do
            -- class whose data is different from the merged must be put on the
            -- analysisWorklist
            when (new_data /= (leader_class^._data)) $
-               addToAnalysisWorklist (leader_class^._parents)
+               addToAnalysisWorklist (S.fromList $ leader_class^._parents)
            when (new_data /= (sub_class^._data)) $
-               addToAnalysisWorklist (leader_class^._parents)
+               addToAnalysisWorklist (S.fromList $ leader_class^._parents)
 
            -- Update leader so that it has all nodes and parents from
            -- subsumed class
@@ -274,32 +275,32 @@ repairAnal (node, repair_id) = do
         -- Merge result is different from original class data, update class
         -- with new_data
         put (egr & _class canon_id._data .~ new_data)
-        addToAnalysisWorklist (c^._parents)
+        addToAnalysisWorklist (S.fromList $ c^._parents)
         modify (modifyA canon_id)
 {-# SCC repairAnal #-}
 
 
 
-addToWorklist :: Eq1 l => Worklist l -> EGS l ()
+addToWorklist :: Ord1 l => Worklist l -> EGS l ()
 addToWorklist li =
     modify (\egr -> egr { worklist = li <> worklist egr})
 
 -- | Clear the e-graph worklist and return the existing work items
-clearWorkList :: Eq1 l => EGS l (Worklist l)
+clearWorkList :: Ord1 l => EGS l (Worklist l)
 clearWorkList = do
     wl <- gets worklist
     modify (\egr -> egr { worklist = mempty })
-    return (L.nub wl)
+    return wl
 
-addToAnalysisWorklist :: Eq1 l => Worklist l -> EGS l ()
+addToAnalysisWorklist :: Ord1 l => Worklist l -> EGS l ()
 addToAnalysisWorklist lx =
     modify (\egr -> egr { analysisWorklist = lx <> analysisWorklist egr})
 
-clearAnalysisWorkList :: Eq1 l => EGS l (Worklist l)
+clearAnalysisWorkList :: Ord1 l => EGS l (Worklist l)
 clearAnalysisWorkList = do
     wl <- gets analysisWorklist
     modify (\egr -> egr { analysisWorklist = mempty })
-    return (L.nub wl)
+    return wl
 
 -- | Get an e-class from an e-graph given its e-class id
 --

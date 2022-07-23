@@ -21,19 +21,19 @@ import Data.Equality.Language
 import Data.Equality.Utils
 
 -- | Query variable
-type Var = String
+type Var = Int
 
+-- TODO: Should be M.Map ...
 type Subst = [(Var, ClassId)]
 
 data ClassIdOrVar = ClassId {-# UNPACK #-} !ClassId
-                  | Var !Var
+                  | Var {-# UNPACK #-} !Var
     deriving (Show, Eq, Ord)
-
-type ClassIdOrVarMap = M.Map Var Var
 
 toVar :: ClassIdOrVar -> Maybe Var
 toVar (Var v) = Just v
 toVar (ClassId _) = Nothing
+{-# INLINE toVar #-}
 
 -- | An Atom ... in pattern ... is R_f(v, v1, ..., vk), so we define it as a
 -- functor ast over pattern variables + the additional var for the e-class id
@@ -42,7 +42,7 @@ data Atom lang
 
 data Query lang
     = Query ![Var] ![Atom lang]
-    | SelectAllQuery !Var
+    | SelectAllQuery {-# UNPACK #-} !Var
 
 -- | Database made of trie maps for each relation. Each relation is uniquely
 -- identified by the expressions modulo children expressions (hence @lang ()@)
@@ -63,10 +63,12 @@ varsInQuery (Query _ atoms) = ordNub $ foldl' f mempty atoms
         f s = \case
             Atom (Var v) (toList -> l) -> (v : (mapMaybe toVar l)) <> s
             Atom _       (toList -> l) -> (mapMaybe toVar l) <> s
+{-# INLINE varsInQuery #-} 
 
 queryHeadVars :: Foldable lang => Query lang -> [Var]
 queryHeadVars (SelectAllQuery x) = [x]
 queryHeadVars (Query qv _) = qv
+{-# INLINE queryHeadVars #-}
 
 -- ROMES:TODO no longer so sure why the query needs [Var] (the free variables in
 -- the query, since the substitution includes ALL variables)... again, weird
@@ -96,6 +98,7 @@ genericJoin d q@(Query qv atoms) = case varsInQuery q of
    where
        atomsWithX x = filter (x `elemOfAtom`) atoms
        domainX x = intersectAtoms x d (atomsWithX x)
+{-# INLINABLE genericJoin #-}
 {-# SCC genericJoin #-}
 
 substitute :: Functor lang => Var -> ClassId -> [Atom lang] -> [Atom lang]
@@ -106,9 +109,12 @@ substitute r i = map $ \case
                    Var vi
                      | vi == r -> ClassId i
                    vi -> vi
+{-# INLINE substitute #-}
 
 elemOfAtom :: Foldable lang => Var -> Atom lang -> Bool
 elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
+{-# INLINE elemOfAtom #-}
+
 
 -- ROMES:TODO Terrible name 'intersectAtoms'
 
@@ -135,6 +141,7 @@ intersectAtoms var (DB db) (a:atoms) = S.toList $ foldr (\x xs -> (f x) `S.inter
                      Just xs -> S.fromList $ xs
 
 intersectAtoms _ _ [] = error "can't intersect empty list of atoms?"
+{-# INLINABLE intersectAtoms #-}
 {-# SCC intersectAtoms #-}
 
 -- | Find the matching ids that a variable can take given a list of variables
@@ -142,7 +149,7 @@ intersectAtoms _ _ [] = error "can't intersect empty list of atoms?"
 --
 -- Invalid substitutions are represented as Nothing
 intersectInTrie :: Var -- ^ The variable whose domain we are looking for
-                -> M.Map Var ClassId -- ^ A mapping from variables that have been substituted
+                -> IM.IntMap ClassId -- ^ A mapping from variables that have been substituted
                 -> Fix ClassIdMap -- ^ The trie
                 -> [ClassIdOrVar]  -- ^ The "query"
                 -> Maybe [ClassId] -- ^ The resulting domain
@@ -150,11 +157,11 @@ intersectInTrie var substs (Fix m) = \case
 
     [] -> error "intersectInRelation should always be called in 'queries' that have at least one var... something went wrong"
 
-    [Var x] -> case M.lookup x substs of
+    [Var x] -> case IM.lookup x substs of
                  -- Last variable is a var, so all possible values are possible
                  Nothing -> pure (IM.keys m)
                  -- Last variable is a var but has a substitution, do the same as if it were the last ClassId
-                 Just s  -> IM.lookup s m >> pure [s]
+                 Just s -> IM.lookup s m >> pure [s]
 
     -- Last variable is constant (lol), so the valid intersection value is itself if it exists in the map
     [ClassId x] -> IM.lookup x m >> pure [x]
@@ -163,7 +170,7 @@ intersectInTrie var substs (Fix m) = \case
     -- intersection, in which its own occurence is replaced by the assumed value
     (Var x:xs)
       | x == var -> pure $
-        mapMaybe
+       mapMaybe
           (\(k, ls) -> do
             -- If the resulting intersection for this value of var @x@ is
             -- non-empty then it's a valid substitution. Otherwise, this
@@ -175,7 +182,7 @@ intersectInTrie var substs (Fix m) = \case
       -- We found a var which isn't the target, so we'll assume all
       -- possible values of this variable and get intersections with the
       -- actual var after
-      | otherwise -> case M.lookup x substs of
+      | otherwise -> case IM.lookup x substs of
           Nothing -> pure $ concat $ 
             mapMaybe
               (\(k, ls) ->
@@ -187,9 +194,13 @@ intersectInTrie var substs (Fix m) = \case
           Just varVal -> intersectInTrie var substs (m IM.! varVal) xs
 
     -- Recurse after descending one layer of the trie map
-    (ClassId x:xs) -> intersectInTrie var substs (m IM.! x) xs
+    (ClassId x:(xs)) -> intersectInTrie var substs (m IM.! x) xs
 
-{-# SCC intersectInTrie #-}
+-- {-# SCC intersectInTrie #-}
 
-putSubst :: Var -> ClassId -> M.Map Var ClassId -> M.Map Var ClassId
-putSubst v i = M.alter (\case Nothing -> Just i; Just _ -> error "replacing a subst!!") v
+putSubst :: Var -> ClassId -> IM.IntMap ClassId -> IM.IntMap ClassId
+-- putSubst v i = M.update (\case Nothing -> Just i; Just _ -> error "replacing a subst!!") v
+putSubst = IM.insert
+-- {-# INLINE putSubst #-}
+{-# INLINE putSubst #-}
+

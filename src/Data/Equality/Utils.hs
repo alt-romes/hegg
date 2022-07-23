@@ -1,6 +1,9 @@
 {-# LANGUAGE StandaloneDeriving #-}
 module Data.Equality.Utils where
 
+import Data.Foldable
+import Data.Bits
+
 import qualified Data.Set    as S
 import Data.Functor.Classes
 
@@ -21,3 +24,7 @@ cata f = f . fmap (cata f) . unFix
 ordNub :: Ord a => [a] -> [a]
 ordNub = S.toList . S.fromList
 {-# INLINE ordNub #-}
+
+hash :: String -> Int
+hash = foldl' (\h c -> 33*h `xor` fromEnum c) 5381
+{-# INLINE hash #-}

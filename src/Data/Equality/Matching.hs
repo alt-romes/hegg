@@ -2,13 +2,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Data.Equality.Matching
     ( module Data.Equality.Matching
-    , Database, Subst
+    , module Data.Equality.Matching.Pattern
+    , Database, Subst, Var
     )
     where
 
-import Data.String
 import Data.Maybe
-import Data.Functor.Classes
 
 import Data.Foldable (toList)
 
@@ -21,6 +20,7 @@ import qualified Data.IntMap as IM
 import Data.Equality.Utils
 import Data.Equality.Graph
 import Data.Equality.Matching.Database
+import Data.Equality.Matching.Pattern
 
 -- |  Matching a pattern on an e-graph returns substitutions for every variable
 -- in the pattern and the e-class that matched the pattern
@@ -95,34 +95,6 @@ eGraphToDatabase eg@EGraph{..} = M.foldrWithKey (addENodeToDB eg) (DB mempty) me
 {-# SCC eGraphToDatabase #-}
 
 
-
--- | @(~x + 0) --> BinOp Add (Var "~x") (ENode (Integer 0))@
--- @~x --> VariablePattern "~x"@
-data Pattern lang
-    = NonVariablePattern (lang (Pattern lang))
-    | VariablePattern Var
-
-pat :: lang (Pattern lang) -> Pattern lang
-pat = NonVariablePattern
-
-instance Eq1 l => (Eq (Pattern l)) where
-    (==) (NonVariablePattern a) (NonVariablePattern b) = liftEq (==) a b
-    (==) (VariablePattern a) (VariablePattern b) = a == b 
-    (==) _ _ = False
-
-instance Ord1 l => (Ord (Pattern l)) where
-    compare (VariablePattern _) (NonVariablePattern _) = LT
-    compare (NonVariablePattern _) (VariablePattern _) = GT
-    compare (VariablePattern a) (VariablePattern b) = compare a b
-    compare (NonVariablePattern a) (NonVariablePattern b) = liftCompare compare a b
-
-instance Show1 lang => Show (Pattern lang) where
-    showsPrec _ (VariablePattern s) = showString s -- ROMES:TODO don't ignore prec?
-    showsPrec d (NonVariablePattern x) = liftShowsPrec showsPrec showList d x
-
-instance IsString (Pattern lang) where
-    fromString = VariablePattern
-
 data AuxResult lang = Var :~ [Atom lang]
 
 -- Return distinct variables in a pattern
@@ -142,7 +114,7 @@ compileToQuery = flip evalState 0 . compile_to_query'
         aux :: (Traversable lang) => Pattern lang -> State Int (AuxResult lang)
         aux (VariablePattern x) = return $ x :~ [] -- from definition in relational e-matching paper (needed for as base case for recursion)
         aux (NonVariablePattern p) = do
-            v <- fresh
+            v <- next
             auxs <- sequence (toList (fmap aux p))
             let boundVars = map (\(b :~ _) -> b) auxs
                 atoms     = join $ map (\(_ :~ a) -> a) auxs
@@ -163,6 +135,7 @@ fresh = ('$':) . ('~':) . (letters !!) <$> next
     where letters :: [String]
           letters = [1..] >>= flip replicateM ['a'..'z']
 
+-- Gives next negative int for bound variable
 next :: State Int Int
 next = do
     i <- get

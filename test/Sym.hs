@@ -231,24 +231,25 @@ evalConstant = \case
     Sym _ -> Nothing
     Const x -> Just x
     
-unsafeGetSubst :: String -> Subst -> ClassId
-unsafeGetSubst v subst = case L.lookup v subst of
+unsafeGetSubst :: Pattern Expr -> Subst -> ClassId
+unsafeGetSubst (NonVariablePattern _) _ = error "unsafeGetSubst: NonVariablePattern; expecting VariablePattern"
+unsafeGetSubst (VariablePattern v) subst = case L.lookup v subst of
       Nothing -> error "Searching for non existent bound var in conditional"
       Just class_id -> class_id
 
-is_not_zero :: String -> RewriteCondition Expr
+is_not_zero :: Pattern Expr -> RewriteCondition Expr
 is_not_zero v subst egr =
     egr^._class (unsafeGetSubst v subst)._data /= Just 0
 
-is_sym :: String -> RewriteCondition Expr
+is_sym :: Pattern Expr -> RewriteCondition Expr
 is_sym v subst egr =
     any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class (unsafeGetSubst v subst)._nodes)
 
-is_const :: String -> RewriteCondition Expr
+is_const :: Pattern Expr -> RewriteCondition Expr
 is_const v subst egr =
     isJust (egr^._class (unsafeGetSubst v subst)._data)
 
-is_const_or_distinct_var :: String -> String -> RewriteCondition Expr
+is_const_or_distinct_var :: Pattern Expr -> Pattern Expr -> RewriteCondition Expr
 is_const_or_distinct_var v w subst egr =
     let v' = unsafeGetSubst v subst
         w' = unsafeGetSubst w subst

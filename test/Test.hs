@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Test.Tasty
 
--- import Data.Equality.Utils
+import Data.Equality.Utils
 import Invariants
 import Sym
 import Lambda

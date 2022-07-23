@@ -54,10 +54,10 @@ instance Show1 l => (Show (ENode l)) where
     showsPrec p (Node l) = liftShowsPrec showsPrec showList p l
 
 instance Eq1 l => (Eq (Operator l)) where
-    (==) (Operator a) (Operator b) = liftEq (==) a b
+    (==) (Operator a) (Operator b) = liftEq (\_ _ -> True) a b
 
 instance Ord1 l => (Ord (Operator l)) where
-    compare (Operator a) (Operator b) = liftCompare compare a b
+    compare (Operator a) (Operator b) = liftCompare (\_ _ -> EQ) a b
 
 instance Show1 l => (Show (Operator l)) where
     showsPrec p (Operator l) = liftShowsPrec (const . const $ showString "") (const $ showString "") p l

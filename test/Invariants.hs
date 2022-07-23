@@ -53,7 +53,7 @@ patFoldAllClasses expr i =
         _   -> False
     where
         eg :: EGraph l
-        eg = snd $ equalitySaturation expr [VariablePattern "x":=fromInteger i] (error "Cost function shouldn't be used")
+        eg = snd $ equalitySaturation expr [VariablePattern 1:=fromInteger i] (error "Cost function shouldn't be used")
 
 -- | Test 'compileToQuery'.
 --
@@ -177,7 +177,7 @@ instance Arbitrary (Fix Expr) where
 instance Arbitrary (Pattern SimpleExpr) where
     arbitrary = sized p'
       where
-        p' 0 = VariablePattern . un <$> arbitrary
+        p' 0 = VariablePattern <$> oneof (return <$> [1..16])
         p' n = NonVariablePattern <$> resize (n `div` 2) arbitrary
 
 newtype Name = Name { un :: String }

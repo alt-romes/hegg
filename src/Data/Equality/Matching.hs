@@ -10,7 +10,6 @@ import Data.String
 import Data.Maybe
 import Data.Functor.Classes
 
-import Data.List (nub)
 import Data.Foldable (toList)
 
 import Control.Monad
@@ -129,7 +128,7 @@ data AuxResult lang = Var :~ [Atom lang]
 -- Return distinct variables in a pattern
 vars :: Foldable lang => Pattern lang -> [Var]
 vars (VariablePattern x) = [x]
-vars (NonVariablePattern p) = nub $ join $ map vars $ toList p
+vars (NonVariablePattern p) = ordNub $ join $ map vars $ toList p
 
 compileToQuery :: (Traversable lang) => Pattern lang -> Query lang
 compileToQuery = flip evalState 0 . compile_to_query'
@@ -138,7 +137,7 @@ compileToQuery = flip evalState 0 . compile_to_query'
         compile_to_query' (VariablePattern x) = return (SelectAllQuery x)
         compile_to_query' p@(NonVariablePattern _) = do
             root :~ atoms <- aux p
-            return (Query (nub $ root:vars p) atoms)
+            return (Query (ordNub $ root:vars p) atoms)
 
         aux :: (Traversable lang) => Pattern lang -> State Int (AuxResult lang)
         aux (VariablePattern x) = return $ x :~ [] -- from definition in relational e-matching paper (needed for as base case for recursion)

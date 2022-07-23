@@ -1,6 +1,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 module Data.Equality.Utils where
 
+import qualified Data.Set    as S
 import Data.Functor.Classes
 
 newtype Fix f = Fix { unFix :: f (Fix f) }
@@ -16,3 +17,7 @@ instance Show1 f => Show (Fix f) where
 cata :: Functor f => (f a -> a) -> (Fix f -> a)
 cata f = f . fmap (cata f) . unFix
 {-# INLINE cata #-}
+
+ordNub :: Ord a => [a] -> [a]
+ordNub = S.toList . S.fromList
+{-# INLINE ordNub #-}

@@ -119,7 +119,12 @@ add uncanon_e = do
         --
         -- The hash cons invariants test suffer from this greatly but the
         -- saturation tests seem mostly fine?
-        addToAnalysisWorklist [(new_en, new_eclass_id)]
+        --
+        -- And adding to the analysis worklist doesn't work, so maybe it's
+        -- something else?
+        --
+        -- So in the end, we do need to addToWorklist to get correct results
+        addToWorklist [(new_en, new_eclass_id)]
 
         -- Add new e-class to existing e-classes
         modifyClasses (IM.insert new_eclass_id new_eclass)

@@ -115,7 +115,7 @@ instance Num (Fix Expr) where
     (-) a b = Fix (BinOp Sub a b)
     (*) a b = Fix (BinOp Mul a b)
     fromInteger = Fix . Const . fromInteger
-    negate = Fix . BinOp Mul (fromInteger $ -1)
+    negate = error "DONT USE" -- Fix . BinOp Mul (fromInteger $ -1)
     abs = error "abs"
     signum = error "signum"
 
@@ -156,7 +156,7 @@ instance Num (Pattern Expr) where
     (-) a b = NonVariablePattern $ BinOp Sub a b
     (*) a b = NonVariablePattern $ BinOp Mul a b
     fromInteger = NonVariablePattern . Const . fromInteger
-    negate = NonVariablePattern. BinOp Mul (fromInteger $ -1)
+    negate = error "DONT USE" -- NonVariablePattern. BinOp Mul (fromInteger $ -1)
     abs = error "abs"
     signum = error "signum"
 
@@ -258,34 +258,36 @@ is_const_or_distinct_var v w subst egr =
 
 rewrites :: [Rewrite Expr]
 rewrites =
-    [ "x"+"y" := "y"+"x" -- comm add
-    , "x"*"y" := "y"*"x" -- comm mul
-    , "x"+("y"+"z") := ("x"+"y")+"z" -- assoc add
-    , "x"*("y"*"z") := ("x"*"y")*"z" -- assoc mul
+    [ "a"+"b" := "b"+"a" -- comm add
+    , "a"*"b" := "b"*"a" -- comm mul
+    , "a"+("b"+"c") := ("a"+"b")+"c" -- assoc add
+    , "a"*("b"*"c") := ("a"*"b")*"c" -- assoc mul
 
-    , "x"-"y" := "x"+(-"y") -- sub cannon
-    , "x"/"y" := "x"*powP "y" (-1) :| is_not_zero "y" -- div cannon
+    , "a"-"b" := "a"+(fromInteger (-1) * "b") -- sub cannon
+    , "a"/"b" := "a"*powP "b" (fromInteger $ -1) :| is_not_zero "b" -- div cannon
 
     -- identities
-    , "x"+0 := "x"
-    , "x"*0 := 0
-    , "x"*1 := "x"
+    , "a"+0 := "a"
+    , "a"*0 := 0
+    , "a"*1 := "a"
 
-    -- TODO: This collapses all classes...
-    -- , "x" := "x"+0
-    , "x" := "x"*1
+    -- TODO This causes many problems
+    -- , "a" := "a"+0
 
-    , "a"-"a" := 1 -- cancel sub
+    -- This already works
+    , "a" := "a"*1
+
+    , "a"-"a" := 0 -- cancel sub
     , "a"/"a" := 1 :| is_not_zero "a" -- cancel div
 
-    , "x"*("y"+"z") := ("x"*"y")+("x"*"z") -- distribute
-    , ("x"*"y")+("x"*"z") := "x"*("y"+"z") -- factor
+    , "a"*("b"+"c") := ("a"*"b")+("a"*"c") -- distribute
+    , ("a"*"b")+("a"*"c") := "a"*("b"+"c") -- factor
 
     , powP "a" "b"*powP "a" "c" := powP "a" ("b" + "c") -- pow mul
     , powP "a" 0 := 1 :| is_not_zero "a"
     , powP "a" 1 := "a"
     , powP "a" 2 := "a"*"a"
-    , powP "a" (-1) := 1/"a" :| is_not_zero "a"
+    , powP "a" (fromInteger $ -1) := 1/"a" :| is_not_zero "a"
 
     , "x"*(1/"x") := 1 :| is_not_zero "x"
 
@@ -296,9 +298,7 @@ rewrites =
     , diffP "x" ("a" * "b") := ("a"*diffP "x" "b") + ("b"*diffP "x" "a")
 
     , diffP "x" (sinP "x") := cosP "x"
-    , diffP "x" (cosP "x") := (-1)*sinP "x"
-
-    , diffP "x" (lnP "x") := 1/"x" :| is_not_zero "x"
+    , diffP "x" (cosP "x") := fromInteger (-1) * sinP "x"
 
     , diffP "x" (lnP "x") := 1/"x" :| is_not_zero "x"
 
@@ -313,16 +313,16 @@ rewrites =
     , intP (powP "x" "c") "x" := (/) (powP "x" ((+) "c" 1)) ((+) "c" 1) :| is_const "c"
 
     , intP (cosP "x") "x" := sinP "x"
-    , intP (sinP "x") "x" := (-1) * cosP "x"
+    , intP (sinP "x") "x" := fromInteger (-1)*cosP "x"
 
     , intP ("f" + "g") "x" := intP "f" "x" + intP "g" "x"
 
-    , intP ("f" - "g") "x" := intP "f" "x" - intP "g" "x"
+    -- , intP ("f" - "g") "x" := intP "f" "x" - intP "g" "x"
 
     , intP ("a" * "b") "x" := (-) ((*) "a" (intP "b" "x")) (intP ((*) (diffP "x" "a") (intP "b" "x")) "x")
 
     -- Additional ad-hoc: because of negate representations?
-    , "a"-(-"b") := "a"+"b"
+    , "a"-(fromInteger (-1)*"b") := "a"+"b"
 
     ]
 
@@ -369,7 +369,7 @@ symTests = testGroup "Symbolic"
         rewrite (1+("a"*(2-1))) @?= (1+"a")
 
     , testCase "1+a*(2-1) = 1+a (all + constant f.)" $
-        rewrite ((-3)+(-3)-6) @?= Fix (Const $ -12)
+        rewrite (fromInteger(-3)+fromInteger(-3)-6) @?= Fix (Const $ -12)
 
     , testCase "1+a-a*(2-1) = 1 (all + constant f.)" $
         rewrite (1 + "a" - "a"*(2-1)) @?= 1
@@ -405,7 +405,7 @@ symTests = testGroup "Symbolic"
         rewrite (Fix $ BinOp Integral (Fix $ UnOp Cos "x") "x") @?= Fix (UnOp Sin "x")
 
     , testCase "i3" $
-        rewrite (Fix $ BinOp Integral (Fix $ BinOp Pow "x" 1) "x") @?= "x"
+        rewrite (Fix $ BinOp Integral (Fix $ BinOp Pow "x" 1) "x") @?= "x"*("x"*0.5)
 
     , testCase "i4" $
         rewrite (_i ((*) "x" (_cos "x")) "x") @?= (+) (_cos "x") ((*) "x" (_sin "x"))
@@ -413,9 +413,9 @@ symTests = testGroup "Symbolic"
     , testCase "i5" $
         rewrite (_i ((*) (_cos "x") "x") "x") @?= (+) (_cos "x") ((*) "x" (_sin "x"))
 
-    -- TODO: How is this supposed to work ?
-    -- , testCase "i6" $
-    --     rewrite (_i (_ln "x") "x") @?= ((-) ((*) "x" (_ln "x")) "x")
+    -- TODO: How does this even work ?
+    , testCase "i6" $
+        rewrite (_i (_ln "x") "x") @?= "x"*(_ln "x" + fromInteger(-1))
 
     ]
 

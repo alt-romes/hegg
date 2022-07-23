@@ -107,6 +107,9 @@ elemOfAtom :: Foldable lang => Var -> Atom lang -> Bool
 elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
 
 -- ROMES:TODO Terrible name
+--
+-- 55% of the time is spent on this function... optimize!
+--
 -- | Given a database and a list of Atoms with an occurring var @x@, find
 -- @D_x@, the domain of variable x, that is, the values x can take
 intersectAtoms :: Language l => Var -> Database l -> [Atom l] -> [ClassId]

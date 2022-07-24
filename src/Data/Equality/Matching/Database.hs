@@ -1,8 +1,10 @@
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -O2 -funbox-strict-fields #-}
 module Data.Equality.Matching.Database where
 
 import Data.Maybe (mapMaybe)
@@ -27,7 +29,7 @@ type Var = Int
 type Subst = [(Var, ClassId)]
 
 data ClassIdOrVar = ClassId {-# UNPACK #-} !ClassId
-                  | Var {-# UNPACK #-} !Var
+                  | Var     {-# UNPACK #-} !Var
     deriving (Show, Eq, Ord)
 
 toVar :: ClassIdOrVar -> Maybe Var
@@ -152,24 +154,24 @@ intersectInTrie :: Var -- ^ The variable whose domain we are looking for
                 -> IM.IntMap ClassId -- ^ A mapping from variables that have been substituted
                 -> Fix ClassIdMap -- ^ The trie
                 -> [ClassIdOrVar]  -- ^ The "query"
-                -> Maybe [ClassId] -- ^ The resulting domain
-intersectInTrie var substs (Fix m) = \case
+                -> Maybe [ClassId] -- ^ The resulting domain for a valid substitution
+intersectInTrie !var !substs (Fix !m) = \case
 
     [] -> error "intersectInRelation should always be called in 'queries' that have at least one var... something went wrong"
 
-    [Var x] -> case IM.lookup x substs of
+    [Var x] -> {-# SCC "SingleVar" #-} case IM.lookup x substs of
                  -- Last variable is a var, so all possible values are possible
                  Nothing -> pure (IM.keys m)
                  -- Last variable is a var but has a substitution, do the same as if it were the last ClassId
                  Just s -> IM.lookup s m >> pure [s]
 
     -- Last variable is constant (lol), so the valid intersection value is itself if it exists in the map
-    [ClassId x] -> IM.lookup x m >> pure [x]
+    [ClassId x] -> {-# SCC "SingleClassId" #-} IM.lookup x m >> pure [x]
 
     -- For all possible values of the required var, see which result in a non-empty
     -- intersection, in which its own occurence is replaced by the assumed value
     (Var x:xs)
-      | x == var -> pure $
+      | x == var -> {-# SCC "THE_var_x:xs" #-} pure $
        mapMaybe
           (\(k, ls) -> do
             -- If the resulting intersection for this value of var @x@ is
@@ -182,7 +184,7 @@ intersectInTrie var substs (Fix m) = \case
       -- We found a var which isn't the target, so we'll assume all
       -- possible values of this variable and get intersections with the
       -- actual var after
-      | otherwise -> case IM.lookup x substs of
+      | otherwise -> {-# SCC "NOT_THE_var_x:xs" #-} case IM.lookup x substs of
           Nothing -> pure $ concat $ 
             mapMaybe
               (\(k, ls) ->
@@ -194,13 +196,12 @@ intersectInTrie var substs (Fix m) = \case
           Just varVal -> intersectInTrie var substs (m IM.! varVal) xs
 
     -- Recurse after descending one layer of the trie map
-    (ClassId x:(xs)) -> intersectInTrie var substs (m IM.! x) xs
-
+    (ClassId x:(xs)) -> {-# SCC "ClassId_x:xs" #-} intersectInTrie var substs (m IM.! x) xs
+{-# INLINABLE intersectInTrie #-}
 -- {-# SCC intersectInTrie #-}
 
 putSubst :: Var -> ClassId -> IM.IntMap ClassId -> IM.IntMap ClassId
 -- putSubst v i = M.update (\case Nothing -> Just i; Just _ -> error "replacing a subst!!") v
 putSubst = IM.insert
--- {-# INLINE putSubst #-}
 {-# INLINE putSubst #-}
 

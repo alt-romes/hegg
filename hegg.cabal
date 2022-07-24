@@ -23,7 +23,17 @@ source-repository head
     location: https://github.com/alt-romes/hegg
 
 library
-    ghc-options:      -Wall -Wcompat
+    ghc-options:      -Wall -Wcompat -fno-prof-auto -ddump-simpl -ddump-to-file
+                      -dsuppress-ticks
+                      -dsuppress-stg-exts
+                      -dsuppress-coercions
+                      -dsuppress-idinfo
+                      -dsuppress-unfoldings
+                      -dsuppress-module-prefixes
+                      -dsuppress-timestamps
+                      -dsuppress-uniques
+                      -dsuppress-var-kinds
+
     exposed-modules:  Data.Equality.Graph,
                       Data.Equality.Graph.ReprUnionFind,
                       Data.Equality.Graph.Classes,

@@ -21,8 +21,6 @@ module Data.Equality.Saturation
 
     ) where
 
-import GHC.Conc
-
 import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 
@@ -162,8 +160,3 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
             NonVariablePattern p -> reprPat subst p
 {-# SCC equalitySaturation' #-}
 
--- We don't have the parallel package, so roll our own simple parMap
-parMap :: (a -> b) -> [a] -> [b]
-parMap _ [] = []
-parMap f (x:xs) = fx `par` (fxs `pseq` (fx : fxs))
-    where fx = f x; fxs = parMap f xs

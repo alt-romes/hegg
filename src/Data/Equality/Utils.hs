@@ -1,6 +1,8 @@
 {-# LANGUAGE StandaloneDeriving #-}
 module Data.Equality.Utils where
 
+import GHC.Conc
+
 import Data.Foldable
 import Data.Bits
 
@@ -28,3 +30,10 @@ ordNub = S.toList . S.fromList
 hash :: String -> Int
 hash = foldl' (\h c -> 33*h `xor` fromEnum c) 5381
 {-# INLINE hash #-}
+
+-- We don't have the parallel package, so roll our own simple parMap
+parMap :: (a -> b) -> [a] -> [b]
+parMap _ [] = []
+parMap f (x:xs) = fx `par` (fxs `pseq` (fx : fxs))
+    where fx = f x; fxs = parMap f xs
+

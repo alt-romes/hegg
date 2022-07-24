@@ -139,7 +139,7 @@ intersectAtoms var (DB db) (a:atoms) = S.toList $ foldr (\x xs -> (f x) `S.inter
         -- If needed relation does exist, find intersection in it
         -- Add list of found intersections to existing
         Just r  -> case intersectInTrie var mempty r (v:toList l) of
-                     Nothing ->  error "intersectInTrie shouldn't return nothing out side of the recursion; failure here is denoted by an empty list of matching classes ... write better errror"
+                     Nothing ->  error "intersectInTrie should return valid substitution for variable query"
                      Just xs -> S.fromList $ xs
 
 intersectAtoms _ _ [] = error "can't intersect empty list of atoms?"
@@ -150,53 +150,81 @@ intersectAtoms _ _ [] = error "can't intersect empty list of atoms?"
 -- and ids that must match the structure
 --
 -- Invalid substitutions are represented as Nothing
+--
+-- The intersection might be invalid while assuming values for variables. If
+-- we're looking for the domain of some variables we should never get an
+-- invalid substitution, but rather an empty list saying that the query
+-- intersection is valid but empty.
+--
+-- TODO: write a note for this...
+--
+--
+-- TODO: Really, a valid substitution is one which isn't empty...
 intersectInTrie :: Var -- ^ The variable whose domain we are looking for
                 -> IM.IntMap ClassId -- ^ A mapping from variables that have been substituted
-                -> Fix ClassIdMap -- ^ The trie
+                -> Fix ClassIdMap  -- ^ The trie
                 -> [ClassIdOrVar]  -- ^ The "query"
                 -> Maybe [ClassId] -- ^ The resulting domain for a valid substitution
 intersectInTrie !var !substs (Fix !m) = \case
 
-    [] -> error "intersectInRelation should always be called in 'queries' that have at least one var... something went wrong"
+    [] -> pure []
 
-    [Var x] -> {-# SCC "SingleVar" #-} case IM.lookup x substs of
-                 -- Last variable is a var, so all possible values are possible
-                 Nothing -> pure (IM.keys m)
-                 -- Last variable is a var but has a substitution, do the same as if it were the last ClassId
-                 Just s -> IM.lookup s m >> pure [s]
+    -- Looking for a class-id, so if it exists in map the intersection is
+    -- valid and we simply continue the search for the domain
+    (ClassId x:xs) -> {-# SCC "Intersect_ClassId" #-}
+        IM.lookup x m >>= \next -> intersectInTrie var substs next xs
 
-    -- Last variable is constant (lol), so the valid intersection value is itself if it exists in the map
-    [ClassId x] -> {-# SCC "SingleClassId" #-} IM.lookup x m >> pure [x]
+    -- Looking for a var. It might be one of the following:
+    --
+    --      (1) The variable whose domain we're looking for, and this is the
+    --      first time we found it. In this case we'll assume all substitutions
+    --      are valid, and try to get a valid substitution with that
+    --      assumption. If the substitution is valid, the substitution is an
+    --      element of the domain.
+    --
+    --      (2) The variable whose domain we're looking for, but we've already
+    --      assumed a value for it in this branch, so we continue the recursion
+    --      guaranteeing the assumption results in a valid substitution
+    --
+    --      (3) A bound variable, and this is the first time we find it. We
+    --      assume its value for all branches and concatenate the result of all
+    --      valid domain elements for each branch that resulted in a valid
+    --      substitution
+    --
+    --      (4) A bound variable, but we've assumed a value for it, so we
+    --      continue the recursion again to validate the assumption and
+    --      possibly find the domain of the variable we're looking for ahead
+    --
+    (Var x:xs) -> case IM.lookup x substs of
+        -- (2) or (4), we simply continue
+        Just varVal -> {-# SCC "intersect_subst_var" #-} IM.lookup varVal m >>= \next -> intersectInTrie var substs next xs
+        -- (1) or (3)
+        Nothing -> pure $
+            if x == var
+               -- (1)
+               then {-# SCC "intersect_new_THE_var" #-} mapMaybe
+                 (\(k, ls) -> do
+                   -- If the resulting intersection for this value of var @x@ is
+                   -- valid then it's a valid substitution. Otherwise, this
+                   -- variable doesn't match any the database and we don't add
+                   -- this value to the domain. If the intersection was
+                   -- successful we return the value for the var.
+                   -- 
+                   -- NOTE: Using empty lists instead of Maybe to detect
+                   -- failure is not feasable, because intersections with e.g.
+                   -- class ids only result in empty lists, but might be valid
+                   -- or invalid depending on whether we got a match or not.
+                   -- That's why we use Maybe to identify failed and successful
+                   -- matches
+                   intersectInTrie var (putSubst x k substs) ls xs >> pure k) (IM.toList m)
 
-    -- For all possible values of the required var, see which result in a non-empty
-    -- intersection, in which its own occurence is replaced by the assumed value
-    (Var x:xs)
-      | x == var -> {-# SCC "THE_var_x:xs" #-} pure $
-       mapMaybe
-          (\(k, ls) -> do
-            -- If the resulting intersection for this value of var @x@ is
-            -- non-empty then it's a valid substitution. Otherwise, this
-            -- variable doesn't match any the database and we return the empty
-            -- list. If the intersection was successful we return the value for
-            -- the var
-            intersectInTrie var (putSubst x k substs) ls xs >> pure k) (IM.toList m)
+               -- (3)
+               else {-# SCC "intersect_new_SOME_var" #-} concat $ mapMaybe
+                  (\(k, ls) ->
+                    -- The resulting intersection for this value of var @x@ is some
+                    -- of the possible values of the target var; return the sum of all valid
+                    intersectInTrie var (putSubst x k substs) ls xs) (IM.toList m)
 
-      -- We found a var which isn't the target, so we'll assume all
-      -- possible values of this variable and get intersections with the
-      -- actual var after
-      | otherwise -> {-# SCC "NOT_THE_var_x:xs" #-} case IM.lookup x substs of
-          Nothing -> pure $ concat $ 
-            mapMaybe
-              (\(k, ls) ->
-                -- The resulting intersection for this value of var @x@ is some
-                -- of the possible values of the target var; return the sum of all valid
-                intersectInTrie var (putSubst x k substs) ls xs) (IM.toList m)
-
-          -- Recurse after descending one layer of the trie map using the substitution we have ffor this var
-          Just varVal -> intersectInTrie var substs (m IM.! varVal) xs
-
-    -- Recurse after descending one layer of the trie map
-    (ClassId x:(xs)) -> {-# SCC "ClassId_x:xs" #-} intersectInTrie var substs (m IM.! x) xs
 {-# INLINABLE intersectInTrie #-}
 -- {-# SCC intersectInTrie #-}
 

@@ -36,4 +36,3 @@ parMap :: (a -> b) -> [a] -> [b]
 parMap _ [] = []
 parMap f (x:xs) = fx `par` (fxs `pseq` (fx : fxs))
     where fx = f x; fxs = parMap f xs
-

@@ -7,8 +7,7 @@ module Data.Equality.Matching
     )
     where
 
-import Data.Maybe
-
+import Data.Maybe (mapMaybe)
 import Data.Foldable (toList)
 
 import Control.Monad
@@ -41,19 +40,18 @@ ematch :: Language l
        -> Pattern l
        -> [Match]
 ematch db patr =
-    let q = compileToQuery patr
-     in mapMaybe copyOutEClass (genericJoin db q)
+    let (q, root) = compileToQuery patr
+     in mapMaybe (f root) (genericJoin db q)
     where
-        -- Given a substitution in which the first element is the pair
-        -- (root_var,root_class), copy the root_class out and return it with
-        -- the substitution.
-        -- 
-        -- That is, we return the e-class where the pattern was matched, and
-        -- the list of substitutions for all variables including the root. The
-        -- root variable is needed in the substitution for single variable
-        -- queries to find the subst
-        copyOutEClass [] = Nothing
-        copyOutEClass l@((_,root_class):_) = Just $ uncurry Match (l, root_class)
+        -- | Convert each substitution into a match by getting the class-id
+        -- where we matched from the subst
+        --
+        -- If the substitution is empty there is no match
+        f :: Var -> Subst -> Maybe Match
+        f root s = if IM.null s then Nothing
+                                else case IM.lookup root s of
+                                       Nothing -> error "how is root not in map?"
+                                       Just found -> pure (Match s found)
 
 -- | Convert an e-graph into a database in which we do the conjunctive queries
 --
@@ -95,21 +93,25 @@ eGraphToDatabase eg@EGraph{..} = M.foldrWithKey (addENodeToDB eg) (DB mempty) me
 {-# SCC eGraphToDatabase #-}
 
 
-data AuxResult lang = Var :~ [Atom lang]
+data AuxResult lang = {-# UNPACK #-} !Var :~ [Atom lang]
 
 -- Return distinct variables in a pattern
 vars :: Foldable lang => Pattern lang -> [Var]
 vars (VariablePattern x) = [x]
 vars (NonVariablePattern p) = ordNub $ join $ map vars $ toList p
 
-compileToQuery :: (Traversable lang) => Pattern lang -> Query lang
+-- | Compiles a 'Pattern' to a 'Query' and returns the query root variable with
+-- it.
+-- The root variable's substitutions are the e-classes where the pattern
+-- matched
+compileToQuery :: (Traversable lang) => Pattern lang -> (Query lang, Var)
 compileToQuery = flip evalState 0 . compile_to_query'
     where
-        compile_to_query' :: (Traversable lang) => Pattern lang -> State Int (Query lang)
-        compile_to_query' (VariablePattern x) = return (SelectAllQuery x)
+        compile_to_query' :: (Traversable lang) => Pattern lang -> State Int (Query lang, Var)
+        compile_to_query' (VariablePattern x) = return (SelectAllQuery x, x)
         compile_to_query' p@(NonVariablePattern _) = do
             root :~ atoms <- aux p
-            return (Query (ordNub $ root:vars p) atoms)
+            return (Query (ordNub $ root:vars p) atoms, root)
 
         aux :: (Traversable lang) => Pattern lang -> State Int (AuxResult lang)
         aux (VariablePattern x) = return $ x :~ [] -- from definition in relational e-matching paper (needed for as base case for recursion)

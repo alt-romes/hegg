@@ -135,7 +135,7 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
                     -- rhs is equal to a variable, simply merge class where lhs
                     -- pattern was found (@eclass@) and the eclass the pattern
                     -- variable matched (@lookup v subst@)
-                    case lookup v subst of
+                    case IM.lookup v subst of
                       Nothing -> error "impossible: couldn't find v in subst"
                       Just n  -> do
                           _ <- merge n eclass
@@ -154,7 +154,7 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
         reprPat :: Subst -> l (Pattern l) -> EGS l ClassId
         reprPat subst = add . Node <=< traverse \case
             VariablePattern v ->
-                case lookup v subst of
+                case IM.lookup v subst of
                     Nothing -> error "impossible: couldn't find v in subst?"
                     Just i  -> return i
             NonVariablePattern p -> reprPat subst p

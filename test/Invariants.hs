@@ -63,7 +63,7 @@ patFoldAllClasses expr i =
 -- The number of atoms should also match the number of non variable patterns
 -- since we should create an additional atom (with a new bound variable) for each. 
 testCompileToQuery :: Traversable lang => Pattern lang -> Bool
-testCompileToQuery p = case compileToQuery p of
+testCompileToQuery p = case fst $ compileToQuery p of
                          -- Handle special case for selectAll queries...
                          SelectAllQuery x -> [x] == vars p && numNonVarPatterns p == 0
                          q@(Query _ atoms)

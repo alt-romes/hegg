@@ -10,8 +10,8 @@ module Sym where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import qualified Data.List as L
-import qualified Data.Set  as S
+import qualified Data.IntMap as IM
+import qualified Data.Set    as S
 import Data.String
 import Data.Maybe (isJust)
 
@@ -233,7 +233,7 @@ evalConstant = \case
     
 unsafeGetSubst :: Pattern Expr -> Subst -> ClassId
 unsafeGetSubst (NonVariablePattern _) _ = error "unsafeGetSubst: NonVariablePattern; expecting VariablePattern"
-unsafeGetSubst (VariablePattern v) subst = case L.lookup v subst of
+unsafeGetSubst (VariablePattern v) subst = case IM.lookup v subst of
       Nothing -> error "Searching for non existent bound var in conditional"
       Just class_id -> class_id
 

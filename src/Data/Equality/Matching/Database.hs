@@ -4,7 +4,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
-{-# OPTIONS_GHC -O2 -funbox-strict-fields #-}
 module Data.Equality.Matching.Database where
 
 import Data.Maybe (mapMaybe)
@@ -25,8 +24,9 @@ import Data.Equality.Utils
 -- | Query variable
 type Var = Int
 
--- TODO: Should be M.Map ...
-type Subst = [(Var, ClassId)]
+-- | Mapping from 'Var' to @['ClassId']@. Multiple possible substitutions for
+-- each variable
+type Subst = IM.IntMap ClassId
 
 data ClassIdOrVar = ClassId {-# UNPACK #-} !ClassId
                   | Var     {-# UNPACK #-} !Var
@@ -72,34 +72,40 @@ queryHeadVars (SelectAllQuery x) = [x]
 queryHeadVars (Query qv _) = qv
 {-# INLINE queryHeadVars #-}
 
--- ROMES:TODO no longer so sure why the query needs [Var] (the free variables in
--- the query, since the substitution includes ALL variables)... again, weird
-
--- | Take a query and produce valid substitutions from query variables to actual
--- classids
+-- | Take a query and produce a list of valid substitutions from query
+-- variables to actual classids. Each list is a fully valid substitution on its
+-- own
 --
 -- ROMES:TODO a less ad-hoc/specialized implementation of generic join...
+-- ROMES:TODO query ordering is very important!
 genericJoin :: Language l => Database l -> Query l -> [Subst]
+
 -- We want to match against ANYTHING, so we return a valid substitution for
 -- all existing e-class: get all relations and make a substition for each class in that relation, then join all substitutions across all classes
-genericJoin (DB m) (SelectAllQuery x) = concatMap (\(_,Fix clss) -> map ((:[]) . (x,)) $ IM.keys clss) (M.toList m)
+genericJoin (DB m) (SelectAllQuery x) = concatMap (map (IM.singleton x) . IM.keys . unFix) (M.elems m)
+
 -- This is the last variable, so we return a valid substitution for every
 -- possible value for the variable (hence, we prepend @x@ to each and make it
 -- its own substitution)
 genericJoin d q@(Query qv atoms) = case varsInQuery q of
-    [] -> error "Query should always have at least one var"
-    [x] -> map ((:[]) . (x,)) (domainX x)
 
-    -- ROMES:TODO the reverse order is probably faster bc people tend to put
-    -- variables on the left of constants? e.g. (x + 0 = x)
+    [] -> error "Query should always have at least one var"
+
+    [x] -> map (IM.singleton x) (domainX x)
+
     x:_ -> concatMap
         (\x_in_D ->
-            -- Each valid sub-query assumed the x -> x_in_D substitution
-            map ((x,x_in_D):) $ genericJoin d (Query qv (substitute x x_in_D atoms)))
+            map (IM.alter (\case
+                Nothing -> Just x_in_D
+                Just _ -> error "overriding existing subst") x) $
+                    -- Each valid sub-query assumed the x -> x_in_D substitution
+                    genericJoin d (Query qv (substitute x x_in_D atoms)))
         (domainX x)
+
    where
        atomsWithX x = filter (x `elemOfAtom`) atoms
        domainX x = intersectAtoms x d (atomsWithX x)
+
 {-# INLINABLE genericJoin #-}
 {-# SCC genericJoin #-}
 
@@ -111,7 +117,8 @@ substitute r i = map $ \case
                    Var vi
                      | vi == r -> ClassId i
                    vi -> vi
-{-# INLINE substitute #-}
+{-# SCC substitute #-}
+-- {-# INLINE substitute #-}
 
 elemOfAtom :: Foldable lang => Var -> Atom lang -> Bool
 elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
@@ -126,7 +133,7 @@ elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
 -- Returns the intset (class id set) of classes forming the domain of var @x@
 intersectAtoms :: forall l. Language l => Var -> Database l -> [Atom l] -> [ClassId]
 -- lookup ... >>= ... to make sure non-existing patterns don't crash
-intersectAtoms var (DB db) (a:atoms) = S.toList $ foldr (\x xs -> (f x) `S.intersection` xs) (f a) atoms
+intersectAtoms !var (DB !db) (a:atoms) = S.toList $ foldr (\x xs -> (f x) `S.intersection` xs) (f a) atoms
   where
     -- Get the matching ids for an atom
     f :: Atom l -> S.Set ClassId
@@ -203,7 +210,7 @@ intersectInTrie !var !substs (Fix !m) = \case
             if x == var
                -- (1)
                then {-# SCC "intersect_new_THE_var" #-} mapMaybe
-                 (\(k, ls) -> do
+                 (\(!k, !ls) -> do
                    -- If the resulting intersection for this value of var @x@ is
                    -- valid then it's a valid substitution. Otherwise, this
                    -- variable doesn't match any the database and we don't add
@@ -220,7 +227,7 @@ intersectInTrie !var !substs (Fix !m) = \case
 
                -- (3)
                else {-# SCC "intersect_new_SOME_var" #-} concat $ mapMaybe
-                  (\(k, ls) ->
+                  (\(!k, !ls) ->
                     -- The resulting intersection for this value of var @x@ is some
                     -- of the possible values of the target var; return the sum of all valid
                     intersectInTrie var (putSubst x k substs) ls xs) (IM.toList m)

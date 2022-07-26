@@ -337,12 +337,16 @@ mergeUnionFindClasses a b = do
 
 modifyClasses :: (ClassIdMap (EClass s) -> ClassIdMap (EClass s)) -> EGS s ()
 modifyClasses f = modify (\egr -> egr { classes = f (classes egr) })
+-- {-# INLINE modifyClasses #-}
 
 modifyMemo :: (Memo l -> Memo l) -> EGS l ()
 modifyMemo f = modify (\egr -> egr { memo = f (memo egr) })
+-- {-# INLINE modifyMemo #-}
 
 emptyEGraph :: Language l => EGraph l
 emptyEGraph = EGraph emptyUF mempty mempty mempty mempty
+-- {-# INLINE emptyEGraph #-}
 
 insertLookup :: Ord k => k -> a -> M.Map k a -> (Maybe a, M.Map k a)
 insertLookup = M.insertLookupWithKey (\_ a _ -> a)
+-- {-# INLINE insertLookup #-}

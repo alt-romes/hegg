@@ -46,18 +46,22 @@ operator = Operator . void . unNode
 
 instance Eq1 l => (Eq (ENode l)) where
     (==) (Node a) (Node b) = liftEq (==) a b
+    {-# INLINE (==) #-}
 
 instance Ord1 l => (Ord (ENode l)) where
     compare (Node a) (Node b) = liftCompare compare a b
+    {-# INLINE compare #-}
 
 instance Show1 l => (Show (ENode l)) where
     showsPrec p (Node l) = liftShowsPrec showsPrec showList p l
 
 instance Eq1 l => (Eq (Operator l)) where
     (==) (Operator a) (Operator b) = liftEq (\_ _ -> True) a b
+    {-# INLINE (==) #-}
 
 instance Ord1 l => (Ord (Operator l)) where
     compare (Operator a) (Operator b) = liftCompare (\_ _ -> EQ) a b
+    {-# INLINE compare #-}
 
 instance Show1 l => (Show (Operator l)) where
     showsPrec p (Operator l) = liftShowsPrec (const . const $ showString "") (const $ showString "") p l

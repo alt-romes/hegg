@@ -9,12 +9,15 @@ module Data.Equality.Matching.Database where
 import Data.Maybe (mapMaybe)
 import Control.Monad
 
-import Data.Foldable (toList, foldl')
+import Data.Foldable
 import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
 
 -- import GHC.Data.TrieMap
+
+import Control.Monad.ST
+import Data.STRef
 
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
@@ -87,6 +90,7 @@ genericJoin (DB m) (SelectAllQuery x) = concatMap (map (IM.singleton x) . IM.key
 -- This is the last variable, so we return a valid substitution for every
 -- possible value for the variable (hence, we prepend @x@ to each and make it
 -- its own substitution)
+-- ROMES:TODO: Start here. Map vars to indexs in an array and substitute in the resulting subst
 genericJoin d q@(Query qv atoms) = case varsInQuery q of
 
     [] -> error "Query should always have at least one var"
@@ -102,9 +106,12 @@ genericJoin d q@(Query qv atoms) = case varsInQuery q of
                     genericJoin d (Query qv (substitute x x_in_D atoms)))
         (domainX x)
 
-   where
-       atomsWithX x = filter (x `elemOfAtom`) atoms
-       domainX x = intersectAtoms x d (atomsWithX x)
+ where
+   -- Map each query head variable to an id
+   varsIndexes = IM.fromList $ zip qv [1..]
+   -- 
+   atomsWithX x = filter (x `elemOfAtom`) atoms
+   domainX x = intersectAtoms x d (atomsWithX x)
 
 {-# INLINABLE genericJoin #-}
 {-# SCC genericJoin #-}
@@ -143,7 +150,7 @@ intersectAtoms !var (DB !db) (a:atoms) = S.toList $ foldr (\x xs -> (f x) `S.int
 
         -- If needed relation does exist, find intersection in it
         -- Add list of found intersections to existing
-        Just r  -> case intersectInTrie var mempty r (v:toList l) of
+        Just r  -> case runST (newSTRef mempty >>= \im -> intersectInTrie var im r (v:toList l)) of
                      Nothing ->  error "intersectInTrie should return valid substitution for variable query"
                      Just xs -> S.fromList $ xs
 
@@ -166,18 +173,21 @@ intersectAtoms _ _ [] = error "can't intersect empty list of atoms?"
 --
 -- TODO: Really, a valid substitution is one which isn't empty...
 intersectInTrie :: Var -- ^ The variable whose domain we are looking for
-                -> IM.IntMap ClassId -- ^ A mapping from variables that have been substituted
+                -> STRef s (IM.IntMap ClassId) -- ^ A mapping from variables that have been substituted
                 -> Fix ClassIdMap  -- ^ The trie
                 -> [ClassIdOrVar]  -- ^ The "query"
-                -> Maybe [ClassId] -- ^ The resulting domain for a valid substitution
-intersectInTrie !var !substs (Fix !m) = \case
+                -> ST s (Maybe [ClassId]) -- ^ The resulting domain for a valid substitution
+intersectInTrie !var substsRef (Fix !m) = \case
 
-    [] -> pure []
+    [] -> pure (Just [])
 
     -- Looking for a class-id, so if it exists in map the intersection is
     -- valid and we simply continue the search for the domain
     ClassId x:xs -> {-# SCC "Intersect_ClassId" #-}
-        IM.lookup x m >>= \next -> intersectInTrie var substs next xs
+      case IM.lookup x m of
+          Nothing   -> pure Nothing
+          Just next -> intersectInTrie var substsRef next xs
+
 
     -- Looking for a var. It might be one of the following:
     --
@@ -200,20 +210,26 @@ intersectInTrie !var !substs (Fix !m) = \case
     --      continue the recursion again to validate the assumption and
     --      possibly find the domain of the variable we're looking for ahead
     --
-    Var x:xs -> case IM.lookup x substs of
+    Var x:xs -> do
+      substs <- readSTRef substsRef
+      case IM.lookup x substs of
         -- (2) or (4), we simply continue
-        Just varVal -> {-# SCC "intersect_subst_var" #-} IM.lookup varVal m >>= \next -> intersectInTrie var substs next xs
+        Just varVal -> {-# SCC "intersect_subst_var" #-}
+          case IM.lookup varVal m of
+            Nothing   -> pure Nothing
+            Just next -> intersectInTrie var substsRef next xs
         -- (1) or (3)
         Nothing -> {-# SCC "intersect_new_var" #-}
-           pure $ IM.foldrWithKey (\(!k) (!ls) (!acc) -> 
-            case intersectInTrie var (putSubst x k substs) ls xs of
-                Nothing -> acc
-                Just rs -> 
+           Just <$> foldrM (\(!k, !ls) (!acc) -> do
+             modifySTRef substsRef (putSubst x k)
+             intersectInTrie var substsRef ls xs >>= \case
+                Nothing -> pure $ acc
+                Just rs -> pure $
                   if x == var
                       -- (1)
                       then k:acc
                       -- (3)
-                      else rs <> acc) mempty m
+                      else rs <> acc) mempty (IM.toList m)
 
 --            if x == var
 --               -- (1)

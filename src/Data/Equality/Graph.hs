@@ -258,7 +258,6 @@ repair (node, repair_id) = do
           modify (_memo .~ egrMemo1)
           _ <- merge existing_class repair_id
           return ()
-{-# SCC repair #-}
 
 repairAnal :: forall l. Language l => (ENode l, ClassId) -> EGS l ()
 repairAnal (node, repair_id) = do
@@ -277,7 +276,6 @@ repairAnal (node, repair_id) = do
         put (egr & _class canon_id._data .~ new_data)
         addToAnalysisWorklist (S.fromList $ c^._parents)
         modify (modifyA canon_id)
-{-# SCC repairAnal #-}
 
 
 

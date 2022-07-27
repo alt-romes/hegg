@@ -6,18 +6,17 @@
 {-# LANGUAGE TupleSections #-}
 module Data.Equality.Matching.Database where
 
+import Data.List (sortBy)
+import Data.Function (on)
 import Data.Maybe (mapMaybe)
 import Control.Monad
 
-import Data.Foldable
+import Data.Foldable as F (toList, foldl', length)
 import qualified Data.Map    as M
 import qualified Data.IntMap as IM
 import qualified Data.Set as S
 
 -- import GHC.Data.TrieMap
-
-import Control.Monad.ST
-import Data.STRef
 
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
@@ -45,6 +44,10 @@ toVar (ClassId _) = Nothing
 data Atom lang
     = Atom !ClassIdOrVar !(lang ClassIdOrVar)
 
+atomLength :: Foldable lang => Atom lang -> Int
+atomLength (Atom _ l) = 1 + F.length l
+{-# INLINE atomLength #-}
+
 data Query lang
     = Query ![Var] ![Atom lang]
     | SelectAllQuery {-# UNPACK #-} !Var
@@ -60,15 +63,22 @@ newtype Database l
 --         show' s m = flip foldFix m $ \case
 --             (IM.toList -> m') -> unlines $ map (\(k,w) -> show k <> " --> " <> w) m'
 
-varsInQuery :: Foldable lang => Query lang -> [Var]
-varsInQuery (SelectAllQuery x) = [x]
-varsInQuery (Query _ atoms) = ordNub $ foldl' f mempty atoms
+orderedVarsInQuery :: Foldable lang => Query lang -> [Var]
+orderedVarsInQuery (SelectAllQuery x) = [x]
+orderedVarsInQuery (Query _ atoms) = ordNub $ sortBy (compare `on` varCost) $ foldl' f mempty atoms
     where
         f :: Foldable lang => [Var] -> Atom lang -> [Var]
         f s = \case
             Atom (Var v) (toList -> l) -> (v : (mapMaybe toVar l)) <> s
             Atom _       (toList -> l) -> (mapMaybe toVar l) <> s
-{-# INLINE varsInQuery #-} 
+        {-# INLINE f #-}
+
+        -- First, prioritize variables that occur in many relations; second,
+        -- prioritize variables that occur in small relations
+        varCost :: Var -> Int
+        varCost v = foldr (\a acc -> if v `elemOfAtom` a then acc - 100 + atomLength a else acc) 0 atoms
+        {-# INLINE varCost #-}
+{-# SCC orderedVarsInQuery #-} 
 
 queryHeadVars :: Foldable lang => Query lang -> [Var]
 queryHeadVars (SelectAllQuery x) = [x]
@@ -81,7 +91,7 @@ queryHeadVars (Query qv _) = qv
 --
 -- ROMES:TODO a less ad-hoc/specialized implementation of generic join...
 -- ROMES:TODO query ordering is very important!
-genericJoin :: Language l => Database l -> Query l -> [Subst]
+genericJoin :: forall l. Language l => Database l -> Query l -> [Subst]
 
 -- We want to match against ANYTHING, so we return a valid substitution for
 -- all existing e-class: get all relations and make a substition for each class in that relation, then join all substitutions across all classes
@@ -91,27 +101,32 @@ genericJoin (DB m) (SelectAllQuery x) = concatMap (map (IM.singleton x) . IM.key
 -- possible value for the variable (hence, we prepend @x@ to each and make it
 -- its own substitution)
 -- ROMES:TODO: Start here. Map vars to indexs in an array and substitute in the resulting subst
-genericJoin d q@(Query qv atoms) = case varsInQuery q of
-
-    [] -> error "Query should always have at least one var"
-
-    [x] -> map (IM.singleton x) (domainX x)
-
-    x:_ -> concatMap
-        (\x_in_D ->
-            map (IM.alter (\case
-                Nothing -> Just x_in_D
-                Just _ -> error "overriding existing subst") x) $
-                    -- Each valid sub-query assumed the x -> x_in_D substitution
-                    genericJoin d (Query qv (substitute x x_in_D atoms)))
-        (domainX x)
+genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
 
  where
-   -- Map each query head variable to an id
-   varsIndexes = IM.fromList $ zip qv [1..]
-   -- 
-   atomsWithX x = filter (x `elemOfAtom`) atoms
-   domainX x = intersectAtoms x d (atomsWithX x)
+   genericJoin' :: [Atom l] -> [Var] -> [Subst]
+   genericJoin' atoms' = \case
+     [] -> error "Query should always havorderede at least one var"
+
+     [x] -> map (IM.singleton x) (domainX x atoms')
+
+     x:xs -> concatMap
+         (\x_in_D ->
+             map (IM.alter (\case
+                 Nothing -> Just x_in_D
+                 Just _ -> error "overriding existing subst") x) $
+                     -- Each valid sub-query assumed the x -> x_in_D substitution
+                     genericJoin' (substitute x x_in_D atoms') xs)
+         (domainX x atoms')
+
+
+   atomsWithX :: Var -> [Atom l] -> [Atom l]
+   atomsWithX x = filter (x `elemOfAtom`)
+   {-# INLINE atomsWithX #-}
+
+   domainX :: Var -> [Atom l] -> [ClassId]
+   domainX x = intersectAtoms x d . atomsWithX x
+   {-# INLINE domainX #-}
 
 {-# INLINABLE genericJoin #-}
 {-# SCC genericJoin #-}
@@ -124,11 +139,13 @@ substitute r i = map $ \case
                    Var vi
                      | vi == r -> ClassId i
                    vi -> vi
-{-# INLINE substitute #-}
+{-# SCC substitute #-}
 
 elemOfAtom :: Foldable lang => Var -> Atom lang -> Bool
-elemOfAtom x (Atom v l) = Var x == v || Var x `elem` toList l
-{-# INLINE elemOfAtom #-}
+elemOfAtom x (Atom v l) = case v of
+  Var v' -> x == v'
+  _ -> foldr (\i acc -> case i of Var v' -> x == v' || acc; _ -> acc) False (toList l)
+{-# SCC elemOfAtom #-}
 
 
 -- ROMES:TODO Terrible name 'intersectAtoms'
@@ -150,7 +167,7 @@ intersectAtoms !var (DB !db) (a:atoms) = S.toList $ foldr (\x xs -> (f x) `S.int
 
         -- If needed relation does exist, find intersection in it
         -- Add list of found intersections to existing
-        Just r  -> case runST (newSTRef mempty >>= \im -> intersectInTrie var im r (v:toList l)) of
+        Just r  -> case intersectInTrie var mempty r (v:toList l) of
                      Nothing ->  error "intersectInTrie should return valid substitution for variable query"
                      Just xs -> S.fromList $ xs
 
@@ -173,21 +190,18 @@ intersectAtoms _ _ [] = error "can't intersect empty list of atoms?"
 --
 -- TODO: Really, a valid substitution is one which isn't empty...
 intersectInTrie :: Var -- ^ The variable whose domain we are looking for
-                -> STRef s (IM.IntMap ClassId) -- ^ A mapping from variables that have been substituted
+                -> IM.IntMap ClassId -- ^ A mapping from variables that have been substituted
                 -> Fix ClassIdMap  -- ^ The trie
                 -> [ClassIdOrVar]  -- ^ The "query"
-                -> ST s (Maybe [ClassId]) -- ^ The resulting domain for a valid substitution
-intersectInTrie !var substsRef (Fix !m) = \case
+                -> Maybe [ClassId] -- ^ The resulting domain for a valid substitution
+intersectInTrie !var !substs (Fix !m) = \case
 
-    [] -> pure (Just [])
+    [] -> pure []
 
     -- Looking for a class-id, so if it exists in map the intersection is
     -- valid and we simply continue the search for the domain
     ClassId x:xs -> {-# SCC "Intersect_ClassId" #-}
-      case IM.lookup x m of
-          Nothing   -> pure Nothing
-          Just next -> intersectInTrie var substsRef next xs
-
+        IM.lookup x m >>= \next -> intersectInTrie var substs next xs
 
     -- Looking for a var. It might be one of the following:
     --
@@ -210,26 +224,20 @@ intersectInTrie !var substsRef (Fix !m) = \case
     --      continue the recursion again to validate the assumption and
     --      possibly find the domain of the variable we're looking for ahead
     --
-    Var x:xs -> do
-      substs <- readSTRef substsRef
-      case IM.lookup x substs of
+    Var x:xs -> case IM.lookup x substs of
         -- (2) or (4), we simply continue
-        Just varVal -> {-# SCC "intersect_subst_var" #-}
-          case IM.lookup varVal m of
-            Nothing   -> pure Nothing
-            Just next -> intersectInTrie var substsRef next xs
+        Just varVal -> {-# SCC "intersect_subst_var" #-} IM.lookup varVal m >>= \next -> intersectInTrie var substs next xs
         -- (1) or (3)
         Nothing -> {-# SCC "intersect_new_var" #-}
-           Just <$> foldrM (\(!k, !ls) (!acc) -> do
-             modifySTRef substsRef (putSubst x k)
-             intersectInTrie var substsRef ls xs >>= \case
-                Nothing -> pure $ acc
-                Just rs -> pure $
+           pure $ IM.foldrWithKey (\(!k) (!ls) (!acc) -> 
+            case intersectInTrie var (putSubst x k substs) ls xs of
+                Nothing -> acc
+                Just rs -> 
                   if x == var
                       -- (1)
                       then k:acc
                       -- (3)
-                      else rs <> acc) mempty (IM.toList m)
+                      else rs <> acc) mempty m
 
 --            if x == var
 --               -- (1)

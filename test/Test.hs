@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Test.Tasty
 
-import Data.Equality.Utils
+-- import Data.Equality.Utils
 import Invariants
 import Sym
 import Lambda
@@ -13,10 +13,10 @@ tests = testGroup "Tests"
   , invariants
   ]
 
--- main :: IO ()
--- main = defaultMain tests
-
 main :: IO ()
-main = do
-    print $ Sym.rewrite (Fix $ BinOp Integral (Fix $ BinOp Pow "x" 1) "x")
+main = defaultMain tests
+
+-- main :: IO ()
+-- main = do
+--     print $ Sym.rewrite (Fix $ BinOp Integral (Fix $ BinOp Pow "x" 1) "x")
 

@@ -235,8 +235,7 @@ intersectInTrie !var !substs (Fix m) = \case
               -- suffix only consists of variables, we can simply return all
               -- possible keys for this since it is the correct variable.
             if all (isVarDifferentFrom x) xs
-              -- then IS.fromAscList $ map fst $ IM.toAscList m
-              then IS.fromList $ IM.keys m
+              then IS.fromAscList $ map fst $ IM.toAscList m
               else IM.foldrWithKey (\k ls (!acc) ->
                case intersectInTrie var ({-# SCC "putSubst" #-} IM.insert x k substs) ls xs of
                    Nothing -> acc

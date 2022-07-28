@@ -15,6 +15,7 @@ import Control.Monad.State.Strict
 
 import qualified Data.Map.Strict    as M
 import qualified Data.IntMap.Strict as IM
+import qualified Data.IntSet as IS
 
 import Data.Equality.Utils
 import Data.Equality.Graph
@@ -75,19 +76,19 @@ eGraphToDatabase eg@EGraph{..} = M.foldrWithKey (addENodeToDB eg) (DB mempty) me
         DB $ M.alter (populate (classid:children enode)) (operator enode) m
 
     -- Populate or create a triemap given the population D_x (ClassIds)
-    populate :: [ClassId] -> Maybe (Fix ClassIdMap) -> Maybe (Fix ClassIdMap)
-    populate ids Nothing = Just $ populate' ids (Fix mempty)
+    populate :: [ClassId] -> Maybe IntTrie -> Maybe IntTrie
+    populate ids Nothing = Just $ populate' ids (MkIntTrie mempty mempty)
     populate ids (Just f) = Just $ populate' ids f
 
     -- Populate a triemap given the population D_x (ClassIds)
-    populate' :: [ClassId] -> Fix ClassIdMap -> Fix ClassIdMap
-    populate' [] (Fix m) = Fix m
-    populate' (x:xs) (Fix m) = Fix $ IM.alter (alterPopulation xs) x m
+    populate' :: [ClassId] -> IntTrie -> IntTrie
+    populate' [] it = it
+    populate' (x:xs) (MkIntTrie k m) = MkIntTrie (x `IS.insert` k) $ IM.alter (alterPopulation xs) x m
       where
         -- Insert remaining ids population doesn't exist, recursively merge tries with remaining ids
-        alterPopulation :: [ClassId] -> Maybe (Fix ClassIdMap) -> Maybe (Fix ClassIdMap)
+        alterPopulation :: [ClassId] -> Maybe IntTrie -> Maybe IntTrie
         -- If trie map entry doesn't exist yet, populate an empty map with the remaining ids
-        alterPopulation ids Nothing = Just $ populate' ids (Fix mempty)
+        alterPopulation ids Nothing = Just $ populate' ids (MkIntTrie mempty mempty)
         -- If trie map entry already exists, populate the existing map with the remaining ids
         alterPopulation ids (Just f) = Just $ populate' ids f
 {-# SCC eGraphToDatabase #-}

@@ -53,7 +53,12 @@ data Query lang
 -- | Database made of trie maps for each relation. Each relation is uniquely
 -- identified by the expressions modulo children expressions (hence @lang ()@)
 newtype Database l
-    = DB (M.Map (Operator l) (Fix ClassIdMap))
+    = DB (M.Map (Operator l) IntTrie)
+
+data IntTrie = MkIntTrie
+  { tkeys :: IS.IntSet
+  , trie :: IM.IntMap IntTrie
+  }
 
 -- instance Show (lang ()) => Show (Database lang) where
 --     show (DB m) = unlines $ map (\(a,b) -> show a <> ": " <> show' 0 b) $ M.toList m where
@@ -93,7 +98,7 @@ genericJoin :: forall l. Language l => Database l -> Query l -> [Subst]
 
 -- We want to match against ANYTHING, so we return a valid substitution for
 -- all existing e-class: get all relations and make a substition for each class in that relation, then join all substitutions across all classes
-genericJoin (DB m) (SelectAllQuery x) = concatMap (map (IM.singleton x) . IM.keys . unFix) (M.elems m)
+genericJoin (DB m) (SelectAllQuery x) = concatMap (map (IM.singleton x) . IS.toList . tkeys) (M.elems m)
 
 -- This is the last variable, so we return a valid substitution for every
 -- possible value for the variable (hence, we prepend @x@ to each and make it
@@ -191,10 +196,10 @@ intersectAtoms _ _ [] = error "can't intersect empty list of atoms?"
 -- TODO: Really, a valid substitution is one which isn't empty...
 intersectInTrie :: Var -- ^ The variable whose domain we are looking for
                 -> IM.IntMap ClassId -- ^ A mapping from variables that have been substituted
-                -> Fix ClassIdMap  -- ^ The trie
+                -> IntTrie  -- ^ The trie
                 -> [ClassIdOrVar]  -- ^ The "query"
                 -> Maybe IS.IntSet -- ^ The resulting domain for a valid substitution
-intersectInTrie !var !substs (Fix m) = \case
+intersectInTrie !var !substs (MkIntTrie trieKeys m) = \case
 
     [] -> pure []
 
@@ -231,17 +236,19 @@ intersectInTrie !var !substs (Fix m) = \case
         Nothing -> pure $ if x == var
           -- (1)
           then
-              -- If this is the var we're looking for, and the remaining @xs@
-              -- suffix only consists of variables, we can simply return all
-              -- possible keys for this since it is the correct variable.
+            -- If this is the var we're looking for, and the remaining @xs@
+            -- suffix only consists of variables modulo the var we're looking
+            -- for, we can simply return all possible keys for this since it is
+            -- the correct variable. This is quite important for performance!
             if all (isVarDifferentFrom x) xs
-              then {-# SCC "intersect_new_NEW_var_simple" #-} IM.keysSet m
+              then {-# SCC "intersect_new_NEW_var_simple" #-} trieKeys
               else {-# SCC "intersect_new_NEW_var_special" #-} IM.foldrWithKey (\k ls (!acc) ->
-               case intersectInTrie var ({-# SCC "putSubst" #-} IM.insert x k substs) ls xs of
+               case intersectInTrie var (IM.insert x k substs) ls xs of
                    Nothing -> acc
                    Just _  -> k `seq` k `IS.insert` acc
                          ) mempty m
           -- (3)
+          -- else {-# SCC "intersect_new_OTHER_var" #-} IS.unions $ IM.elems $ IM.mapMaybeWithKey (\k ls -> intersectInTrie var ({-# SCC "putSubst" #-} IM.insert x k substs) ls xs) m
           else {-# SCC "intersect_new_OTHER_var" #-} IM.foldrWithKey (\k ls (!acc) ->
             case intersectInTrie var ({-# SCC "putSubst" #-} IM.insert x k substs) ls xs of
                 Nothing -> acc

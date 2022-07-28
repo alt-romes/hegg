@@ -230,20 +230,20 @@ intersectInTrie !var !substs (Fix m) = \case
         -- (1) or (3)
         Nothing -> pure $ if x == var
           -- (1)
-          then {-# SCC "intersect_new_var" #-}
+          then
               -- If this is the var we're looking for, and the remaining @xs@
               -- suffix only consists of variables, we can simply return all
               -- possible keys for this since it is the correct variable.
             if all (isVarDifferentFrom x) xs
-              then IS.fromAscList $ map fst $ IM.toAscList m
-              else IM.foldrWithKey (\k ls (!acc) ->
+              then {-# SCC "intersect_new_NEW_var_simple" #-} IM.keysSet m
+              else {-# SCC "intersect_new_NEW_var_special" #-} IM.foldrWithKey (\k ls (!acc) ->
                case intersectInTrie var ({-# SCC "putSubst" #-} IM.insert x k substs) ls xs of
                    Nothing -> acc
                    Just _  -> k `seq` k `IS.insert` acc
                          ) mempty m
           -- (3)
-          else IM.foldrWithKey (\k ls (!acc) ->
-            case intersectInTrie var ({-# SCC "putSubst2" #-} IM.insert x k substs) ls xs of
+          else {-# SCC "intersect_new_OTHER_var" #-} IM.foldrWithKey (\k ls (!acc) ->
+            case intersectInTrie var ({-# SCC "putSubst" #-} IM.insert x k substs) ls xs of
                 Nothing -> acc
                 Just rs -> rs <> acc) mempty m
 
@@ -253,4 +253,4 @@ intersectInTrie !var !substs (Fix m) = \case
 isVarDifferentFrom :: Var -> ClassIdOrVar -> Bool
 isVarDifferentFrom _ (ClassId _) = False
 isVarDifferentFrom x (Var     y) = x /= y
-{-# SCC isVarDifferentFrom #-}
+{-# INLINE isVarDifferentFrom #-}

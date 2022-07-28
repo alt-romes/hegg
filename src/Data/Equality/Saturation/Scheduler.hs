@@ -14,7 +14,7 @@ module Data.Equality.Saturation.Scheduler
     ( Scheduler(..), BackoffScheduler
     ) where
 
-import qualified Data.IntMap as IM
+import qualified Data.IntMap.Strict as IM
 import Data.Equality.Matching
 
 -- | A 'Scheduler' determines whether a certain rewrite rule is banned from

@@ -10,7 +10,7 @@ module Sym where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import qualified Data.IntMap as IM
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
 import Data.String
 import Data.Maybe (isJust)

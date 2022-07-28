@@ -8,7 +8,7 @@ module Data.Equality.Graph.Classes.Id
     , ClassIdMap
     ) where
 
-import qualified Data.IntMap as IM
+import qualified Data.IntMap.Strict as IM
 
 -- | Type for e-class ids
 type ClassId = Int

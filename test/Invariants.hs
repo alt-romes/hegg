@@ -20,7 +20,7 @@ import Control.Monad
 
 import qualified Data.List   as L
 import qualified Data.Set    as S
-import qualified Data.IntMap as IM
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Map    as M
 
 import Data.Equality.Graph

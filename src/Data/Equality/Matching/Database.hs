@@ -12,11 +12,9 @@ import Data.Maybe (mapMaybe)
 import Control.Monad
 
 import Data.Foldable as F (toList, foldl', length)
-import qualified Data.Map    as M
-import qualified Data.IntMap as IM
-import qualified Data.Set as S
-
--- import GHC.Data.TrieMap
+import qualified Data.Map.Strict    as M
+import qualified Data.IntMap.Strict as IM
+import qualified Data.IntSet as IS
 
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
@@ -112,9 +110,7 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
 
      x:xs -> concatMap
          (\x_in_D ->
-             map (IM.alter (\case
-                 Nothing -> Just x_in_D
-                 Just _ -> error "overriding existing subst") x) $
+             map (IM.insert x x_in_D) $
                      -- Each valid sub-query assumed the x -> x_in_D substitution
                      genericJoin' (substitute x x_in_D atoms') xs)
          (domainX x atoms')
@@ -155,10 +151,10 @@ elemOfAtom x (Atom v l) = case v of
 --
 -- Returns the class id set of classes forming the domain of var @x@
 intersectAtoms :: forall l. Language l => Var -> Database l -> [Atom l] -> [ClassId]
-intersectAtoms !var (DB !db) (a:atoms) = S.toList $ foldr (\x xs -> (f x) `S.intersection` xs) (f a) atoms
+intersectAtoms !var (DB db) (a:atoms) = IS.toList $ foldr (\x xs -> (f x) `IS.intersection` xs) (f a) atoms
   where
     -- Get the matching ids for an atom
-    f :: Atom l -> S.Set ClassId
+    f :: Atom l -> IS.IntSet
     f (Atom v l) = case M.lookup (Operator $ void l) db of
 
         -- If needed relation doesn't exist altogether, return the matching
@@ -169,7 +165,7 @@ intersectAtoms !var (DB !db) (a:atoms) = S.toList $ foldr (\x xs -> (f x) `S.int
         -- Add list of found intersections to existing
         Just r  -> case intersectInTrie var mempty r (v:toList l) of
                      Nothing ->  error "intersectInTrie should return valid substitution for variable query"
-                     Just xs -> S.fromList $ xs
+                     Just xs -> xs
 
 intersectAtoms _ _ [] = error "can't intersect empty list of atoms?"
 {-# INLINABLE intersectAtoms #-}
@@ -193,8 +189,8 @@ intersectInTrie :: Var -- ^ The variable whose domain we are looking for
                 -> IM.IntMap ClassId -- ^ A mapping from variables that have been substituted
                 -> Fix ClassIdMap  -- ^ The trie
                 -> [ClassIdOrVar]  -- ^ The "query"
-                -> Maybe [ClassId] -- ^ The resulting domain for a valid substitution
-intersectInTrie !var !substs (Fix !m) = \case
+                -> Maybe IS.IntSet -- ^ The resulting domain for a valid substitution
+intersectInTrie !var !substs (Fix m) = \case
 
     [] -> pure []
 
@@ -229,47 +225,15 @@ intersectInTrie !var !substs (Fix !m) = \case
         Just varVal -> {-# SCC "intersect_subst_var" #-} IM.lookup varVal m >>= \next -> intersectInTrie var substs next xs
         -- (1) or (3)
         Nothing -> {-# SCC "intersect_new_var" #-}
-           pure $ IM.foldrWithKey (\(!k) (!ls) (!acc) -> 
-            case intersectInTrie var (putSubst x k substs) ls xs of
+           pure $ IM.foldrWithKey (\(!k) ls (!acc) -> 
+            case intersectInTrie var ({-# SCC "putSubst" #-} IM.insert x k substs) ls xs of
                 Nothing -> acc
-                Just rs -> 
+                Just rs ->
                   if x == var
                       -- (1)
-                      then k:acc
+                      then k `IS.insert` acc
                       -- (3)
                       else rs <> acc) mempty m
 
---            if x == var
---               -- (1)
---               then 
---                   -- If the resulting intersection for this value of var @x@ is
---                   -- valid then it's a valid substitution. Otherwise, this
---                   -- variable doesn't match any the database and we don't add
---                   -- this value to the domain. If the intersection was
---                   -- successful we return the value for the var.
---                   -- 
---                   -- NOTE: Using empty lists instead of Maybe to detect
---                   -- failure is not feasable, because intersections with e.g.
---                   -- class ids only result in empty lists, but might be valid
---                   -- or invalid depending on whether we got a match or not.
---                   -- That's why we use Maybe to identify failed and successful
---                   -- matches
---                     Nothing -> acc
---                     Just _  -> k:acc
-
---               -- (3)
---               else {-# SCC "intersect_new_SOME_var" #-}
---                    -- The resulting intersection for this value of var @x@ is some
---                    -- of the possible values of the target var; return the sum of all valid
---                    case intersectInTrie var (putSubst x k substs) ls xs of
---                      Just rs -> rs <> acc)
---                      mempty m
-
 {-# INLINABLE intersectInTrie #-}
--- {-# SCC intersectInTrie #-}
-
-putSubst :: Var -> ClassId -> IM.IntMap ClassId -> IM.IntMap ClassId
--- putSubst v i = M.update (\case Nothing -> Just i; Just _ -> error "replacing a subst!!") v
-putSubst = IM.insert
-{-# SCC putSubst #-}
 

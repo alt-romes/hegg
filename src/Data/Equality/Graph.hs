@@ -23,7 +23,7 @@ import Control.Monad
 import Control.Monad.State.Strict
 
 import qualified Data.Map    as M
-import qualified Data.IntMap as IM
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
 
 import Data.Equality.Utils

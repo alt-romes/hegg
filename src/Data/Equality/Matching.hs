@@ -11,10 +11,10 @@ import Data.Maybe (mapMaybe)
 import Data.Foldable (toList)
 
 import Control.Monad
-import Control.Monad.State
+import Control.Monad.State.Strict
 
-import qualified Data.Map    as M
-import qualified Data.IntMap as IM
+import qualified Data.Map.Strict    as M
+import qualified Data.IntMap.Strict as IM
 
 import Data.Equality.Utils
 import Data.Equality.Graph

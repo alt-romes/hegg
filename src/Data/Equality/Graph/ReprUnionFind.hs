@@ -6,7 +6,7 @@ Union-find like data structure that defines equivalence classes of e-class ids
 -}
 module Data.Equality.Graph.ReprUnionFind where
 
-import qualified Data.IntMap as IM
+import qualified Data.IntMap.Strict as IM
 
 import Data.Equality.Graph.Classes.Id
 

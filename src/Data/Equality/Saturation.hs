@@ -22,7 +22,7 @@ module Data.Equality.Saturation
     ) where
 
 import qualified Data.Map    as M
-import qualified Data.IntMap as IM
+import qualified Data.IntMap.Strict as IM
 
 import Data.Bifunctor
 import Control.Monad

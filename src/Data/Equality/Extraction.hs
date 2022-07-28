@@ -9,7 +9,7 @@ import Data.Maybe (catMaybes)
 
 import qualified Data.List as L
 import qualified Data.Set as S
-import qualified Data.IntMap as IM
+import qualified Data.IntMap.Strict as IM
 
 import Control.Monad.State
 

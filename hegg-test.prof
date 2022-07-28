@@ -1,204 +1,208 @@
-	Wed Jul 27 23:43 2022 Time and Allocation Profiling Report  (Final)
+	Thu Jul 28 17:20 2022 Time and Allocation Profiling Report  (Final)
 
 	   hegg-test +RTS -p -RTS
 
-	total time  =        2.10 secs   (2105 ticks @ 1000 us, 1 processor)
-	total alloc = 4,698,611,624 bytes  (excludes profiling overheads)
+	total time  =        1.46 secs   (1464 ticks @ 1000 us, 1 processor)
+	total alloc = 5,701,145,328 bytes  (excludes profiling overheads)
 
 COST CENTRE                                    MODULE                            SRC                                                       %time %alloc
 
-intersect_new_var                              Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(232,12)-(240,46)   50.4   56.6
-Data.Equality.Matching.Database.intersectAtoms Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:158:1-14            20.3   25.8
-Data.Equality.Graph.add                        Data.Equality.Graph               src/Data/Equality/Graph.hs:83:1-3                           6.0    2.3
-fmap                                           Sym                               test/Sym.hs:31:33-39                                        3.2    2.2
-liftCompare                                    Sym                               test/Sym.hs:(44,5)-(62,25)                                  2.8    0.0
-Data.Equality.Graph.merge                      Data.Equality.Graph               src/Data/Equality/Graph.hs:145:1-5                          2.5    3.1
-Data.Equality.Extraction.findCosts             Data.Equality.Extraction          src/Data/Equality/Extraction.hs:71:1-9                      2.3    2.4
-Data.Equality.Graph.rebuild                    Data.Equality.Graph               src/Data/Equality/Graph.hs:230:1-7                          1.8    0.9
-Data.Equality.Matching.eGraphToDatabase        Data.Equality.Matching            src/Data/Equality/Matching.hs:67:1-16                       1.8    1.4
-Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8             1.7    0.5
-traverse                                       Sym                               test/Sym.hs:32:34-44                                        1.7    1.1
-Data.Equality.Matching.Database.genericJoin    Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:98:1-11              1.4    1.4
+intersect_new_var                              Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(237,13)-(244,35)   59.8   84.8
+Data.Equality.Graph.add                        Data.Equality.Graph               src/Data/Equality/Graph.hs:83:1-3                           6.4    1.9
+liftCompare                                    Sym                               test/Sym.hs:(44,5)-(62,25)                                  4.4    0.0
+fmap                                           Sym                               test/Sym.hs:31:33-39                                        4.4    1.8
+Data.Equality.Graph.merge                      Data.Equality.Graph               src/Data/Equality/Graph.hs:145:1-5                          3.1    2.6
+Data.Equality.Graph.rebuild                    Data.Equality.Graph               src/Data/Equality/Graph.hs:230:1-7                          2.7    0.8
+Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8             2.5    0.4
+Data.Equality.Matching.eGraphToDatabase        Data.Equality.Matching            src/Data/Equality/Matching.hs:67:1-16                       2.4    1.2
+traverse                                       Sym                               test/Sym.hs:32:34-44                                        2.3    0.9
+Data.Equality.Extraction.findCosts             Data.Equality.Extraction          src/Data/Equality/Extraction.hs:71:1-9                      2.2    2.0
+Data.Equality.Matching.Database.intersectAtoms Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:154:1-14             2.2    0.6
+symCost                                        Sym                               test/Sym.hs:(139,1)-(152,16)                                1.4    0.1
+Data.Equality.Matching.Database.genericJoin    Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:96:1-11              1.4    1.1
+Data.Equality.Matching.Database.substitute     Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:131:1-10             1.0    0.8
 
 
-                                                                                                                                                                       individual      inherited
-COST CENTRE                                              MODULE                            SRC                                                      no.     entries  %time %alloc   %time %alloc
+                                                                                                                                                                          individual      inherited
+COST CENTRE                                                 MODULE                            SRC                                                      no.     entries  %time %alloc   %time %alloc
 
-MAIN                                                     MAIN                              <built-in>                                               269           0    0.0    0.0   100.0  100.0
- CAF                                                     Sym                               <entire-module>                                          536           0    0.0    0.0     0.0    0.0
-  evalConstant                                           Sym                               test/Sym.hs:(218,1)-(232,21)                             557           1    0.0    0.0     0.0    0.0
-  fromInteger                                            Sym                               test/Sym.hs:158:5-58                                     600           1    0.0    0.0     0.0    0.0
-  fromInteger                                            Sym                               test/Sym.hs:117:5-43                                     553           1    0.0    0.0     0.0    0.0
-  fromString                                             Sym                               test/Sym.hs:108:5-26                                     549           1    0.0    0.0     0.0    0.0
-  rewrites                                               Sym                               test/Sym.hs:(261,1)-(328,5)                              576           1    0.0    0.0     0.0    0.0
-   *                                                     Sym                               test/Sym.hs:157:5-48                                     595          21    0.0    0.0     0.0    0.0
-   +                                                     Sym                               test/Sym.hs:155:5-48                                     579          14    0.0    0.0     0.0    0.0
-   diffP                                                 Sym                               test/Sym.hs:171:1-47                                     632          12    0.0    0.0     0.0    0.0
-   powP                                                  Sym                               test/Sym.hs:168:1-45                                     622          11    0.0    0.0     0.0    0.0
-   intP                                                  Sym                               test/Sym.hs:174:1-50                                     636          10    0.0    0.0     0.0    0.0
-   /                                                     Sym                               test/Sym.hs:164:5-48                                     599           6    0.0    0.0     0.0    0.0
-   -                                                     Sym                               test/Sym.hs:156:5-48                                     598           4    0.0    0.0     0.0    0.0
-   lnP                                                   Sym                               test/Sym.hs:183:1-38                                     635           2    0.0    0.0     0.0    0.0
-   cosP                                                  Sym                               test/Sym.hs:177:1-40                                     634           1    0.0    0.0     0.0    0.0
-   sinP                                                  Sym                               test/Sym.hs:180:1-40                                     633           1    0.0    0.0     0.0    0.0
-   fromInteger                                           Sym                               test/Sym.hs:158:5-58                                     604           0    0.0    0.0     0.0    0.0
-  show                                                   Sym                               test/Sym.hs:(82,5)-(89,23)                               701           1    0.0    0.0     0.0    0.0
-  show                                                   Sym                               test/Sym.hs:(99,5)-(105,18)                              540           1    0.0    0.0     0.0    0.0
-  symCost                                                Sym                               test/Sym.hs:(139,1)-(152,16)                             697           1    0.0    0.0     0.0    0.0
-  modifyA                                                Sym                               test/Sym.hs:(203,5)-(213,66)                             560           0    0.0    0.0     0.0    0.0
- CAF                                                     Main                              <entire-module>                                          534           0    0.0    0.0   100.0  100.0
-  main                                                   Main                              test/Test.hs:(20,1)-(21,74)                              538           1    0.0    0.0   100.0  100.0
-   rewrite                                               Sym                               test/Sym.hs:331:1-55                                     543           1    0.0    0.0   100.0  100.0
-    Data.Equality.Saturation.equalitySaturation'         Data.Equality.Saturation          src/Data/Equality/Saturation.hs:61:1-19                  544           1    0.7    0.3   100.0  100.0
-     traverse                                            Sym                               test/Sym.hs:32:34-44                                     545       50625    0.8    0.7     6.5    2.2
-      Data.Equality.Graph.add                            Data.Equality.Graph               src/Data/Equality/Graph.hs:83:1-3                        601       34128    3.8    1.3     5.7    1.5
-       liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               603      815164    0.9    0.0     1.0    0.0
-        compare                                          Sym                               test/Sym.hs:73:23-25                                     642      755091    0.1    0.0     0.1    0.0
-        compare                                          Sym                               test/Sym.hs:79:19-21                                     690        1224    0.0    0.0     0.0    0.0
-       Data.Equality.Graph.ReprUnionFind.findRepr        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          606       46746    0.2    0.0     0.2    0.0
-       fmap                                              Sym                               test/Sym.hs:31:33-39                                     602       34128    0.1    0.1     0.3    0.1
-        Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          646       60603    0.2    0.1     0.2    0.1
-       modifyA                                           Sym                               test/Sym.hs:(203,5)-(213,66)                             644       12288    0.1    0.0     0.1    0.0
-        Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          645       12292    0.0    0.0     0.0    0.0
-        liftCompare                                      Sym                               test/Sym.hs:(44,5)-(62,25)                               654          12    0.0    0.0     0.0    0.0
-        foldr                                            Sym                               test/Sym.hs:32:24-31                                     656           5    0.0    0.0     0.0    0.0
-        Data.Equality.Graph.merge                        Data.Equality.Graph               src/Data/Equality/Graph.hs:145:1-5                       653           4    0.0    0.0     0.0    0.0
-         Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          655          11    0.0    0.0     0.0    0.0
-         joinA                                           Sym                               test/Sym.hs:(194,5)-(201,16)                             657           1    0.0    0.0     0.0    0.0
-        fmap                                             Sym                               test/Sym.hs:31:33-39                                     651           4    0.0    0.0     0.0    0.0
-       foldr                                             Sym                               test/Sym.hs:32:24-31                                     643       12287    0.0    0.0     0.0    0.0
-       makeA                                             Sym                               test/Sym.hs:191:5-73                                     647       12287    0.0    0.0     0.2    0.1
-        fmap                                             Sym                               test/Sym.hs:31:33-39                                     649       12287    0.1    0.0     0.1    0.1
-         Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          650        9075    0.0    0.0     0.0    0.0
-        evalConstant                                     Sym                               test/Sym.hs:(218,1)-(232,21)                             648           0    0.1    0.0     0.1    0.0
-      fmap                                               Sym                               test/Sym.hs:31:33-39                                     547           9    0.0    0.0     0.0    0.0
-       Data.Equality.Graph.add                           Data.Equality.Graph               src/Data/Equality/Graph.hs:83:1-3                        550           5    0.0    0.0     0.0    0.0
-        liftCompare                                      Sym                               test/Sym.hs:(44,5)-(62,25)                               559          12    0.0    0.0     0.0    0.0
-        Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          564           6    0.0    0.0     0.0    0.0
-        foldr                                            Sym                               test/Sym.hs:32:24-31                                     552           3    0.0    0.0     0.0    0.0
-        makeA                                            Sym                               test/Sym.hs:191:5-73                                     556           3    0.0    0.0     0.0    0.0
-         evalConstant                                    Sym                               test/Sym.hs:(218,1)-(232,21)                             558           0    0.0    0.0     0.0    0.0
-        modifyA                                          Sym                               test/Sym.hs:(203,5)-(213,66)                             554           3    0.0    0.0     0.0    0.0
-         Data.Equality.Graph.ReprUnionFind.findRepr      Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          555           4    0.0    0.0     0.0    0.0
-         Data.Equality.Graph.merge                       Data.Equality.Graph               src/Data/Equality/Graph.hs:145:1-5                       562           1    0.0    0.0     0.0    0.0
-          Data.Equality.Graph.ReprUnionFind.findRepr     Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          563           2    0.0    0.0     0.0    0.0
-         foldr                                           Sym                               test/Sym.hs:32:24-31                                     614           1    0.0    0.0     0.0    0.0
-     Data.Equality.Graph.merge                           Data.Equality.Graph               src/Data/Equality/Graph.hs:145:1-5                       605       17949    2.5    3.0     3.0    3.1
-      liftCompare                                        Sym                               test/Sym.hs:(44,5)-(62,25)                               612      234590    0.2    0.0     0.2    0.0
-       compare                                           Sym                               test/Sym.hs:73:23-25                                     613      234548    0.0    0.0     0.0    0.0
-      Data.Equality.Graph.ReprUnionFind.findRepr         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          608       69545    0.2    0.1     0.2    0.1
-      joinA                                              Sym                               test/Sym.hs:(194,5)-(201,16)                             609       10692    0.0    0.0     0.0    0.0
-      modifyA                                            Sym                               test/Sym.hs:(203,5)-(213,66)                             610       10692    0.1    0.0     0.2    0.0
-       Data.Equality.Graph.ReprUnionFind.findRepr        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          611       10692    0.1    0.0     0.1    0.0
-     Data.Equality.Graph.add                             Data.Equality.Graph               src/Data/Equality/Graph.hs:83:1-3                        551       16507    2.2    1.0     3.5    1.2
-      liftCompare                                        Sym                               test/Sym.hs:(44,5)-(62,25)                               566      530261    0.7    0.0     0.8    0.0
-       compare                                           Sym                               test/Sym.hs:73:23-25                                     567      529944    0.1    0.0     0.1    0.0
-      Data.Equality.Graph.ReprUnionFind.findRepr         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          572       27418    0.0    0.0     0.0    0.0
-      fmap                                               Sym                               test/Sym.hs:31:33-39                                     565       16507    0.1    0.0     0.3    0.1
-       Data.Equality.Graph.ReprUnionFind.findRepr        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          571       33937    0.1    0.0     0.1    0.0
-      modifyA                                            Sym                               test/Sym.hs:(203,5)-(213,66)                             569       10455    0.1    0.0     0.1    0.0
-       Data.Equality.Graph.ReprUnionFind.findRepr        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          570       10470    0.0    0.0     0.0    0.0
-       liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               620          37    0.0    0.0     0.0    0.0
-        compare                                          Sym                               test/Sym.hs:73:23-25                                     621          19    0.0    0.0     0.0    0.0
-       foldr                                             Sym                               test/Sym.hs:32:24-31                                     641          16    0.0    0.0     0.0    0.0
-       Data.Equality.Graph.merge                         Data.Equality.Graph               src/Data/Equality/Graph.hs:145:1-5                       617          11    0.0    0.0     0.0    0.0
-        Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          618          37    0.0    0.0     0.0    0.0
-        joinA                                            Sym                               test/Sym.hs:(194,5)-(201,16)                             619           5    0.0    0.0     0.0    0.0
-       fmap                                              Sym                               test/Sym.hs:31:33-39                                     616          11    0.0    0.0     0.0    0.0
-       traverse                                          Sym                               test/Sym.hs:32:34-44                                     615          11    0.0    0.0     0.0    0.0
-      foldr                                              Sym                               test/Sym.hs:32:24-31                                     568       10450    0.0    0.0     0.0    0.0
-      makeA                                              Sym                               test/Sym.hs:191:5-73                                     573       10450    0.0    0.0     0.0    0.1
-       fmap                                              Sym                               test/Sym.hs:31:33-39                                     575       10450    0.0    0.0     0.0    0.0
-        Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          607        9214    0.0    0.0     0.0    0.0
-       evalConstant                                      Sym                               test/Sym.hs:(218,1)-(232,21)                             574           0    0.0    0.0     0.0    0.0
-     Data.Equality.Matching.Database.genericJoin         Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:98:1-11           577         317    1.4    1.4    74.3   85.6
-      Data.Equality.Matching.Database.elemOfAtom         Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:145:1-10          591      288034    0.2    0.0     0.2    0.2
-       foldr                                             Sym                               test/Sym.hs:32:24-31                                     628      163587    0.0    0.2     0.0    0.2
-      Data.Equality.Matching.Database.intersectAtoms     Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:158:1-14          586      136248   20.3   25.8    72.0   82.8
-       intersect_new_var                                 Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(232,12)-(240,46) 623    19358908   49.9   56.0    49.9   56.0
-       liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               593      609366    0.4    0.0     0.4    0.0
-        compare                                          Sym                               test/Sym.hs:73:23-25                                     594      278384    0.0    0.0     0.0    0.0
-        compare                                          Sym                               test/Sym.hs:79:19-21                                     689       26862    0.0    0.0     0.0    0.0
-       <$                                                Sym                               test/Sym.hs:31:33-39                                     592      189562    0.0    0.1     0.0    0.1
-       Intersect_ClassId                                 Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:204:9-69          630      145399    0.7    0.2     1.2    0.8
-        intersect_new_var                                Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(232,12)-(240,46) 631      160337    0.5    0.6     0.5    0.6
-         intersect_subst_var                             Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:229:58-123        669       10669    0.0    0.0     0.0    0.0
-       foldr                                             Sym                               test/Sym.hs:32:24-31                                     626      139430    0.1    0.1     0.1    0.1
-      Data.Equality.Matching.Database.substitute         Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:135:1-10          627      135938    0.5    0.9     0.7    1.1
-       fmap                                              Sym                               test/Sym.hs:31:33-39                                     629      170571    0.1    0.2     0.1    0.2
-      Data.Equality.Matching.Database.orderedVarsInQuery Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:67:1-18           581         310    0.0    0.0     0.0    0.0
-       Data.Equality.Matching.Database.elemOfAtom        Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:145:1-10          585       10652    0.0    0.0     0.0    0.0
-       foldr                                             Sym                               test/Sym.hs:32:24-31                                     584        3440    0.0    0.0     0.0    0.0
-     Data.Equality.Matching.compileToQuery               Data.Equality.Matching            src/Data/Equality/Matching.hs:108:1-14                   578         317    0.0    0.0     0.0    0.0
-      fmap                                               Sym                               test/Sym.hs:31:33-39                                     582        1168    0.0    0.0     0.0    0.0
-       foldr                                             Sym                               test/Sym.hs:32:24-31                                     597         274    0.0    0.0     0.0    0.0
-       traverse                                          Sym                               test/Sym.hs:32:34-44                                     596         274    0.0    0.0     0.0    0.0
-      foldr                                              Sym                               test/Sym.hs:32:24-31                                     580         894    0.0    0.0     0.0    0.0
-      traverse                                           Sym                               test/Sym.hs:32:34-44                                     583         310    0.0    0.0     0.0    0.0
-     Data.Equality.Graph.rebuild                         Data.Equality.Graph               src/Data/Equality/Graph.hs:230:1-7                       658          25    1.8    0.9     3.0    1.1
-      liftCompare                                        Sym                               test/Sym.hs:(44,5)-(62,25)                               659      581846    0.5    0.0     0.6    0.0
-       compare                                           Sym                               test/Sym.hs:73:23-25                                     661      581747    0.1    0.0     0.1    0.0
-       compare                                           Sym                               test/Sym.hs:79:19-21                                     676           4    0.0    0.0     0.0    0.0
-      Data.Equality.Graph.ReprUnionFind.findRepr         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          664       34799    0.2    0.0     0.2    0.0
-      fmap                                               Sym                               test/Sym.hs:31:33-39                                     660       23835    0.1    0.0     0.2    0.1
-       Data.Equality.Graph.ReprUnionFind.findRepr        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          662       46812    0.1    0.0     0.1    0.0
-      Data.Equality.Graph.merge                          Data.Equality.Graph               src/Data/Equality/Graph.hs:145:1-5                       663        1628    0.0    0.1     0.1    0.1
-       liftCompare                                       Sym                               test/Sym.hs:(44,5)-(62,25)                               680       12536    0.0    0.0     0.0    0.0
-        compare                                          Sym                               test/Sym.hs:73:23-25                                     681       12535    0.0    0.0     0.0    0.0
-       Data.Equality.Graph.ReprUnionFind.findRepr        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          665        6111    0.0    0.0     0.0    0.0
-       joinA                                             Sym                               test/Sym.hs:(194,5)-(201,16)                             677         414    0.0    0.0     0.0    0.0
-       modifyA                                           Sym                               test/Sym.hs:(203,5)-(213,66)                             678         414    0.0    0.0     0.0    0.0
-        Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          679         414    0.0    0.0     0.0    0.0
-      joinA                                              Sym                               test/Sym.hs:(194,5)-(201,16)                             682          31    0.0    0.0     0.0    0.0
-      makeA                                              Sym                               test/Sym.hs:191:5-73                                     683           2    0.0    0.0     0.0    0.0
-       fmap                                              Sym                               test/Sym.hs:31:33-39                                     685           2    0.0    0.0     0.0    0.0
-        Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          686           3    0.0    0.0     0.0    0.0
-      modifyA                                            Sym                               test/Sym.hs:(203,5)-(213,66)                             687           2    0.0    0.0     0.0    0.0
-       Data.Equality.Graph.ReprUnionFind.findRepr        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          688           2    0.0    0.0     0.0    0.0
-     Data.Equality.Matching.eGraphToDatabase             Data.Equality.Matching            src/Data/Equality/Matching.hs:67:1-16                    587          11    1.8    1.4     2.1    1.6
-      liftCompare                                        Sym                               test/Sym.hs:(44,5)-(62,25)                               589      193660    0.0    0.0     0.0    0.0
-       compare                                           Sym                               test/Sym.hs:73:23-25                                     590      193420    0.0    0.0     0.0    0.0
-       compare                                           Sym                               test/Sym.hs:79:19-21                                     691           5    0.0    0.0     0.0    0.0
-      <$                                                 Sym                               test/Sym.hs:31:33-39                                     588       71210    0.1    0.0     0.1    0.0
-      foldr                                              Sym                               test/Sym.hs:32:24-31                                     625       71191    0.1    0.1     0.1    0.1
-     fmap                                                Sym                               test/Sym.hs:31:33-39                                     546           5    0.0    0.0     0.0    0.0
-      traverse                                           Sym                               test/Sym.hs:32:34-44                                     548           4    0.0    0.0     0.0    0.0
-     Data.Equality.Extraction.extractBest                Data.Equality.Extraction          src/Data/Equality/Extraction.hs:54:1-11                  692           1    0.0    0.0     6.7    4.8
-      Data.Equality.Extraction.findCosts                 Data.Equality.Extraction          src/Data/Equality/Extraction.hs:71:1-9                   694           3    2.3    2.4     6.7    4.8
-       fmap                                              Sym                               test/Sym.hs:31:33-39                                     699     1094388    2.6    1.8     3.2    1.9
-        symCost                                          Sym                               test/Sym.hs:(139,1)-(152,16)                             700           0    0.6    0.2     0.6    0.2
-       traverse                                          Sym                               test/Sym.hs:32:34-44                                     695       68202    0.9    0.4     1.2    0.5
-        Data.Equality.Graph.ReprUnionFind.findRepr       Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          696      134240    0.4    0.1     0.4    0.1
-       symCost                                           Sym                               test/Sym.hs:(139,1)-(152,16)                             698           0    0.0    0.0     0.0    0.0
-      Data.Equality.Graph.ReprUnionFind.findRepr         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          693           1    0.0    0.0     0.0    0.0
-     rewrites                                            Sym                               test/Sym.hs:(261,1)-(328,5)                              637           0    0.0    0.0     0.1    0.0
-      is_not_zero                                        Sym                               test/Sym.hs:(241,1)-(242,56)                             666        3704    0.0    0.0     0.0    0.0
-       Data.Equality.Graph.ReprUnionFind.findRepr        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          668        3707    0.0    0.0     0.0    0.0
-       unsafeGetSubst                                    Sym                               test/Sym.hs:(235,1)-(238,31)                             667        3704    0.0    0.0     0.0    0.0
-      is_const                                           Sym                               test/Sym.hs:(249,1)-(250,55)                             638        1218    0.0    0.0     0.0    0.0
-       Data.Equality.Graph.ReprUnionFind.findRepr        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          640        1221    0.0    0.0     0.0    0.0
-       unsafeGetSubst                                    Sym                               test/Sym.hs:(235,1)-(238,31)                             639        1218    0.0    0.0     0.0    0.0
-      is_const_or_distinct_var                           Sym                               test/Sym.hs:(253,1)-(258,90)                             673         918    0.0    0.0     0.0    0.0
-       Data.Equality.Graph.ReprUnionFind.findRepr        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          675        1866    0.0    0.0     0.0    0.0
-       unsafeGetSubst                                    Sym                               test/Sym.hs:(235,1)-(238,31)                             674        1836    0.0    0.0     0.0    0.0
-      is_sym                                             Sym                               test/Sym.hs:(245,1)-(246,100)                            670           9    0.0    0.0     0.0    0.0
-       Data.Equality.Graph.ReprUnionFind.findRepr        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          672           9    0.0    0.0     0.0    0.0
-       unsafeGetSubst                                    Sym                               test/Sym.hs:(235,1)-(238,31)                             671           9    0.0    0.0     0.0    0.0
-   fromInteger                                           Sym                               test/Sym.hs:117:5-43                                     561           0    0.0    0.0     0.0    0.0
-   show                                                  Sym                               test/Sym.hs:(99,5)-(105,18)                              541           0    0.0    0.0     0.0    0.0
-    fmap                                                 Sym                               test/Sym.hs:31:33-39                                     542           5    0.0    0.0     0.0    0.0
-    show                                                 Sym                               test/Sym.hs:(82,5)-(89,23)                               702           0    0.0    0.0     0.0    0.0
- CAF                                                     Data.Equality.Graph               <entire-module>                                          469           0    0.0    0.0     0.0    0.0
- CAF                                                     Data.Equality.Matching            <entire-module>                                          465           0    0.0    0.0     0.0    0.0
- CAF                                                     Data.Equality.Matching.Database   <entire-module>                                          464           0    0.0    0.0     0.0    0.0
-  Data.Equality.Matching.Database.putSubst               Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:273:1-8           624           1    0.0    0.0     0.0    0.0
- CAF                                                     Data.Equality.Saturation          <entire-module>                                          462           0    0.0    0.0     0.0    0.0
- CAF                                                     GHC.Conc.Signal                   <entire-module>                                          379           0    0.0    0.0     0.0    0.0
- CAF                                                     GHC.Float                         <entire-module>                                          370           0    0.0    0.0     0.0    0.0
- CAF                                                     GHC.IO.Encoding                   <entire-module>                                          360           0    0.0    0.0     0.0    0.0
- CAF                                                     GHC.IO.Encoding.Iconv             <entire-module>                                          358           0    0.0    0.0     0.0    0.0
- CAF                                                     GHC.IO.Handle.FD                  <entire-module>                                          349           0    0.0    0.0     0.0    0.0
- CAF                                                     GHC.IO.Handle.Text                <entire-module>                                          347           0    0.0    0.0     0.0    0.0
- CAF                                                     GHC.Event.Poll                    <entire-module>                                          290           0    0.0    0.0     0.0    0.0
- CAF                                                     GHC.Event.Thread                  <entire-module>                                          289           0    0.0    0.0     0.0    0.0
- main                                                    Main                              test/Test.hs:(20,1)-(21,74)                              539           0    0.0    0.0     0.0    0.0
+MAIN                                                        MAIN                              <built-in>                                               270           0    0.0    0.0   100.0  100.0
+ CAF                                                        Sym                               <entire-module>                                          538           0    0.0    0.0     0.0    0.0
+  evalConstant                                              Sym                               test/Sym.hs:(218,1)-(232,21)                             559           1    0.0    0.0     0.0    0.0
+  fromInteger                                               Sym                               test/Sym.hs:158:5-58                                     604           1    0.0    0.0     0.0    0.0
+  fromInteger                                               Sym                               test/Sym.hs:117:5-43                                     555           1    0.0    0.0     0.0    0.0
+  fromString                                                Sym                               test/Sym.hs:108:5-26                                     551           1    0.0    0.0     0.0    0.0
+  rewrites                                                  Sym                               test/Sym.hs:(261,1)-(328,5)                              579           1    0.0    0.0     0.0    0.0
+   *                                                        Sym                               test/Sym.hs:157:5-48                                     599          21    0.0    0.0     0.0    0.0
+   +                                                        Sym                               test/Sym.hs:155:5-48                                     582          14    0.0    0.0     0.0    0.0
+   diffP                                                    Sym                               test/Sym.hs:171:1-47                                     638          12    0.0    0.0     0.0    0.0
+   powP                                                     Sym                               test/Sym.hs:168:1-45                                     626          11    0.0    0.0     0.0    0.0
+   intP                                                     Sym                               test/Sym.hs:174:1-50                                     642          10    0.0    0.0     0.0    0.0
+   /                                                        Sym                               test/Sym.hs:164:5-48                                     603           6    0.0    0.0     0.0    0.0
+   -                                                        Sym                               test/Sym.hs:156:5-48                                     602           4    0.0    0.0     0.0    0.0
+   lnP                                                      Sym                               test/Sym.hs:183:1-38                                     641           2    0.0    0.0     0.0    0.0
+   cosP                                                     Sym                               test/Sym.hs:177:1-40                                     640           1    0.0    0.0     0.0    0.0
+   sinP                                                     Sym                               test/Sym.hs:180:1-40                                     639           1    0.0    0.0     0.0    0.0
+   fromInteger                                              Sym                               test/Sym.hs:158:5-58                                     608           0    0.0    0.0     0.0    0.0
+  show                                                      Sym                               test/Sym.hs:(82,5)-(89,23)                               706           1    0.0    0.0     0.0    0.0
+  show                                                      Sym                               test/Sym.hs:(99,5)-(105,18)                              542           1    0.0    0.0     0.0    0.0
+  symCost                                                   Sym                               test/Sym.hs:(139,1)-(152,16)                             702           1    0.0    0.0     0.0    0.0
+  modifyA                                                   Sym                               test/Sym.hs:(203,5)-(213,66)                             562           0    0.0    0.0     0.0    0.0
+ CAF                                                        Main                              <entire-module>                                          536           0    0.0    0.0   100.0  100.0
+  main                                                      Main                              test/Test.hs:(20,1)-(21,74)                              540           1    0.0    0.0   100.0  100.0
+   rewrite                                                  Sym                               test/Sym.hs:331:1-55                                     545           1    0.0    0.0   100.0  100.0
+    Data.Equality.Saturation.equalitySaturation'            Data.Equality.Saturation          src/Data/Equality/Saturation.hs:61:1-19                  546           1    0.8    0.2   100.0  100.0
+     traverse                                               Sym                               test/Sym.hs:32:34-44                                     547       50625    0.7    0.6     7.1    1.8
+      Data.Equality.Graph.add                               Data.Equality.Graph               src/Data/Equality/Graph.hs:83:1-3                        605       34128    3.8    1.0     6.4    1.3
+       liftCompare                                          Sym                               test/Sym.hs:(44,5)-(62,25)                               607      815164    1.6    0.0     1.6    0.0
+        compare                                             Sym                               test/Sym.hs:73:23-25                                     647      755091    0.0    0.0     0.0    0.0
+        compare                                             Sym                               test/Sym.hs:79:19-21                                     695        1224    0.0    0.0     0.0    0.0
+       Data.Equality.Graph.ReprUnionFind.findRepr           Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          610       46746    0.1    0.0     0.1    0.0
+       fmap                                                 Sym                               test/Sym.hs:31:33-39                                     606       34128    0.0    0.0     0.4    0.1
+        Data.Equality.Graph.ReprUnionFind.findRepr          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          651       60603    0.4    0.0     0.4    0.0
+       modifyA                                              Sym                               test/Sym.hs:(203,5)-(213,66)                             649       12288    0.2    0.0     0.2    0.0
+        Data.Equality.Graph.ReprUnionFind.findRepr          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          650       12292    0.0    0.0     0.0    0.0
+        liftCompare                                         Sym                               test/Sym.hs:(44,5)-(62,25)                               659          12    0.0    0.0     0.0    0.0
+        foldr                                               Sym                               test/Sym.hs:32:24-31                                     661           5    0.0    0.0     0.0    0.0
+        Data.Equality.Graph.merge                           Data.Equality.Graph               src/Data/Equality/Graph.hs:145:1-5                       658           4    0.0    0.0     0.0    0.0
+         Data.Equality.Graph.ReprUnionFind.findRepr         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          660          11    0.0    0.0     0.0    0.0
+         joinA                                              Sym                               test/Sym.hs:(194,5)-(201,16)                             662           1    0.0    0.0     0.0    0.0
+        fmap                                                Sym                               test/Sym.hs:31:33-39                                     656           4    0.0    0.0     0.0    0.0
+       foldr                                                Sym                               test/Sym.hs:32:24-31                                     648       12287    0.0    0.0     0.0    0.0
+       makeA                                                Sym                               test/Sym.hs:191:5-73                                     652       12287    0.1    0.0     0.3    0.0
+        fmap                                                Sym                               test/Sym.hs:31:33-39                                     654       12287    0.1    0.0     0.1    0.0
+         Data.Equality.Graph.ReprUnionFind.findRepr         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          655        9075    0.0    0.0     0.0    0.0
+        evalConstant                                        Sym                               test/Sym.hs:(218,1)-(232,21)                             653           0    0.1    0.0     0.1    0.0
+      fmap                                                  Sym                               test/Sym.hs:31:33-39                                     549           9    0.0    0.0     0.0    0.0
+       Data.Equality.Graph.add                              Data.Equality.Graph               src/Data/Equality/Graph.hs:83:1-3                        552           5    0.0    0.0     0.0    0.0
+        liftCompare                                         Sym                               test/Sym.hs:(44,5)-(62,25)                               561          12    0.0    0.0     0.0    0.0
+        Data.Equality.Graph.ReprUnionFind.findRepr          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          566           6    0.0    0.0     0.0    0.0
+        foldr                                               Sym                               test/Sym.hs:32:24-31                                     554           3    0.0    0.0     0.0    0.0
+        makeA                                               Sym                               test/Sym.hs:191:5-73                                     558           3    0.0    0.0     0.0    0.0
+         evalConstant                                       Sym                               test/Sym.hs:(218,1)-(232,21)                             560           0    0.0    0.0     0.0    0.0
+        modifyA                                             Sym                               test/Sym.hs:(203,5)-(213,66)                             556           3    0.0    0.0     0.0    0.0
+         Data.Equality.Graph.ReprUnionFind.findRepr         Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          557           4    0.0    0.0     0.0    0.0
+         Data.Equality.Graph.merge                          Data.Equality.Graph               src/Data/Equality/Graph.hs:145:1-5                       564           1    0.0    0.0     0.0    0.0
+          Data.Equality.Graph.ReprUnionFind.findRepr        Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          565           2    0.0    0.0     0.0    0.0
+         foldr                                              Sym                               test/Sym.hs:32:24-31                                     567           1    0.0    0.0     0.0    0.0
+     Data.Equality.Graph.merge                              Data.Equality.Graph               src/Data/Equality/Graph.hs:145:1-5                       609       17949    2.9    2.5     3.8    2.6
+      liftCompare                                           Sym                               test/Sym.hs:(44,5)-(62,25)                               616      234590    0.2    0.0     0.3    0.0
+       compare                                              Sym                               test/Sym.hs:73:23-25                                     617      234548    0.1    0.0     0.1    0.0
+      Data.Equality.Graph.ReprUnionFind.findRepr            Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          612       69545    0.3    0.1     0.3    0.1
+      joinA                                                 Sym                               test/Sym.hs:(194,5)-(201,16)                             613       10692    0.0    0.0     0.0    0.0
+      modifyA                                               Sym                               test/Sym.hs:(203,5)-(213,66)                             614       10692    0.2    0.0     0.3    0.0
+       Data.Equality.Graph.ReprUnionFind.findRepr           Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          615       10692    0.1    0.0     0.1    0.0
+     Data.Equality.Graph.add                                Data.Equality.Graph               src/Data/Equality/Graph.hs:83:1-3                        553       16507    2.6    0.8     4.4    1.0
+      liftCompare                                           Sym                               test/Sym.hs:(44,5)-(62,25)                               569      530261    1.2    0.0     1.2    0.0
+       compare                                              Sym                               test/Sym.hs:73:23-25                                     570      529944    0.1    0.0     0.1    0.0
+      Data.Equality.Graph.ReprUnionFind.findRepr            Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          575       27418    0.2    0.0     0.2    0.0
+      fmap                                                  Sym                               test/Sym.hs:31:33-39                                     568       16507    0.0    0.0     0.2    0.1
+       Data.Equality.Graph.ReprUnionFind.findRepr           Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          574       33937    0.2    0.0     0.2    0.0
+      modifyA                                               Sym                               test/Sym.hs:(203,5)-(213,66)                             572       10455    0.0    0.0     0.0    0.0
+       Data.Equality.Graph.ReprUnionFind.findRepr           Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          573       10470    0.0    0.0     0.0    0.0
+       liftCompare                                          Sym                               test/Sym.hs:(44,5)-(62,25)                               623          37    0.0    0.0     0.0    0.0
+        compare                                             Sym                               test/Sym.hs:73:23-25                                     624          19    0.0    0.0     0.0    0.0
+       foldr                                                Sym                               test/Sym.hs:32:24-31                                     625          16    0.0    0.0     0.0    0.0
+       Data.Equality.Graph.merge                            Data.Equality.Graph               src/Data/Equality/Graph.hs:145:1-5                       620          11    0.0    0.0     0.0    0.0
+        Data.Equality.Graph.ReprUnionFind.findRepr          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          621          37    0.0    0.0     0.0    0.0
+        joinA                                               Sym                               test/Sym.hs:(194,5)-(201,16)                             622           5    0.0    0.0     0.0    0.0
+       fmap                                                 Sym                               test/Sym.hs:31:33-39                                     619          11    0.0    0.0     0.0    0.0
+       traverse                                             Sym                               test/Sym.hs:32:34-44                                     618          11    0.0    0.0     0.0    0.0
+      foldr                                                 Sym                               test/Sym.hs:32:24-31                                     571       10450    0.1    0.0     0.1    0.0
+      makeA                                                 Sym                               test/Sym.hs:191:5-73                                     576       10450    0.0    0.0     0.1    0.0
+       fmap                                                 Sym                               test/Sym.hs:31:33-39                                     578       10450    0.1    0.0     0.1    0.0
+        Data.Equality.Graph.ReprUnionFind.findRepr          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          611        9214    0.0    0.0     0.0    0.0
+       evalConstant                                         Sym                               test/Sym.hs:(218,1)-(232,21)                             577           0    0.0    0.0     0.0    0.0
+     Data.Equality.Matching.Database.genericJoin            Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:96:1-11           580         317    1.4    1.1    66.9   88.1
+      Data.Equality.Matching.Database.elemOfAtom            Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:141:1-10          590      288034    0.5    0.0     0.5    0.1
+       foldr                                                Sym                               test/Sym.hs:32:24-31                                     631      163587    0.1    0.1     0.1    0.1
+      Data.Equality.Matching.Database.intersectAtoms        Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:154:1-14          589      136248    2.2    0.6    63.6   85.9
+       liftCompare                                          Sym                               test/Sym.hs:(44,5)-(62,25)                               597      609366    0.4    0.0     0.5    0.0
+        compare                                             Sym                               test/Sym.hs:73:23-25                                     598      278384    0.1    0.0     0.1    0.0
+        compare                                             Sym                               test/Sym.hs:79:19-21                                     694       26862    0.1    0.0     0.1    0.0
+       <$                                                   Sym                               test/Sym.hs:31:33-39                                     591      189562    0.0    0.1     0.0    0.1
+       Intersect_ClassId                                    Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:204:9-69          633      145399    0.8    0.3     1.4    0.5
+        intersect_new_var                                   Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(237,13)-(244,35) 635       98737    0.5    0.2     0.6    0.3
+         putSubst                                           Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:241:65-84         637       53321    0.1    0.0     0.1    0.0
+         Data.Equality.Matching.Database.isVarDifferentFrom Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:255:1-18          636       42529    0.0    0.0     0.0    0.0
+         intersect_subst_var                                Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:229:58-123        674       10669    0.0    0.0     0.0    0.0
+        putSubst2                                           Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:247:63-82         634       42466    0.0    0.0     0.0    0.0
+       foldr                                                Sym                               test/Sym.hs:32:24-31                                     628      139430    0.1    0.1     0.1    0.1
+       intersect_new_var                                    Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:(237,13)-(244,35) 627       50420   59.4   84.6    59.4   84.6
+        Data.Equality.Matching.Database.isVarDifferentFrom  Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:255:1-18          629       66901    0.0    0.0     0.0    0.0
+      Data.Equality.Matching.Database.substitute            Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:131:1-10          630      135938    1.0    0.8     1.4    0.9
+       fmap                                                 Sym                               test/Sym.hs:31:33-39                                     632      170571    0.4    0.2     0.4    0.2
+      Data.Equality.Matching.Database.orderedVarsInQuery    Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:65:1-18           585         310    0.0    0.0     0.0    0.0
+       Data.Equality.Matching.Database.elemOfAtom           Data.Equality.Matching.Database   src/Data/Equality/Matching/Database.hs:141:1-10          588       10652    0.0    0.0     0.0    0.0
+       foldr                                                Sym                               test/Sym.hs:32:24-31                                     587        3440    0.0    0.0     0.0    0.0
+     Data.Equality.Matching.compileToQuery                  Data.Equality.Matching            src/Data/Equality/Matching.hs:108:1-14                   581         317    0.0    0.0     0.1    0.0
+      fmap                                                  Sym                               test/Sym.hs:31:33-39                                     584        1168    0.1    0.0     0.1    0.0
+       foldr                                                Sym                               test/Sym.hs:32:24-31                                     600         274    0.0    0.0     0.0    0.0
+       traverse                                             Sym                               test/Sym.hs:32:34-44                                     601         274    0.0    0.0     0.0    0.0
+      foldr                                                 Sym                               test/Sym.hs:32:24-31                                     583         894    0.0    0.0     0.0    0.0
+      traverse                                              Sym                               test/Sym.hs:32:34-44                                     586         310    0.0    0.0     0.0    0.0
+     Data.Equality.Graph.rebuild                            Data.Equality.Graph               src/Data/Equality/Graph.hs:230:1-7                       663          25    2.7    0.8     4.4    0.9
+      liftCompare                                           Sym                               test/Sym.hs:(44,5)-(62,25)                               664      581846    0.7    0.0     0.9    0.0
+       compare                                              Sym                               test/Sym.hs:73:23-25                                     666      581747    0.2    0.0     0.2    0.0
+       compare                                              Sym                               test/Sym.hs:79:19-21                                     681           4    0.0    0.0     0.0    0.0
+      Data.Equality.Graph.ReprUnionFind.findRepr            Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          669       34799    0.2    0.0     0.2    0.0
+      fmap                                                  Sym                               test/Sym.hs:31:33-39                                     665       23835    0.1    0.0     0.3    0.1
+       Data.Equality.Graph.ReprUnionFind.findRepr           Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          667       49683    0.2    0.0     0.2    0.0
+      Data.Equality.Graph.merge                             Data.Equality.Graph               src/Data/Equality/Graph.hs:145:1-5                       668        1628    0.2    0.1     0.3    0.1
+       liftCompare                                          Sym                               test/Sym.hs:(44,5)-(62,25)                               685       12536    0.0    0.0     0.0    0.0
+        compare                                             Sym                               test/Sym.hs:73:23-25                                     686       12535    0.0    0.0     0.0    0.0
+       Data.Equality.Graph.ReprUnionFind.findRepr           Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          670        6111    0.0    0.0     0.0    0.0
+       joinA                                                Sym                               test/Sym.hs:(194,5)-(201,16)                             682         414    0.1    0.0     0.1    0.0
+       modifyA                                              Sym                               test/Sym.hs:(203,5)-(213,66)                             683         414    0.0    0.0     0.0    0.0
+        Data.Equality.Graph.ReprUnionFind.findRepr          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          684         414    0.0    0.0     0.0    0.0
+      joinA                                                 Sym                               test/Sym.hs:(194,5)-(201,16)                             687          31    0.0    0.0     0.0    0.0
+      makeA                                                 Sym                               test/Sym.hs:191:5-73                                     688           2    0.0    0.0     0.0    0.0
+       fmap                                                 Sym                               test/Sym.hs:31:33-39                                     690           2    0.0    0.0     0.0    0.0
+        Data.Equality.Graph.ReprUnionFind.findRepr          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          691           3    0.0    0.0     0.0    0.0
+      modifyA                                               Sym                               test/Sym.hs:(203,5)-(213,66)                             692           2    0.0    0.0     0.0    0.0
+       Data.Equality.Graph.ReprUnionFind.findRepr           Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          693           2    0.0    0.0     0.0    0.0
+     Data.Equality.Matching.eGraphToDatabase                Data.Equality.Matching            src/Data/Equality/Matching.hs:67:1-16                    592          11    2.4    1.2     2.9    1.3
+      liftCompare                                           Sym                               test/Sym.hs:(44,5)-(62,25)                               595      193660    0.3    0.0     0.3    0.0
+       compare                                              Sym                               test/Sym.hs:73:23-25                                     596      193420    0.0    0.0     0.0    0.0
+       compare                                              Sym                               test/Sym.hs:79:19-21                                     696           5    0.0    0.0     0.0    0.0
+      <$                                                    Sym                               test/Sym.hs:31:33-39                                     593       71210    0.2    0.0     0.2    0.0
+      foldr                                                 Sym                               test/Sym.hs:32:24-31                                     594       71210    0.0    0.1     0.0    0.1
+     fmap                                                   Sym                               test/Sym.hs:31:33-39                                     548           5    0.0    0.0     0.0    0.0
+      traverse                                              Sym                               test/Sym.hs:32:34-44                                     550           4    0.0    0.0     0.0    0.0
+     Data.Equality.Extraction.extractBest                   Data.Equality.Extraction          src/Data/Equality/Extraction.hs:54:1-11                  697           1    0.0    0.0     9.5    4.0
+      Data.Equality.Extraction.findCosts                    Data.Equality.Extraction          src/Data/Equality/Extraction.hs:71:1-9                   699           3    2.2    2.0     9.5    4.0
+       fmap                                                 Sym                               test/Sym.hs:31:33-39                                     704     1094388    3.6    1.5     4.8    1.6
+        symCost                                             Sym                               test/Sym.hs:(139,1)-(152,16)                             705           0    1.2    0.1     1.2    0.1
+       traverse                                             Sym                               test/Sym.hs:32:34-44                                     700       68202    1.6    0.3     2.3    0.4
+        Data.Equality.Graph.ReprUnionFind.findRepr          Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          701      134240    0.6    0.1     0.6    0.1
+       symCost                                              Sym                               test/Sym.hs:(139,1)-(152,16)                             703           0    0.2    0.0     0.2    0.0
+      Data.Equality.Graph.ReprUnionFind.findRepr            Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          698           1    0.0    0.0     0.0    0.0
+     rewrites                                               Sym                               test/Sym.hs:(261,1)-(328,5)                              643           0    0.0    0.0     0.1    0.0
+      is_not_zero                                           Sym                               test/Sym.hs:(241,1)-(242,56)                             671        3704    0.0    0.0     0.0    0.0
+       Data.Equality.Graph.ReprUnionFind.findRepr           Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          673        3707    0.0    0.0     0.0    0.0
+       unsafeGetSubst                                       Sym                               test/Sym.hs:(235,1)-(238,31)                             672        3704    0.0    0.0     0.0    0.0
+      is_const                                              Sym                               test/Sym.hs:(249,1)-(250,55)                             644        1218    0.0    0.0     0.0    0.0
+       Data.Equality.Graph.ReprUnionFind.findRepr           Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          646        1221    0.0    0.0     0.0    0.0
+       unsafeGetSubst                                       Sym                               test/Sym.hs:(235,1)-(238,31)                             645        1218    0.0    0.0     0.0    0.0
+      is_const_or_distinct_var                              Sym                               test/Sym.hs:(253,1)-(258,90)                             678         918    0.1    0.0     0.1    0.0
+       Data.Equality.Graph.ReprUnionFind.findRepr           Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          680        1866    0.1    0.0     0.1    0.0
+       unsafeGetSubst                                       Sym                               test/Sym.hs:(235,1)-(238,31)                             679        1836    0.0    0.0     0.0    0.0
+      is_sym                                                Sym                               test/Sym.hs:(245,1)-(246,100)                            675           9    0.0    0.0     0.0    0.0
+       Data.Equality.Graph.ReprUnionFind.findRepr           Data.Equality.Graph.ReprUnionFind src/Data/Equality/Graph/ReprUnionFind.hs:52:1-8          677           9    0.0    0.0     0.0    0.0
+       unsafeGetSubst                                       Sym                               test/Sym.hs:(235,1)-(238,31)                             676           9    0.0    0.0     0.0    0.0
+   fromInteger                                              Sym                               test/Sym.hs:117:5-43                                     563           0    0.0    0.0     0.0    0.0
+   show                                                     Sym                               test/Sym.hs:(99,5)-(105,18)                              543           0    0.0    0.0     0.0    0.0
+    fmap                                                    Sym                               test/Sym.hs:31:33-39                                     544           5    0.0    0.0     0.0    0.0
+    show                                                    Sym                               test/Sym.hs:(82,5)-(89,23)                               707           0    0.0    0.0     0.0    0.0
+ CAF                                                        Data.Equality.Graph               <entire-module>                                          471           0    0.0    0.0     0.0    0.0
+ CAF                                                        Data.Equality.Matching            <entire-module>                                          467           0    0.0    0.0     0.0    0.0
+ CAF                                                        Data.Equality.Saturation          <entire-module>                                          464           0    0.0    0.0     0.0    0.0
+ CAF                                                        GHC.Conc.Signal                   <entire-module>                                          380           0    0.0    0.0     0.0    0.0
+ CAF                                                        GHC.Float                         <entire-module>                                          371           0    0.0    0.0     0.0    0.0
+ CAF                                                        GHC.IO.Encoding                   <entire-module>                                          361           0    0.0    0.0     0.0    0.0
+ CAF                                                        GHC.IO.Encoding.Iconv             <entire-module>                                          359           0    0.0    0.0     0.0    0.0
+ CAF                                                        GHC.IO.Handle.FD                  <entire-module>                                          350           0    0.0    0.0     0.0    0.0
+ CAF                                                        GHC.IO.Handle.Text                <entire-module>                                          348           0    0.0    0.0     0.0    0.0
+ CAF                                                        GHC.Event.Poll                    <entire-module>                                          291           0    0.0    0.0     0.0    0.0
+ CAF                                                        GHC.Event.Thread                  <entire-module>                                          290           0    0.0    0.0     0.0    0.0
+ main                                                       Main                              test/Test.hs:(20,1)-(21,74)                              541           0    0.0    0.0     0.0    0.0

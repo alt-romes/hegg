@@ -181,6 +181,10 @@ intersectAtoms _ _ [] = error "can't intersect empty list of atoms?"
 -- invalid substitution, but rather an empty list saying that the query
 -- intersection is valid but empty.
 --
+--
+-- If R_f(1,y,z), this function receives [1,y,z] :: [ClassIdOrVar] and
+-- intersects the trie map of R_f with this prefix
+--
 -- TODO: write a note for this...
 --
 --
@@ -224,16 +228,30 @@ intersectInTrie !var !substs (Fix m) = \case
         -- (2) or (4), we simply continue
         Just varVal -> {-# SCC "intersect_subst_var" #-} IM.lookup varVal m >>= \next -> intersectInTrie var substs next xs
         -- (1) or (3)
-        Nothing -> {-# SCC "intersect_new_var" #-}
-           pure $ IM.foldrWithKey (\(!k) ls (!acc) -> 
-            case intersectInTrie var ({-# SCC "putSubst" #-} IM.insert x k substs) ls xs of
+        Nothing -> pure $ if x == var
+          -- (1)
+          then {-# SCC "intersect_new_var" #-}
+              -- If this is the var we're looking for, and the remaining @xs@
+              -- suffix only consists of variables, we can simply return all
+              -- possible keys for this since it is the correct variable.
+            if all (isVarDifferentFrom x) xs
+              -- then IS.fromAscList $ map fst $ IM.toAscList m
+              then IS.fromList $ IM.keys m
+              else IM.foldrWithKey (\k ls (!acc) ->
+               case intersectInTrie var ({-# SCC "putSubst" #-} IM.insert x k substs) ls xs of
+                   Nothing -> acc
+                   Just _  -> k `seq` k `IS.insert` acc
+                         ) mempty m
+          -- (3)
+          else IM.foldrWithKey (\k ls (!acc) ->
+            case intersectInTrie var ({-# SCC "putSubst2" #-} IM.insert x k substs) ls xs of
                 Nothing -> acc
-                Just rs ->
-                  if x == var
-                      -- (1)
-                      then k `IS.insert` acc
-                      -- (3)
-                      else rs <> acc) mempty m
+                Just rs -> rs <> acc) mempty m
+
 
 {-# INLINABLE intersectInTrie #-}
 
+isVarDifferentFrom :: Var -> ClassIdOrVar -> Bool
+isVarDifferentFrom _ (ClassId _) = False
+isVarDifferentFrom x (Var     y) = x /= y
+{-# SCC isVarDifferentFrom #-}

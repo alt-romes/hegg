@@ -45,7 +45,7 @@ makeNewSet (RUF im si) = (si, RUF (IM.insert si Canonical im) (si+1))
 --
 -- Given two leader ids, unions the two eclasses making root1 the leader.
 unionSets :: ClassId -> ClassId -> ReprUnionFind -> (ClassId, ReprUnionFind)
-unionSets a b (RUF im si) = (a, RUF (IM.update (\case Canonical -> Just $ Represented a; Represented _ -> error "unionSets should be called on canonical ids") b im) si)
+unionSets a b (RUF im si) = (a, RUF (IM.adjust (\case Canonical -> Represented a; Represented _ -> error "unionSets should be called on canonical ids") b im) si)
 
 -- | Find the canonical representation of an e-class id
 findRepr :: ClassId -> ReprUnionFind -> Maybe ClassId

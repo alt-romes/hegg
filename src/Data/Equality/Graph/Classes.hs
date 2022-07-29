@@ -23,9 +23,9 @@ import Data.Equality.Analysis
 -- @nid@ type of e-node ids
 data EClass l = EClass
     { eClassId      :: {-# UNPACK #-} !ClassId -- ^ E-class Id
-    , eClassNodes   :: !(S.Set (ENode l))      -- ^ E-nodes in this class
+    , eClassNodes   :: S.Set (ENode l)         -- ^ E-nodes in this class
     , eClassData    :: Domain l                -- ^ The analysis data associated with this eclass.
-    , eClassParents :: ![(ENode l, ClassId)]   -- ^ E-nodes which are parents of (reference) this e-class and their e-class ids. (See EGraph.ENode for why @s ClassId@)
+    , eClassParents :: S.Set (ENode l, ClassId)  -- ^ E-nodes which are parents of (reference) this e-class and their e-class ids. (See EGraph.ENode for why @s ClassId@)
     }
 
 instance (Show (Domain l), Show1 l) => Show (EClass l) where

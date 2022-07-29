@@ -7,6 +7,8 @@ import Data.Foldable
 import Data.Bits
 
 import qualified Data.Set    as S
+import qualified Data.Map    as M
+import qualified Data.Map.Strict as MS
 import Data.Functor.Classes
 
 newtype Fix f = Fix { unFix :: f (Fix f) }
@@ -36,3 +38,13 @@ parMap :: (a -> b) -> [a] -> [b]
 parMap _ [] = []
 parMap f (x:xs) = fx `par` (fxs `pseq` (fx : fxs))
     where fx = f x; fxs = parMap f xs
+
+-- | Insert and lookup in a Map
+insertLookup :: Ord k => k -> a -> M.Map k a -> (Maybe a, M.Map k a)
+insertLookup = M.insertLookupWithKey (\_ a _ -> a)
+{-# INLINE insertLookup #-}
+
+-- | Strict insert and lookup in a Map
+insertLookup' :: Ord k => k -> a -> M.Map k a -> (Maybe a, M.Map k a)
+insertLookup' = MS.insertLookupWithKey (\_ a _ -> a)
+{-# INLINE insertLookup' #-}

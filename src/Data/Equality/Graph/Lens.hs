@@ -2,6 +2,7 @@
 {-# LANGUAGE Rank2Types #-}
 module Data.Equality.Graph.Lens where
 
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Set as S
 
 import Data.Functor.Identity
@@ -11,26 +12,41 @@ import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 import Data.Equality.Graph.Classes
 import Data.Equality.Analysis
-import {-# SOURCE #-} Data.Equality.Graph (EGraph(..), Memo, getClass, setClass)
+import {-# SOURCE #-} Data.Equality.Graph (EGraph(..), Memo, find)
 
 type Lens' s a = forall f. Functor f => (a -> f a) -> (s -> f s)
 
 
+-- outdated comment for "getClass":
+--
+-- Get an e-class from an e-graph given its e-class id
+--
+-- Returns the canonical id of the class and the class itself
+--
+-- We'll find its canonical representation and then get it from the e-classes map
+--
+-- Invariant: The e-class exists.
+
+-- | Lens for the e-class with the given id in an e-graph
 _class :: ClassId -> Lens' (EGraph l) (EClass l)
 _class i afa s =
-    let (i', c) = getClass i s
-     in setClass s i' <$> afa c
+    let canon_id = find i s
+     in (\c' -> s { classes = IM.insert canon_id c' (classes s) }) <$> afa (classes s IM.! canon_id)
 {-# INLINE _class #-}
 
 _memo :: Lens' (EGraph l) (Memo l)
 _memo afa egr = (\m1 -> egr {memo = m1}) <$> afa (memo egr)
 {-# INLINE _memo #-}
 
+_classes :: Lens' (EGraph l) (ClassIdMap (EClass l))
+_classes afa egr = (\m1 -> egr {classes = m1}) <$> afa (classes egr)
+{-# INLINE _classes #-}
+
 _data :: Lens' (EClass l) (Domain l)
 _data afa EClass{..} = (\d1 -> EClass eClassId eClassNodes d1 eClassParents) <$> afa eClassData
 {-# INLINE _data #-}
 
-_parents :: Lens' (EClass l) [(ENode l, ClassId)]
+_parents :: Lens' (EClass l) (S.Set (ENode l, ClassId))
 _parents afa EClass{..} = EClass eClassId eClassNodes eClassData <$> afa eClassParents
 {-# INLINE _parents #-}
 

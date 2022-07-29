@@ -38,9 +38,11 @@ type EGS s = State (EGraph s)
 
 runEGS :: EGraph s -> EGS s a -> (a, EGraph s)
 runEGS = flip runState
+{-# INLINE runEGS #-}
 
 egraph :: Language l => EGS l a -> EGraph l
 egraph = snd . runEGS emptyEGraph
+{-# INLINE egraph #-}
 
 -- | E-graph
 --
@@ -75,6 +77,7 @@ instance (Show (Domain l), Show1 l) => Show (EGraph l) where
 represent :: Language lang => Fix lang -> EGS lang ClassId
 -- Represent each sub-expression and add the resulting e-node to the e-graph
 represent = cata $ sequence >=> add . Node
+{-# SCC represent #-}
 
 -- | Add an e-node to the e-graph
 --
@@ -98,7 +101,7 @@ add uncanon_e = do
         -- Update e-classes by going through all e-node children and adding
         -- to the e-class parents the new e-node and its e-class id
         forM_ (children new_en) $ \eclass_id -> do
-            modify (_class eclass_id._parents %~ ((new_en, new_eclass_id):))
+            modify (_class eclass_id._parents %~ (S.insert (new_en, new_eclass_id)))
 
         -- TODO: From egg: Is this needed?
         -- This is required if we want math pruning to work. Unfortunately, it
@@ -128,10 +131,10 @@ add uncanon_e = do
         addToWorklist $ S.singleton (new_en, new_eclass_id)
 
         -- Add new e-class to existing e-classes
-        modifyClasses (IM.insert new_eclass_id new_eclass)
+        modify (_classes %~ IM.insert new_eclass_id new_eclass)
 
         -- Add the e-node's e-class id at the e-node's id
-        modifyMemo (M.insert new_en new_eclass_id)
+        modify (_memo %~ M.insert new_en new_eclass_id)
 
         -- Modify created node according to analysis
         modify (modifyA new_eclass_id)
@@ -167,11 +170,11 @@ merge a b = get >>= \egr0 -> do
            new_id <- mergeUnionFindClasses leader sub
 
            -- Delete subsumed class
-           modifyClasses (IM.delete sub)
+           modify (_classes %~ IM.delete sub)
 
            -- Add all subsumed parents to worklist
            -- We can do this instead of adding the new e-class itself to the worklist because it'll end up in doing this anyway
-           addToWorklist (S.fromList $ sub_class^._parents)
+           addToWorklist (sub_class^._parents)
 
            -- Update leader class with all e-nodes and parents from the
            -- subsumed class
@@ -184,9 +187,9 @@ merge a b = get >>= \egr0 -> do
            -- class whose data is different from the merged must be put on the
            -- analysisWorklist
            when (new_data /= (leader_class^._data)) $
-               addToAnalysisWorklist (S.fromList $ leader_class^._parents)
+               addToAnalysisWorklist (leader_class^._parents)
            when (new_data /= (sub_class^._data)) $
-               addToAnalysisWorklist (S.fromList $ leader_class^._parents)
+               addToAnalysisWorklist (leader_class^._parents)
 
            -- Update leader so that it has all nodes and parents from
            -- subsumed class
@@ -200,7 +203,7 @@ merge a b = get >>= \egr0 -> do
            -- I do not understand how they don't have this kind of thing,
            -- Without it, everything breaks
            forM_ (sub_class^._nodes) $ \l ->
-               modifyMemo (M.insert l leader)
+               modify (_memo %~ M.insert l leader)
 
            modify (modifyA new_id)
            return new_id
@@ -225,6 +228,7 @@ find cid = unsafeUnpack . findRepr cid . unionFind
     where
         unsafeUnpack Nothing  = error $ "The impossible happened: Couldn't find representation of e-node " <> show cid
         unsafeUnpack (Just x) = x
+{-# SCC find #-}
 
 rebuild :: Language l => EGS l ()
 rebuild = do
@@ -246,13 +250,13 @@ rebuild = do
 repair :: forall l. Language l => (ENode l, ClassId) -> EGS l ()
 repair (node, repair_id) = do
 
-    modifyMemo (M.delete node)
+    modify (_memo %~ M.delete node)
     egr <- get
     -- Canonicalize node
     let canon_node = node `canonicalize` egr 
 
     egrMemo0 <- gets (^._memo)
-    case insertLookup canon_node (find repair_id egr) egrMemo0 of-- TODO: I seem to really need it. Is find needed? (they don't use it)
+    case insertLookup' canon_node (find repair_id egr) egrMemo0 of-- TODO: I seem to really need it. Is find needed? (they don't use it)
       (Nothing, egrMemo1) -> modify (_memo .~ egrMemo1)
       (Just existing_class, egrMemo1) -> do
           modify (_memo .~ egrMemo1)
@@ -274,7 +278,7 @@ repairAnal (node, repair_id) = do
         -- Merge result is different from original class data, update class
         -- with new_data
         put (egr & _class canon_id._data .~ new_data)
-        addToAnalysisWorklist (S.fromList $ c^._parents)
+        addToAnalysisWorklist (c^._parents)
         modify (modifyA canon_id)
 
 
@@ -300,21 +304,6 @@ clearAnalysisWorkList = do
     modify (\egr -> egr { analysisWorklist = mempty })
     return wl
 
--- | Get an e-class from an e-graph given its e-class id
---
--- Returns the canonical id of the class and the class itself
---
--- We'll find its canonical representation and then get it from the e-classes map
---
--- Invariant: The e-class exists.
-getClass :: ClassId -> EGraph s -> (ClassId, EClass s)
-getClass cid egr=
-    let canon_id = find cid egr
-     in (canon_id, classes egr IM.! canon_id)
-
-setClass :: EGraph s -> ClassId -> EClass s -> EGraph s
-setClass egr i c = egr { classes = IM.insert i c (classes egr) }
-
 -- | Extend the existing UnionFind equivalence classes with a new one and
 -- return the new id
 createUnionFindClass :: EGS s ClassId
@@ -332,19 +321,6 @@ mergeUnionFindClasses a b = do
     modify (\egr -> egr { unionFind = new_uf })
     return new_id
 
-
-modifyClasses :: (ClassIdMap (EClass s) -> ClassIdMap (EClass s)) -> EGS s ()
-modifyClasses f = modify (\egr -> egr { classes = f (classes egr) })
--- {-# INLINE modifyClasses #-}
-
-modifyMemo :: (Memo l -> Memo l) -> EGS l ()
-modifyMemo f = modify (\egr -> egr { memo = f (memo egr) })
--- {-# INLINE modifyMemo #-}
-
 emptyEGraph :: Language l => EGraph l
 emptyEGraph = EGraph emptyUF mempty mempty mempty mempty
--- {-# INLINE emptyEGraph #-}
-
-insertLookup :: Ord k => k -> a -> M.Map k a -> (Maybe a, M.Map k a)
-insertLookup = M.insertLookupWithKey (\_ a _ -> a)
--- {-# INLINE insertLookup #-}
+{-# INLINE emptyEGraph #-}

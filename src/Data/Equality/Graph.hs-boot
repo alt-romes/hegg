@@ -18,9 +18,7 @@ data EGraph l = EGraph
     , analysisWorklist :: Worklist l        -- ^ like 'worklist' but for analysis repairing
     }
 
-getClass :: ClassId -> EGraph s -> (ClassId, EClass s)
-
-setClass :: EGraph s -> ClassId -> EClass s -> EGraph s
+find :: ClassId -> EGraph l -> ClassId
 
 type Memo l = M.Map (ENode l) ClassId
 type Worklist l = S.Set (ENode l, ClassId)

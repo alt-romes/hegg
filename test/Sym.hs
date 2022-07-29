@@ -39,6 +39,7 @@ instance Eq1 Expr where
         (UnOp op x, UnOp op' y) -> op == op' && x `eq` y
         (BinOp op x y, BinOp op' x' y') -> op == op' && x `eq` x' && y `eq` y'
         _ -> False
+    {-# INLINE liftEq #-}
 
 instance Ord1 Expr where
     liftCompare cmp a b = case (a, b) of
@@ -60,6 +61,8 @@ instance Ord1 Expr where
             Const _ -> 2
             UnOp _ _ -> 3
             BinOp {} -> 4
+        {-# INLINE expIx #-}
+    {-# SCC liftCompare #-}
 
 instance Language Expr
 

@@ -84,7 +84,8 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
 
             -- Read-only phase, invariants are preserved
             -- With backoff scheduler
-            let (!matches, newStats) = mconcat (parMap (matchWithScheduler db i stats) (zip [1..] rewrites))
+            -- ROMES:TODO parMap with chunks
+            let (!matches, newStats) = mconcat (fmap (matchWithScheduler db i stats) (zip [1..] rewrites))
 
             -- Write-only phase, temporarily break invariants
             forM_ matches applyMatchesRhs

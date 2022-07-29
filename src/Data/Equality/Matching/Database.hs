@@ -55,6 +55,7 @@ data Query lang
 newtype Database l
     = DB (M.Map (Operator l) IntTrie)
 
+-- | A triemap that keeps a cache of all keys in each level
 data IntTrie = MkIntTrie
   { tkeys :: IS.IntSet
   , trie :: IM.IntMap IntTrie

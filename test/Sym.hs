@@ -370,7 +370,7 @@ symTests = testGroup "Symbolic"
         fst (equalitySaturation ("a" * (2-1)) ["x"*1:="x"] symCost) @?= "a"
 
     , testCase "1+a*(2-1) = 1+a (all + constant folding)" $
-        rewrite (1+("a"*(2-1))) @?= (1+"a")
+        rewrite (1+("a"*(2-1))) @?= ("a"+1)
 
     , testCase "1+a*(2-1) = 1+a (all + constant f.)" $
         rewrite (fromInteger(-3)+fromInteger(-3)-6) @?= Fix (Const $ -12)
@@ -379,13 +379,13 @@ symTests = testGroup "Symbolic"
         rewrite (1 + "a" - "a"*(2-1)) @?= 1
 
     , testCase "1+(a-a*(2-1)) = 1 (all + constant f.)" $
-        rewrite ("a" - "a"*(4-1)) @?= "a"*(Fix . Const $ -2)
+        rewrite ("a" - "a"*(4-1)) @?= (Fix . Const $ -2)*"a"
 
     , testCase "x + x + x + x = 4*x" $
-        rewrite ("a"+"a"+"a"+"a") @?= "a"*4
+        rewrite ("a"+"a"+"a"+"a") @?= 4*"a"
 
     , testCase "math powers" $
-        rewrite (Fix (BinOp Pow 2 "x")*Fix (BinOp Pow 2 "y")) @?= Fix (BinOp Pow 2 ("x" + "y"))
+        rewrite (Fix (BinOp Pow 2 "x")*Fix (BinOp Pow 2 "y")) @?= Fix (BinOp Pow 2 ("y" + "x"))
 
     , testCase "d1" $
         rewrite (Fix $ BinOp Diff "a" "a") @?= 1
@@ -409,17 +409,17 @@ symTests = testGroup "Symbolic"
         rewrite (Fix $ BinOp Integral (Fix $ UnOp Cos "x") "x") @?= Fix (UnOp Sin "x")
 
     , testCase "i3" $
-        rewrite (Fix $ BinOp Integral (Fix $ BinOp Pow "x" 1) "x") @?= "x"*("x"*0.5)
+        rewrite (Fix $ BinOp Integral (Fix $ BinOp Pow "x" 1) "x") @?= (0.5*"x")*"x"
 
     , testCase "i4" $
-        rewrite (_i ((*) "x" (_cos "x")) "x") @?= (+) (_cos "x") ((*) "x" (_sin "x"))
+        rewrite (_i ((*) "x" (_cos "x")) "x") @?= (+) ((*) (_sin "x") "x") (_cos "x")
 
     , testCase "i5" $
-        rewrite (_i ((*) (_cos "x") "x") "x") @?= (+) (_cos "x") ((*) "x" (_sin "x"))
+        rewrite (_i ((*) (_cos "x") "x") "x") @?= (+) ((*) (_sin "x") "x") (_cos "x")
 
     -- TODO: How does this even work ?
     , testCase "i6" $
-        rewrite (_i (_ln "x") "x") @?= "x"*(_ln "x" + fromInteger(-1))
+        rewrite (_i (_ln "x") "x") @?= (fromInteger(-1) + _ln "x")*"x"
 
     ]
 

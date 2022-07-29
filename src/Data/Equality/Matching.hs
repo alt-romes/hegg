@@ -65,32 +65,28 @@ ematch db patr =
 --     }
 -- @
 eGraphToDatabase :: Language l => EGraph l -> Database l
-eGraphToDatabase eg@EGraph{..} = M.foldrWithKey (addENodeToDB eg) (DB mempty) memo
+eGraphToDatabase EGraph{..} = M.foldrWithKey addENodeToDB (DB mempty) memo
   where
 
     -- Add an enode in an e-graph, given its class, to a database
-    addENodeToDB :: Language l => EGraph l -> ENode l -> ClassId -> Database l -> Database l
-    addENodeToDB _ enode classid (DB m) =
+    addENodeToDB :: Language l => ENode l -> ClassId -> Database l -> Database l
+    addENodeToDB enode classid (DB m) =
         -- ROMES:TODO map find
         -- Insert or create a relation R_f(i1,i2,...,in) for lang in which 
         DB $ M.alter (populate (classid:children enode)) (operator enode) m
 
     -- Populate or create a triemap given the population D_x (ClassIds)
+    -- Insert remaining ids population doesn't exist, recursively merge tries with remaining ids
     populate :: [ClassId] -> Maybe IntTrie -> Maybe IntTrie
+    -- If trie map entry doesn't exist yet, populate an empty map with the remaining ids
     populate ids Nothing = Just $ populate' ids (MkIntTrie mempty mempty)
-    populate ids (Just f) = Just $ populate' ids f
+        -- If trie map entry already exists, populate the existing map with the remaining ids
+    populate ids (Just a) = Just $ populate' ids a
 
     -- Populate a triemap given the population D_x (ClassIds)
     populate' :: [ClassId] -> IntTrie -> IntTrie
     populate' [] it = it
-    populate' (x:xs) (MkIntTrie k m) = MkIntTrie (x `IS.insert` k) $ IM.alter (alterPopulation xs) x m
-      where
-        -- Insert remaining ids population doesn't exist, recursively merge tries with remaining ids
-        alterPopulation :: [ClassId] -> Maybe IntTrie -> Maybe IntTrie
-        -- If trie map entry doesn't exist yet, populate an empty map with the remaining ids
-        alterPopulation ids Nothing = Just $ populate' ids (MkIntTrie mempty mempty)
-        -- If trie map entry already exists, populate the existing map with the remaining ids
-        alterPopulation ids (Just f) = Just $ populate' ids f
+    populate' (x:xs) (MkIntTrie k m) = MkIntTrie (x `IS.insert` k) $ IM.alter (populate xs) x m
 {-# SCC eGraphToDatabase #-}
 
 

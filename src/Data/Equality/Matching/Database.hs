@@ -205,7 +205,7 @@ intersectInTrie !var !substs (MkIntTrie trieKeys m) = \case
 
     -- Looking for a class-id, so if it exists in map the intersection is
     -- valid and we simply continue the search for the domain
-    ClassId x:xs -> {-# SCC "Intersect_ClassId" #-}
+    ClassId x:xs ->
         IM.lookup x m >>= \next -> intersectInTrie var substs next xs
 
     -- Looking for a var. It might be one of the following:
@@ -231,7 +231,7 @@ intersectInTrie !var !substs (MkIntTrie trieKeys m) = \case
     --
     Var x:xs -> case IM.lookup x substs of
         -- (2) or (4), we simply continue
-        Just varVal -> {-# SCC "intersect_subst_var" #-} IM.lookup varVal m >>= \next -> intersectInTrie var substs next xs
+        Just varVal -> IM.lookup varVal m >>= \next -> intersectInTrie var substs next xs
         -- (1) or (3)
         Nothing -> pure $ if x == var
           -- (1)
@@ -241,21 +241,22 @@ intersectInTrie !var !substs (MkIntTrie trieKeys m) = \case
             -- for, we can simply return all possible keys for this since it is
             -- the correct variable. This is quite important for performance!
             if all (isVarDifferentFrom x) xs
-              then {-# SCC "intersect_new_NEW_var_simple" #-} trieKeys
-              else {-# SCC "intersect_new_NEW_var_special" #-} IM.foldrWithKey (\k ls (!acc) ->
+              then trieKeys
+              else IM.foldrWithKey (\k ls (!acc) ->
                case intersectInTrie var (IM.insert x k substs) ls xs of
                    Nothing -> acc
-                   Just _  -> k `seq` k `IS.insert` acc
+                   Just _  -> k `IS.insert` acc
                          ) mempty m
           -- (3)
           -- else {-# SCC "intersect_new_OTHER_var" #-} IS.unions $ IM.elems $ IM.mapMaybeWithKey (\k ls -> intersectInTrie var ({-# SCC "putSubst" #-} IM.insert x k substs) ls xs) m
-          else {-# SCC "intersect_new_OTHER_var" #-} IM.foldrWithKey (\k ls (!acc) ->
-            case intersectInTrie var ({-# SCC "putSubst" #-} IM.insert x k substs) ls xs of
+          else IM.foldrWithKey (\k ls (!acc) ->
+            case intersectInTrie var (IM.insert x k substs) ls xs of
                 Nothing -> acc
                 Just rs -> rs <> acc) mempty m
 
 
 {-# INLINABLE intersectInTrie #-}
+{-# SCC intersectInTrie #-}
 
 isVarDifferentFrom :: Var -> ClassIdOrVar -> Bool
 isVarDifferentFrom _ (ClassId _) = False

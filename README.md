@@ -16,6 +16,3 @@ ghc-prof-flamegraph hegg-test.prof
 
 open hegg-test.svg
 ```
-
-Running profiling on a slow integral shows that 55-50% of the time is spent on the
-ill-named `intersectAtoms`

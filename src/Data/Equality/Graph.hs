@@ -214,17 +214,8 @@ merge a b = get >>= \egr0 -> do
            -- subsumed class
            modify (_class leader .~ updatedLeader)
 
-           -- Subsumed nodes in memo should now point to leader
-           --
-           -- ROMES:TODO Rebuild should maintain both invariants instead of
-           -- merge...
-           -- 
-           -- I do not understand how they don't have this kind of thing,
-           -- Without it, everything breaks
-           forM_ (sub_class^._nodes) $ \l ->
-               modify (_memo %~ insertNM l leader)
-
            modify (modifyA new_id)
+
            return new_id
 {-# SCC merge #-}
             
@@ -253,13 +244,13 @@ find cid = unsafeUnpack . findRepr cid . unionFind
 rebuild :: Language l => EGS l ()
 rebuild = do
     -- empty the worklist into a local variable
-    wl  :: NodeMap l ClassId <- clearWorkList
-    awl :: NodeMap l ClassId <- clearAnalysisWorkList
+    wl  <- clearWorkList
+    awl <- clearAnalysisWorkList
 
     -- repair deduplicated eclasses
-    forM_ (toListNM wl) repair
+    traverseWithKeyNM repair wl
 
-    forM_ (toListNM awl) repairAnal
+    traverseWithKeyNM repairAnal awl
 
     -- Loop until worklist is completely empty
     wl'  <- gets worklist
@@ -267,8 +258,8 @@ rebuild = do
     unless (null wl' && null awl') rebuild
 {-# SCC rebuild #-}
 
-repair' :: forall l. Language l => (ENode l, ClassId) -> EGraph l -> EGraph l
-repair' (node, repair_id) egr =
+repair' :: forall l. Language l => ENode l -> ClassId -> EGraph l -> EGraph l
+repair' node repair_id egr =
 
    case insertLookupNM (node `canonicalize` egr) (find repair_id egr) (deleteNM node $ memo egr) of-- TODO: I seem to really need it. Is find needed? (they don't use it)
 
@@ -278,12 +269,12 @@ repair' (node, repair_id) egr =
 
 {-# SCC repair' #-}
 
-repair :: forall l. Language l => (ENode l, ClassId) -> EGS l ()
-repair x = StateT (return . ((),) . repair' x)
+repair :: forall l. Language l => ENode l -> ClassId -> EGS l ()
+repair x y = StateT (return . ((),) . repair' x y)
 {-# INLINE repair #-}
 
-repairAnal :: forall l. Language l => (ENode l, ClassId) -> EGS l ()
-repairAnal (node, repair_id) = do
+repairAnal :: forall l. Language l => ENode l -> ClassId -> EGS l ()
+repairAnal node repair_id = do
 
     egr <- get
 

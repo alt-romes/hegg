@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -116,9 +117,9 @@ sizeNM :: NodeMap l a -> Int
 sizeNM = IM.size . unNodeMap
 {-# INLINE sizeNM #-}
 
-toListNM :: NodeMap l a -> [(ENode l, a)]
-toListNM = IM.elems . unNodeMap
-{-# SCC toListNM #-}
+traverseWithKeyNM :: Applicative t => (ENode l -> a -> t b) -> NodeMap l a -> t (NodeMap l b) 
+traverseWithKeyNM f (NodeMap m) = NodeMap <$> traverse (\(n,x) -> (n,) <$> f n x) m
+{-# SCC traverseWithKeyNM #-}
 
 -- * Node Set
 

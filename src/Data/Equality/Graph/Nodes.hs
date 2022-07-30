@@ -1,4 +1,9 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-|
 
 Definition of e-nodes, instances and some operations on them.
@@ -10,9 +15,17 @@ parametrised over @()@.
 module Data.Equality.Graph.Nodes where
 
 import Data.Functor.Classes
+import Data.Bifunctor
 import Data.Foldable
 
+import Data.Kind
+
+import Data.Hashable
+import Data.Hashable.Lifted
+
 import Control.Monad (void)
+
+import qualified Data.IntMap.Strict as IM
 
 import Data.Equality.Graph.Classes.Id
 
@@ -27,6 +40,10 @@ import Data.Equality.Graph.Classes.Id
 -- recursive field (so, every argument passed to this expr) is a 'ClassId'
 -- rather than an explicit expression
 newtype ENode l = Node { unNode :: l ClassId }
+
+hashNode :: Hashable1 l => ENode l -> Int
+hashNode = hash
+{-# INLINE hashNode #-}
 
 -- | Operator
 --
@@ -55,6 +72,10 @@ instance Ord1 l => (Ord (ENode l)) where
 instance Show1 l => (Show (ENode l)) where
     showsPrec p (Node l) = liftShowsPrec showsPrec showList p l
 
+instance Hashable1 l => Hashable (ENode l) where
+  hashWithSalt i (Node l) = liftHashWithSalt hashWithSalt i l
+  {-# INLINE hashWithSalt #-}
+
 instance Eq1 l => (Eq (Operator l)) where
     (==) (Operator a) (Operator b) = liftEq (\_ _ -> True) a b
     {-# INLINE (==) #-}
@@ -65,3 +86,40 @@ instance Ord1 l => (Ord (Operator l)) where
 
 instance Show1 l => (Show (Operator l)) where
     showsPrec p (Operator l) = liftShowsPrec (const . const $ showString "") (const $ showString "") p l
+
+-- * Node Map
+
+newtype NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: IM.IntMap (a, ENode l) }
+  deriving (Semigroup, Monoid, Functor, Foldable, Traversable, Show)
+
+insertNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> NodeMap l a
+insertNM e@(hashNode -> k) v = NodeMap . IM.insert k (v, e) . unNodeMap
+{-# INLINE insertNM #-}
+
+lookupNM :: Hashable1 l => ENode l -> NodeMap l a -> Maybe a
+lookupNM (hashNode -> k) = fmap fst . IM.lookup k . unNodeMap
+{-# INLINE lookupNM #-}
+
+deleteNM :: Hashable1 l => ENode l -> NodeMap l a -> NodeMap l a
+deleteNM (hashNode -> k) = NodeMap . IM.delete k . unNodeMap
+{-# INLINE deleteNM #-}
+
+insertLookupNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> (Maybe a, NodeMap l a)
+insertLookupNM e@(hashNode -> k) v = bimap (fmap fst) NodeMap . IM.insertLookupWithKey (\_ a _ -> a) k (v, e) . unNodeMap
+{-# INLINE insertLookupNM #-}
+
+foldrWithKeyNM :: Hashable1 l => (ENode l -> a -> b -> b) -> b -> NodeMap l a -> b 
+foldrWithKeyNM f b (NodeMap m) = IM.foldrWithKey (\_ (x,e) -> f e x) b m
+{-# INLINE foldrWithKeyNM #-}
+
+sizeNM :: NodeMap l a -> Int
+sizeNM = IM.size . unNodeMap
+{-# INLINE sizeNM #-}
+
+-- * Node Set
+
+newtype NodeSet l = NodeSet { unNodeSet :: IM.IntMap (ENode l) }
+  deriving (Semigroup, Monoid)
+
+insertNS :: Hashable1 l => ENode l -> NodeSet l -> NodeSet l
+insertNS v = NodeSet . IM.insert (hashNode v) v . unNodeSet

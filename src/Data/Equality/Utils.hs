@@ -29,9 +29,9 @@ ordNub :: Ord a => [a] -> [a]
 ordNub = S.toList . S.fromList
 {-# INLINE ordNub #-}
 
-hash :: String -> Int
-hash = foldl' (\h c -> 33*h `xor` fromEnum c) 5381
-{-# INLINE hash #-}
+hashString :: String -> Int
+hashString = foldl' (\h c -> 33*h `xor` fromEnum c) 5381
+{-# INLINE hashString #-}
 
 -- We don't have the parallel package, so roll our own simple parMap
 parMap :: (a -> b) -> [a] -> [b]

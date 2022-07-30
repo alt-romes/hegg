@@ -18,10 +18,11 @@ import Test.Tasty.QuickCheck as QC hiding (classes)
 import Data.Functor.Classes
 import Control.Monad
 
+import Data.Hashable.Lifted
+
 import qualified Data.List   as L
 import qualified Data.Set    as S
 import qualified Data.IntMap.Strict as IM
-import qualified Data.Map    as M
 
 import Data.Equality.Graph
 import Data.Equality.Saturation
@@ -33,7 +34,7 @@ import Sym
 -- TODO: Use type level symbol to define the analysis
 type role SimpleExpr nominal
 newtype SimpleExpr l = SE (Expr l)
-    deriving (Functor, Foldable, Traversable, Show1, Eq1, Ord1, Language)
+    deriving (Functor, Foldable, Traversable, Show1, Eq1, Ord1, Hashable1, Language)
 
 instance Analysis SimpleExpr where
     type Domain SimpleExpr = ()
@@ -116,7 +117,7 @@ hashConsInvariant eg@EGraph{..} =
       -- e-node 𝑛 ∈ 𝑀 [𝑎] ⇐⇒ 𝐻 [canonicalize(𝑛)] = find(𝑎)
       f (i, EClass _ nodes _ _) = all g nodes
         where
-          g en = case M.lookup (canonicalize en eg) memo of
+          g en = case lookupNM (canonicalize en eg) memo of
             Nothing -> error "how can we not find canonical thing in map? :)" -- False
             Just i' -> i' == find i eg 
 

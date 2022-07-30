@@ -11,7 +11,7 @@ module Data.Equality.Graph
     , module Data.Equality.Graph.Classes
     , module Data.Equality.Graph.Nodes
     , module Data.Equality.Language
-    , modify, get
+    , modify, get, gets
     ) where
 
 -- import GHC.Conc
@@ -22,9 +22,8 @@ import Data.Foldable (foldl')
 import Data.Functor.Classes
 
 import Control.Monad
-import Control.Monad.State.Strict
+import Control.Monad.Trans.State.Strict
 
-import qualified Data.Map    as M
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
 
@@ -58,7 +57,7 @@ data EGraph l = EGraph
     , analysisWorklist :: Worklist l        -- ^ like 'worklist' but for analysis repairing
     }
 
-type Memo l = M.Map (ENode l) ClassId
+type Memo l = NodeMap l ClassId
 type Worklist l = S.Set (ENode l, ClassId)
 
 -- ROMES:TODO: join things built in paralell?
@@ -88,7 +87,7 @@ add' :: forall l. Language l => ENode l -> EGraph l -> (ClassId, EGraph l)
 add' uncanon_e egr =
     let new_en = {-# SCC "-2" #-} canonicalize uncanon_e egr
 
-     in case {-# SCC "-1" #-} M.lookup new_en (memo egr) of
+     in case {-# SCC "-1" #-} lookupNM new_en (memo egr) of
       Just canon_enode_id -> {-# SCC "0" #-} (find canon_enode_id egr, egr)
       Nothing ->
 
@@ -139,7 +138,7 @@ add' uncanon_e egr =
             new_worklist     = {-# SCC "4" #-} S.insert (new_en, new_eclass_id) (worklist egr)
 
             -- Add the e-node's e-class id at the e-node's id
-            new_memo         = {-# SCC "5" #-} M.insert new_en new_eclass_id (memo egr)
+            new_memo         = {-# SCC "5" #-} insertNM new_en new_eclass_id (memo egr)
 
          in ( new_eclass_id
 
@@ -223,7 +222,7 @@ merge a b = get >>= \egr0 -> do
            -- I do not understand how they don't have this kind of thing,
            -- Without it, everything breaks
            forM_ (sub_class^._nodes) $ \l ->
-               modify (_memo %~ M.insert l leader)
+               modify (_memo %~ insertNM l leader)
 
            modify (modifyA new_id)
            return new_id
@@ -271,7 +270,7 @@ rebuild = do
 repair' :: forall l. Language l => (ENode l, ClassId) -> EGraph l -> EGraph l
 repair' (node, repair_id) egr =
 
-   case insertLookup' (node `canonicalize` egr) (find repair_id egr) (M.delete node $ memo egr) of-- TODO: I seem to really need it. Is find needed? (they don't use it)
+   case insertLookupNM (node `canonicalize` egr) (find repair_id egr) (deleteNM node $ memo egr) of-- TODO: I seem to really need it. Is find needed? (they don't use it)
 
       (Nothing, memo2) -> egr { memo = memo2 } -- Return new memo but delete uncanonicalized node
 

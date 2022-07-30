@@ -27,17 +27,17 @@ library
 
                       -fno-prof-auto
 
-                      -- -ddump-simpl
-                      -- -ddump-to-file
-                      -- -dsuppress-ticks
-                      -- -dsuppress-stg-exts
-                      -- -dsuppress-coercions
-                      -- -dsuppress-idinfo
-                      -- -dsuppress-unfoldings
-                      -- -dsuppress-module-prefixes
-                      -- -dsuppress-timestamps
-                      -- -dsuppress-uniques
-                      -- -dsuppress-var-kinds
+                      -ddump-simpl
+                      -ddump-to-file
+                      -dsuppress-ticks
+                      -dsuppress-stg-exts
+                      -dsuppress-coercions
+                      -dsuppress-idinfo
+                      -dsuppress-unfoldings
+                      -dsuppress-module-prefixes
+                      -dsuppress-timestamps
+                      -dsuppress-uniques
+                      -dsuppress-var-kinds
 
     exposed-modules:  Data.Equality.Graph,
                       Data.Equality.Graph.ReprUnionFind,
@@ -64,7 +64,7 @@ library
 
     -- LANGUAGE extensions used by modules in this package.
     build-depends:    base >= 4.4 && < 5,
-                      mtl, containers, array
+                      transformers, containers, hashable
     if flag(vizdot)
         build-depends: graphviz
     hs-source-dirs:   src
@@ -81,6 +81,7 @@ test-suite hegg-test
     build-depends:    base,
                       hegg,
                       containers,
+                      hashable,
                       tasty,
                       tasty-quickcheck,
                       tasty-hunit,

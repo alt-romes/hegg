@@ -11,7 +11,7 @@ import Data.Maybe (mapMaybe)
 import Data.Foldable (toList)
 
 import Control.Monad
-import Control.Monad.State.Strict
+import Control.Monad.Trans.State.Strict
 
 import qualified Data.Map.Strict    as M
 import qualified Data.IntMap.Strict as IM
@@ -65,7 +65,7 @@ ematch db patr =
 --     }
 -- @
 eGraphToDatabase :: Language l => EGraph l -> Database l
-eGraphToDatabase EGraph{..} = M.foldrWithKey addENodeToDB (DB mempty) memo
+eGraphToDatabase EGraph{..} = foldrWithKeyNM addENodeToDB (DB mempty) memo
   where
 
     -- Add an enode in an e-graph, given its class, to a database

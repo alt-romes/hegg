@@ -1,3 +1,5 @@
+Consider using unordered containers altogether
+Drop Hashable dependency by vendoring generic hash? Can we use Uniques in GHC if we vendor this?
 Memo data structure is not good enough, maybe UniqMap
 UniqMap
 Memoization in find / canonicalize

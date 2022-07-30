@@ -31,5 +31,5 @@ instance Show1 lang => Show (Pattern lang) where
     showsPrec d (NonVariablePattern x) = liftShowsPrec showsPrec showList d x
 
 instance IsString (Pattern lang) where
-    fromString = VariablePattern . hash
+    fromString = VariablePattern . hashString
 

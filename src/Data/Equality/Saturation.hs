@@ -21,12 +21,10 @@ module Data.Equality.Saturation
 
     ) where
 
-import qualified Data.Map    as M
 import qualified Data.IntMap.Strict as IM
 
 import Data.Bifunctor
 import Control.Monad
-import Control.Monad.State
 
 import Data.Proxy
 
@@ -99,7 +97,7 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
             -- ROMES:TODO: Actual Timeout... not just iteration timeout
             -- ROMES:TODO Better saturation (see Runner)
             -- Apply rewrites until saturated or ROMES:TODO: timeout
-            unless (M.size afterMemo == M.size beforeMemo
+            unless (sizeNM afterMemo == sizeNM beforeMemo
                       && IM.size afterClasses == IM.size beforeClasses)
                 (equalitySaturation'' (i+1) newStats)
 

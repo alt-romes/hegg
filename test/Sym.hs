@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -7,8 +8,13 @@
 {-# LANGUAGE LambdaCase #-}
 module Sym where
 
+import GHC.Generics
+
 import Test.Tasty
 import Test.Tasty.HUnit
+
+import Data.Hashable
+import Data.Hashable.Lifted
 
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
@@ -30,7 +36,10 @@ data Expr a = Sym String
             | BinOp BOp a a
             deriving ( Eq, Ord, Functor
                      , Foldable, Traversable
+                     , Generic1
                      )
+
+instance Hashable1 Expr
 
 instance Eq1 Expr where
     liftEq eq a b = case (a, b) of
@@ -62,7 +71,7 @@ instance Ord1 Expr where
             UnOp _ _ -> 3
             BinOp {} -> 4
         {-# INLINE expIx #-}
-    {-# SCC liftCompare #-}
+    {-# INLINE liftCompare #-}
 
 instance Language Expr
 
@@ -73,13 +82,16 @@ data BOp = Add
          | Pow
          | Diff
          | Integral
-        deriving (Eq, Ord)
+        deriving (Eq, Ord, Generic)
 
 data UOp = Sin
          | Cos
          | Sqrt
          | Ln
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Generic)
+
+instance Hashable BOp
+instance Hashable UOp
 
 instance Show BOp where
     show = \case
@@ -191,9 +203,11 @@ lnP a = NonVariablePattern (UnOp Ln a)
 instance Analysis Expr where
     type Domain Expr = Maybe Double
 
+    {-# SCC makeA #-}
     makeA (Node e) egr = evalConstant ((\c -> egr^._class c._data) <$> e)
 
     -- joinA = (<|>)
+    {-# SCC joinA #-}
     joinA ma mb = do
         a <- ma
         b <- mb
@@ -203,6 +217,7 @@ instance Analysis Expr where
         !_ <- unless (a == b || (a == 0 && b == (-0)) || (a == (-0) && b == 0)) (error "Merged non-equal constants!")
         return a
 
+    {-# SCC modifyA #-}
     modifyA i egr =
         case egr ^._class i._data of
           Nothing -> egr

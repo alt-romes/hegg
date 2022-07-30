@@ -54,7 +54,6 @@ _nodes :: Lens' (EClass l) (S.Set (ENode l))
 _nodes afa EClass{..} = (\ns -> EClass eClassId ns eClassData eClassParents) <$> afa eClassNodes
 {-# INLINE _nodes #-}
 
-
 -- | Like @'view'@ but with the arguments flipped
 (^.) :: s -> Lens' s a -> a
 (^.) s ln = view ln s

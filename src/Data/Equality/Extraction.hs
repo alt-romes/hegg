@@ -78,6 +78,7 @@ extractBest g@EGraph{classes = eclasses'} cost (flip find g -> i) =
 
       let (modified, updated) = IM.foldlWithKey f (False, current) eclasses
 
+          {-# INLINE f #-}
           f :: (Bool, ClassIdMap (CostWithExpr lang)) -> Int -> EClass lang -> (Bool, ClassIdMap (CostWithExpr lang))
           f = \acc@(_, beingUpdated) i' (EClass _ nodes _ _) ->
 
@@ -100,8 +101,6 @@ extractBest g@EGraph{classes = eclasses'} cost (flip find g -> i) =
 
                     _ -> acc
 
-          {-# INLINE f #-}
-
         -- If any class was modified, loop
        in if modified
             then findCosts eclasses updated
@@ -119,8 +118,8 @@ extractBest g@EGraph{classes = eclasses'} cost (flip find g -> i) =
     nodeTotalCost m (Node n) = do
         expr <- traverse ((`IM.lookup` m) . flip find g) n
         return $ CostWithExpr (cost ((fst . unCWE) <$> expr), (Fix $ (snd . unCWE) <$> expr))
-    {-# NOINLINE nodeTotalCost #-}
-    {-# SCC nodeTotalCost #-}
+    {-# INLINE nodeTotalCost #-}
+    -- {-# SCC nodeTotalCost #-}
 {-# SCC extractBest #-}
 
 

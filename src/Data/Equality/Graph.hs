@@ -16,6 +16,7 @@ module Data.Equality.Graph
 -- import GHC.Conc
 
 import Data.Function
+import Data.Foldable (foldl')
 
 import Data.Functor.Classes
 
@@ -100,8 +101,7 @@ add uncanon_e = do
         --
         -- Update e-classes by going through all e-node children and adding
         -- to the e-class parents the new e-node and its e-class id
-        forM_ (children new_en) $ \eclass_id -> do
-            modify (_class eclass_id._parents %~ (S.insert (new_en, new_eclass_id)))
+        modify (_classes %~ \cls -> foldl' (flip $ IM.adjust (_parents %~ S.insert (new_en, new_eclass_id))) cls (unNode new_en))
 
         -- TODO: From egg: Is this needed?
         -- This is required if we want math pruning to work. Unfortunately, it
@@ -220,6 +220,7 @@ merge a b = get >>= \egr0 -> do
 -- canonicalize(f(a,b,c,...)) = f((find a), (find b), (find c),...)
 canonicalize :: Functor l => ENode l -> EGraph l -> ENode l
 canonicalize (Node enode) eg = Node $ fmap (`find` eg) enode
+{-# SCC canonicalize #-}
 
 -- | Find the canonical representation of an e-class id in the e-graph
 -- Invariant: The e-class id always exists.
@@ -286,6 +287,7 @@ repairAnal (node, repair_id) = do
 addToWorklist :: Ord1 l => Worklist l -> EGS l ()
 addToWorklist li =
     modify (\egr -> egr { worklist = li <> worklist egr})
+{-# SCC addToWorklist #-}
 
 -- | Clear the e-graph worklist and return the existing work items
 clearWorkList :: Ord1 l => EGS l (Worklist l)
@@ -293,16 +295,19 @@ clearWorkList = do
     wl <- gets worklist
     modify (\egr -> egr { worklist = mempty })
     return wl
+{-# SCC clearWorkList #-}
 
 addToAnalysisWorklist :: Ord1 l => Worklist l -> EGS l ()
 addToAnalysisWorklist lx =
     modify (\egr -> egr { analysisWorklist = lx <> analysisWorklist egr})
+{-# SCC addToAnalysisWorklist #-}
 
 clearAnalysisWorkList :: Ord1 l => EGS l (Worklist l)
 clearAnalysisWorkList = do
     wl <- gets analysisWorklist
     modify (\egr -> egr { analysisWorklist = mempty })
     return wl
+{-# SCC clearAnalysisWorkList #-}
 
 -- | Extend the existing UnionFind equivalence classes with a new one and
 -- return the new id
@@ -312,6 +317,7 @@ createUnionFindClass = do
     let (new_id, new_uf) = makeNewSet uf
     modify (\egr -> egr { unionFind = new_uf })
     return new_id
+{-# SCC createUnionFindClass #-}
 
 -- | Merge two equivalent classes in the union find
 mergeUnionFindClasses :: ClassId -> ClassId -> EGS s ClassId
@@ -320,6 +326,7 @@ mergeUnionFindClasses a b = do
     let (new_id, new_uf) = unionSets a b uf
     modify (\egr -> egr { unionFind = new_uf })
     return new_id
+{-# SCC mergeUnionFindClasses #-}
 
 emptyEGraph :: Language l => EGraph l
 emptyEGraph = EGraph emptyUF mempty mempty mempty mempty

@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TupleSections #-}
 -- {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE UndecidableInstances #-} -- tmp show
@@ -105,7 +106,7 @@ add' uncanon_e egr =
             -- to the e-class parents the new e-node and its e-class id
             --
             -- And add new e-class to existing e-classes
-            new_classes      = IM.insert new_eclass_id new_eclass $
+            new_classes      = {-# SCC "2" #-} IM.insert new_eclass_id new_eclass $
                                   foldl' (flip $ IM.adjust (_parents %~ S.insert (new_en, new_eclass_id)))
                                          (classes egr)
                                          (unNode new_en)
@@ -135,10 +136,10 @@ add' uncanon_e egr =
             -- something else?
             --
             -- So in the end, we do need to addToWorklist to get correct results
-            new_worklist     = S.insert (new_en, new_eclass_id) (worklist egr)
+            new_worklist     = {-# SCC "4" #-} S.insert (new_en, new_eclass_id) (worklist egr)
 
             -- Add the e-node's e-class id at the e-node's id
-            new_memo         = M.insert new_en new_eclass_id (memo egr)
+            new_memo         = {-# SCC "5" #-} M.insert new_en new_eclass_id (memo egr)
 
          in ( new_eclass_id
 
@@ -149,7 +150,7 @@ add' uncanon_e egr =
                   }
 
                   -- Modify created node according to analysis
-                  & modifyA new_eclass_id
+                  & {-# SCC "6" #-} modifyA new_eclass_id
 
             )
 {-# SCC add' #-}
@@ -267,21 +268,20 @@ rebuild = do
     unless (null wl' && null awl') rebuild
 {-# SCC rebuild #-}
 
+repair' :: forall l. Language l => (ENode l, ClassId) -> EGraph l -> EGraph l
+repair' (node, repair_id) egr =
+
+   case insertLookup' (node `canonicalize` egr) (find repair_id egr) (M.delete node $ memo egr) of-- TODO: I seem to really need it. Is find needed? (they don't use it)
+
+      (Nothing, memo2) -> egr { memo = memo2 } -- Return new memo but delete uncanonicalized node
+
+      (Just existing_class, memo2) -> snd $ runState (merge existing_class repair_id) egr{ memo = memo2 }
+
+{-# SCC repair' #-}
+
 repair :: forall l. Language l => (ENode l, ClassId) -> EGS l ()
-repair (node, repair_id) = do
-
-    modify (_memo %~ M.delete node)
-    egr <- get
-    -- Canonicalize node
-    let canon_node = node `canonicalize` egr 
-
-    egrMemo0 <- gets (^._memo)
-    case insertLookup' canon_node (find repair_id egr) egrMemo0 of-- TODO: I seem to really need it. Is find needed? (they don't use it)
-      (Nothing, egrMemo1) -> modify (_memo .~ egrMemo1)
-      (Just existing_class, egrMemo1) -> do
-          modify (_memo .~ egrMemo1)
-          _ <- merge existing_class repair_id
-          return ()
+repair x = StateT (return . ((),) . repair' x)
+{-# INLINE repair #-}
 
 repairAnal :: forall l. Language l => (ENode l, ClassId) -> EGS l ()
 repairAnal (node, repair_id) = do
@@ -300,7 +300,7 @@ repairAnal (node, repair_id) = do
         put (egr & _class canon_id._data .~ new_data)
         addToAnalysisWorklist (c^._parents)
         modify (modifyA canon_id)
-
+{-# SCC repairAnal #-}
 
 
 addToWorklist :: Ord1 l => Worklist l -> EGS l ()

@@ -57,3 +57,4 @@ class Eq (Domain l) => Analysis l where
     -- @
     modifyA :: ClassId -> EGraph l -> EGraph l
     modifyA _ = id
+    {-# INLINE modifyA #-}

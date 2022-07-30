@@ -235,11 +235,8 @@ canonicalize (Node enode) eg = Node $ fmap (`find` eg) enode
 -- | Find the canonical representation of an e-class id in the e-graph
 -- Invariant: The e-class id always exists.
 find :: ClassId -> EGraph l -> ClassId
-find cid = unsafeUnpack . findRepr cid . unionFind
-    where
-        unsafeUnpack Nothing  = error $ "The impossible happened: Couldn't find representation of e-node " <> show cid
-        unsafeUnpack (Just x) = x
-{-# SCC find #-}
+find cid = findRepr cid . unionFind
+{-# INLINE find #-}
 
 rebuild :: Language l => EGS l ()
 rebuild = do

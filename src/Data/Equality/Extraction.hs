@@ -9,9 +9,7 @@
 module Data.Equality.Extraction
   (extractBest, depthCost, CostFunction, Cost) where
 
-import Prelude hiding (Maybe(..))
 import Data.Foldable (toList)
-import qualified Data.Maybe as MB
 
 import qualified Data.Set as S
 import qualified Data.IntMap.Strict as IM
@@ -35,24 +33,6 @@ import Data.Equality.Graph
 --     Const _ -> 1
 -- @
 type CostFunction l = l Cost -> Cost
-
--- | Instance Ord for Maybe in which Just is always considered smaller than Nothing
-newtype NMaybe a = NM (MB.Maybe a)
-  deriving (Eq, Functor, Applicative, Monad)
-
-pattern Nothing :: NMaybe a
-pattern Nothing = NM MB.Nothing
-
-pattern Just :: a -> NMaybe a
-pattern Just a = NM (MB.Just a)
-
-{-# COMPLETE Nothing, Just #-}
-
-instance Ord a => Ord (NMaybe a) where
-  compare (Nothing) (Nothing) = EQ
-  compare (Just _) (Nothing) = LT
-  compare (Nothing) (Just _) = GT
-  compare (Just x) (Just y) = compare x y
 
 -- | 'Cost' is simply an integer
 type Cost = Int
@@ -84,9 +64,9 @@ extractBest g@EGraph{classes = eclasses'} cost (flip find g -> i) =
     -- picking up the best from the target e-class.  In practice this shouldn't
     -- find the cost of unused nodes because the "topmost" e-class will be the
     -- target, and all sub-classes must be calculated?
-    let extr = findCosts eclasses' mempty
+    let allCosts = findCosts eclasses' mempty
 
-     in case findBest i extr of
+     in case findBest i allCosts of
         Just (CostWithExpr (_,n)) -> n
         Nothing    -> error $ "Couldn't find a best node for e-class " <> show i
 
@@ -102,9 +82,14 @@ extractBest g@EGraph{classes = eclasses'} cost (flip find g -> i) =
           f = \acc@(_, beingUpdated) i' (EClass _ nodes _ _) ->
 
                 let
-                    currentCost = NM (IM.lookup i' beingUpdated)
+                    currentCost = IM.lookup i' beingUpdated
 
-                    newCost = S.foldl' (\c n -> c `min` nodeTotalCost beingUpdated n) Nothing nodes
+                    newCost = S.foldl' (\c n -> case (c, nodeTotalCost beingUpdated n) of
+                                                  (Nothing, Nothing) -> Nothing
+                                                  (Nothing, Just nc) -> Just nc
+                                                  (Just oc, Nothing) -> Just oc
+                                                  (Just oc, Just nc) -> Just (oc `min` nc)
+                                       ) Nothing nodes
                     -- Current cost + get lowest cost and corresponding node of an e-class if possible
                  in case (currentCost, newCost) of
 
@@ -114,6 +99,8 @@ extractBest g@EGraph{classes = eclasses'} cost (flip find g -> i) =
                       | fst new < fst old -> (True, IM.insert i' (CostWithExpr new) beingUpdated)
 
                     _ -> acc
+
+          {-# INLINE f #-}
 
         -- If any class was modified, loop
        in if modified
@@ -128,18 +115,19 @@ extractBest g@EGraph{classes = eclasses'} cost (flip find g -> i) =
     -- For a node to have a cost, all its (canonical) sub-classes have a cost and
     -- an associated better expression. We return the constructed best expression
     -- with its cost
-    nodeTotalCost :: Traversable lang => ClassIdMap (CostWithExpr lang) -> ENode lang -> NMaybe (CostWithExpr lang)
+    nodeTotalCost :: Traversable lang => ClassIdMap (CostWithExpr lang) -> ENode lang -> Maybe (CostWithExpr lang)
     nodeTotalCost m (Node n) = do
-        expr <- traverse (NM . fmap @MB.Maybe (snd . unCWE) . (`IM.lookup` m) . flip find g) n
-        return $ CostWithExpr (cata cost (Fix expr), (Fix expr))
-    {-# INLINE nodeTotalCost #-}
+        expr <- traverse ((`IM.lookup` m) . flip find g) n
+        return $ CostWithExpr (cost ((fst . unCWE) <$> expr), (Fix $ (snd . unCWE) <$> expr))
+    {-# NOINLINE nodeTotalCost #-}
+    {-# SCC nodeTotalCost #-}
 {-# SCC extractBest #-}
 
 
 
 -- | Find the current best node and its cost in an equivalence class given only the class and the current extraction
 -- This is not necessarily the best node in the e-graph, only the best in the current extraction state
-findBest :: ClassId -> ClassIdMap (CostWithExpr lang) -> NMaybe (CostWithExpr lang)
-findBest i = NM . IM.lookup i
+findBest :: ClassId -> ClassIdMap (CostWithExpr lang) -> Maybe (CostWithExpr lang)
+findBest i = IM.lookup i
 {-# INLINE findBest #-}
 

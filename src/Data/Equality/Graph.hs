@@ -88,7 +88,7 @@ add' uncanon_e egr =
     let new_en = {-# SCC "-2" #-} canonicalize uncanon_e egr
 
      in case {-# SCC "-1" #-} lookupNM new_en (memo egr) of
-      Just canon_enode_id -> {-# SCC "0" #-} (find canon_enode_id egr, egr)
+      Just canon_enode_id -> (canon_enode_id, egr)
       Nothing ->
 
         let
@@ -164,16 +164,15 @@ add = StateT . fmap pure . add'
 
 -- | Merge 2 e-classes by id
 merge :: forall l. Language l => ClassId -> ClassId -> EGS l ClassId
-merge a b = get >>= \egr0 -> do
+merge a b = do
 
     -- Use canonical ids
-    let
-        a' = find a egr0
-        b' = find b egr0
+    a' <- findMut a
+    b' <- findMut b
 
     if a' == b'
        then return a'
-       else do
+       else get >>= \egr0 -> do
 
            -- Get classes being merged
            let
@@ -182,7 +181,7 @@ merge a b = get >>= \egr0 -> do
 
            -- Leader is the class with more parents
            let (leader, leader_class, sub, sub_class) =
-                   if length (class_a^._parents) < length (class_b^._parents)
+                   if ({-# SCC "l1" #-} sizeNM (class_a^._parents)) < ({-# SCC "l2" #-} sizeNM (class_b^._parents))
                       then (b', class_b, a', class_a) -- b is leader
                       else (a', class_a, b', class_b) -- a is leader
 
@@ -232,14 +231,28 @@ canonicalize :: Functor l => ENode l -> EGraph l -> ENode l
 canonicalize (Node enode) eg = Node $ fmap (`find` eg) enode
 {-# SCC canonicalize #-}
 
+canonicalizeMut :: Traversable l => ENode l -> EGS l (ENode l)
+canonicalizeMut (Node enode) = Node <$> traverse findMut enode
+{-# SCC canonicalizeMut #-}
+
+-- | Find the canonical representation of an e-class id in the e-graph
+-- Invariant: The e-class id always exists.
+-- With path compression
+findMut :: ClassId -> EGS l ClassId
+findMut cid = do
+  (i, new_uf) <- gets (findReprMut cid . unionFind)
+  modify (\egr -> egr { unionFind = new_uf })
+  return i
+    -- where
+    --     unsafeUnpack Nothing  = error $ "The impossible happened: Couldn't find representation of e-node " <> show cid
+    --     unsafeUnpack (Just x) = x
+{-# INLINE findMut #-}
+
 -- | Find the canonical representation of an e-class id in the e-graph
 -- Invariant: The e-class id always exists.
 find :: ClassId -> EGraph l -> ClassId
-find cid = unsafeUnpack . findRepr cid . unionFind
-    where
-        unsafeUnpack Nothing  = error $ "The impossible happened: Couldn't find representation of e-node " <> show cid
-        unsafeUnpack (Just x) = x
-{-# SCC find #-}
+find cid = findRepr cid . unionFind
+{-# INLINE find #-}
 
 rebuild :: Language l => EGS l ()
 rebuild = do
@@ -261,11 +274,14 @@ rebuild = do
 repair' :: forall l. Language l => ENode l -> ClassId -> EGraph l -> EGraph l
 repair' node repair_id egr =
 
-   case insertLookupNM (node `canonicalize` egr) (find repair_id egr) (deleteNM node $ memo egr) of-- TODO: I seem to really need it. Is find needed? (they don't use it)
+  let (canon_id, new_uf) = findReprMut repair_id (unionFind egr)
+      (canon_node, new_egr) = runState (canonicalizeMut node) egr
 
-      (Nothing, memo2) -> egr { memo = memo2 } -- Return new memo but delete uncanonicalized node
+   in case insertLookupNM canon_node canon_id (deleteNM node $ memo egr) of-- TODO: I seem to really need it. Is find needed? (they don't use it)
 
-      (Just existing_class, memo2) -> snd $ runState (merge existing_class repair_id) egr{ memo = memo2 }
+      (Nothing, memo2) -> new_egr { memo = memo2, unionFind = new_uf } -- Return new memo but delete uncanonicalized node
+
+      (Just existing_class, memo2) -> snd $ runState (merge existing_class repair_id) new_egr{ memo = memo2, unionFind = new_uf }
 
 {-# SCC repair' #-}
 
@@ -276,10 +292,10 @@ repair x y = StateT (return . ((),) . repair' x y)
 repairAnal :: forall l. Language l => ENode l -> ClassId -> EGS l ()
 repairAnal node repair_id = do
 
+    canon_id <- findMut repair_id
     egr <- get
 
     let
-        canon_id = find repair_id egr
         c        = egr^._class canon_id
         new_data = joinA @l (c^._data) (makeA node egr)
 
@@ -317,16 +333,6 @@ clearAnalysisWorkList = do
     modify (\egr -> egr { analysisWorklist = mempty })
     return wl
 {-# SCC clearAnalysisWorkList #-}
-
--- | Extend the existing UnionFind equivalence classes with a new one and
--- return the new id
-createUnionFindClass :: EGS s ClassId
-createUnionFindClass = do
-    uf <- gets unionFind
-    let (new_id, new_uf) = makeNewSet uf
-    modify (\egr -> egr { unionFind = new_uf })
-    return new_id
-{-# SCC createUnionFindClass #-}
 
 -- | Merge two equivalent classes in the union find
 mergeUnionFindClasses :: ClassId -> ClassId -> EGS s ClassId

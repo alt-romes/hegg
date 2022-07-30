@@ -2,7 +2,6 @@
 {-# LANGUAGE KindSignatures #-}
 module Data.Equality.Graph where
 
-import qualified Data.Set as S
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 import Data.Equality.Graph.ReprUnionFind
@@ -20,4 +19,4 @@ data EGraph l = EGraph
 find :: ClassId -> EGraph l -> ClassId
 
 type Memo l = NodeMap l ClassId
-type Worklist l = S.Set (ENode l, ClassId)
+type Worklist l = NodeMap l ClassId

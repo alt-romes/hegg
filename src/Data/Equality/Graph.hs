@@ -58,7 +58,7 @@ data EGraph l = EGraph
     }
 
 type Memo l = NodeMap l ClassId
-type Worklist l = S.Set (ENode l, ClassId)
+type Worklist l = NodeMap l ClassId
 
 -- ROMES:TODO: join things built in paralell?
 -- instance Ord1 l => Semigroup (EGraph l) where
@@ -106,7 +106,7 @@ add' uncanon_e egr =
             --
             -- And add new e-class to existing e-classes
             new_classes      = {-# SCC "2" #-} IM.insert new_eclass_id new_eclass $
-                                  foldl' (flip $ IM.adjust (_parents %~ S.insert (new_en, new_eclass_id)))
+                                  foldl' (flip $ IM.adjust (_parents %~ insertNM new_en new_eclass_id))
                                          (classes egr)
                                          (unNode new_en)
 
@@ -135,7 +135,7 @@ add' uncanon_e egr =
             -- something else?
             --
             -- So in the end, we do need to addToWorklist to get correct results
-            new_worklist     = {-# SCC "4" #-} S.insert (new_en, new_eclass_id) (worklist egr)
+            new_worklist     = {-# SCC "4" #-} insertNM new_en new_eclass_id (worklist egr)
 
             -- Add the e-node's e-class id at the e-node's id
             new_memo         = {-# SCC "5" #-} insertNM new_en new_eclass_id (memo egr)
@@ -253,13 +253,13 @@ find cid = unsafeUnpack . findRepr cid . unionFind
 rebuild :: Language l => EGS l ()
 rebuild = do
     -- empty the worklist into a local variable
-    wl  <- clearWorkList
-    awl <- clearAnalysisWorkList
+    wl  :: NodeMap l ClassId <- clearWorkList
+    awl :: NodeMap l ClassId <- clearAnalysisWorkList
 
     -- repair deduplicated eclasses
-    forM_ wl repair
+    forM_ (toListNM wl) repair
 
-    forM_ awl repairAnal
+    forM_ (toListNM awl) repairAnal
 
     -- Loop until worklist is completely empty
     wl'  <- gets worklist

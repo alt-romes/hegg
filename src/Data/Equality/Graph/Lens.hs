@@ -46,7 +46,7 @@ _data :: Lens' (EClass l) (Domain l)
 _data afa EClass{..} = (\d1 -> EClass eClassId eClassNodes d1 eClassParents) <$> afa eClassData
 {-# INLINE _data #-}
 
-_parents :: Lens' (EClass l) (S.Set (ENode l, ClassId))
+_parents :: Lens' (EClass l) (NodeMap l ClassId)
 _parents afa EClass{..} = EClass eClassId eClassNodes eClassData <$> afa eClassParents
 {-# INLINE _parents #-}
 

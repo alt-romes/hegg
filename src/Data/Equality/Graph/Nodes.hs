@@ -89,15 +89,15 @@ instance Show1 l => (Show (Operator l)) where
 
 -- * Node Map
 
-newtype NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: IM.IntMap (a, ENode l) }
+newtype NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: IM.IntMap (ENode l, a) }
   deriving (Semigroup, Monoid, Functor, Foldable, Traversable, Show)
 
 insertNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> NodeMap l a
-insertNM e@(hashNode -> k) v = NodeMap . IM.insert k (v, e) . unNodeMap
+insertNM e@(hashNode -> k) v = NodeMap . IM.insert k (e, v) . unNodeMap
 {-# INLINE insertNM #-}
 
 lookupNM :: Hashable1 l => ENode l -> NodeMap l a -> Maybe a
-lookupNM (hashNode -> k) = fmap fst . IM.lookup k . unNodeMap
+lookupNM (hashNode -> k) = fmap snd . IM.lookup k . unNodeMap
 {-# INLINE lookupNM #-}
 
 deleteNM :: Hashable1 l => ENode l -> NodeMap l a -> NodeMap l a
@@ -105,21 +105,25 @@ deleteNM (hashNode -> k) = NodeMap . IM.delete k . unNodeMap
 {-# INLINE deleteNM #-}
 
 insertLookupNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> (Maybe a, NodeMap l a)
-insertLookupNM e@(hashNode -> k) v = bimap (fmap fst) NodeMap . IM.insertLookupWithKey (\_ a _ -> a) k (v, e) . unNodeMap
+insertLookupNM e@(hashNode -> k) v = bimap (fmap snd) NodeMap . IM.insertLookupWithKey (\_ a _ -> a) k (e, v) . unNodeMap
 {-# INLINE insertLookupNM #-}
 
 foldrWithKeyNM :: Hashable1 l => (ENode l -> a -> b -> b) -> b -> NodeMap l a -> b 
-foldrWithKeyNM f b (NodeMap m) = IM.foldrWithKey (\_ (x,e) -> f e x) b m
+foldrWithKeyNM f b (NodeMap m) = IM.foldrWithKey (\_ -> uncurry f) b m
 {-# INLINE foldrWithKeyNM #-}
 
 sizeNM :: NodeMap l a -> Int
 sizeNM = IM.size . unNodeMap
 {-# INLINE sizeNM #-}
 
+toListNM :: NodeMap l a -> [(ENode l, a)]
+toListNM = IM.elems . unNodeMap
+{-# SCC toListNM #-}
+
 -- * Node Set
 
-newtype NodeSet l = NodeSet { unNodeSet :: IM.IntMap (ENode l) }
-  deriving (Semigroup, Monoid)
+-- newtype NodeSet l a = NodeSet { unNodeSet :: IM.IntMap (a, ENode l) }
+--   deriving (Semigroup, Monoid)
 
-insertNS :: Hashable1 l => ENode l -> NodeSet l -> NodeSet l
-insertNS v = NodeSet . IM.insert (hashNode v) v . unNodeSet
+-- insertNS :: Hashable1 l => ENode l -> NodeSet l -> NodeSet l
+-- insertNS v = NodeSet . IM.insert (hashNode v) v . unNodeSet

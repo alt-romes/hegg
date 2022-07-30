@@ -182,7 +182,7 @@ merge a b = get >>= \egr0 -> do
 
            -- Leader is the class with more parents
            let (leader, leader_class, sub, sub_class) =
-                   if length (class_a^._parents) < length (class_b^._parents)
+                   if ({-# SCC "size1" #-} sizeNM (class_a^._parents)) < ({-# SCC "size2" #-} sizeNM (class_b^._parents))
                       then (b', class_b, a', class_a) -- b is leader
                       else (a', class_a, b', class_b) -- a is leader
 
@@ -317,16 +317,6 @@ clearAnalysisWorkList = do
     modify (\egr -> egr { analysisWorklist = mempty })
     return wl
 {-# SCC clearAnalysisWorkList #-}
-
--- | Extend the existing UnionFind equivalence classes with a new one and
--- return the new id
-createUnionFindClass :: EGS s ClassId
-createUnionFindClass = do
-    uf <- gets unionFind
-    let (new_id, new_uf) = makeNewSet uf
-    modify (\egr -> egr { unionFind = new_uf })
-    return new_id
-{-# SCC createUnionFindClass #-}
 
 -- | Merge two equivalent classes in the union find
 mergeUnionFindClasses :: ClassId -> ClassId -> EGS s ClassId

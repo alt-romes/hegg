@@ -16,7 +16,6 @@ parametrised over @()@.
 module Data.Equality.Graph.Nodes where
 
 import Data.Functor.Classes
-import Data.Bifunctor
 import Data.Foldable
 
 import Data.Kind
@@ -26,7 +25,7 @@ import Data.Hashable.Lifted
 
 import Control.Monad (void)
 
-import qualified Data.IntMap.Strict as IM
+import qualified Data.HashMap.Strict as HMS
 
 import Data.Equality.Graph.Classes.Id
 
@@ -90,36 +89,36 @@ instance Show1 l => (Show (Operator l)) where
 
 -- * Node Map
 
-newtype NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: IM.IntMap (ENode l, a) }
+newtype NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: HMS.HashMap (ENode l) a }
   deriving (Semigroup, Monoid, Functor, Foldable, Traversable, Show)
 
 insertNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> NodeMap l a
-insertNM e@(hashNode -> k) v = NodeMap . IM.insert k (e, v) . unNodeMap
+insertNM e v = NodeMap . HMS.insert e v . unNodeMap
 {-# INLINE insertNM #-}
 
 lookupNM :: Hashable1 l => ENode l -> NodeMap l a -> Maybe a
-lookupNM (hashNode -> k) = fmap snd . IM.lookup k . unNodeMap
+lookupNM e = HMS.lookup e . unNodeMap
 {-# INLINE lookupNM #-}
 
 deleteNM :: Hashable1 l => ENode l -> NodeMap l a -> NodeMap l a
-deleteNM (hashNode -> k) = NodeMap . IM.delete k . unNodeMap
+deleteNM e = NodeMap . HMS.delete e . unNodeMap
 {-# INLINE deleteNM #-}
 
 insertLookupNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> (Maybe a, NodeMap l a)
-insertLookupNM e@(hashNode -> k) v = bimap (fmap snd) NodeMap . IM.insertLookupWithKey (\_ a _ -> a) k (e, v) . unNodeMap
+insertLookupNM e v (NodeMap m) = (HMS.lookup e m, NodeMap $ HMS.insert e v m)
 {-# INLINE insertLookupNM #-}
 
 foldrWithKeyNM :: Hashable1 l => (ENode l -> a -> b -> b) -> b -> NodeMap l a -> b 
-foldrWithKeyNM f b (NodeMap m) = IM.foldrWithKey (\_ -> uncurry f) b m
+foldrWithKeyNM f b = HMS.foldrWithKey f b . unNodeMap
 {-# INLINE foldrWithKeyNM #-}
 
 sizeNM :: NodeMap l a -> Int
-sizeNM = IM.size . unNodeMap
+sizeNM = HMS.size . unNodeMap
 {-# INLINE sizeNM #-}
 
 traverseWithKeyNM :: Applicative t => (ENode l -> a -> t b) -> NodeMap l a -> t (NodeMap l b) 
-traverseWithKeyNM f (NodeMap m) = NodeMap <$> traverse (\(n,x) -> (n,) <$> f n x) m
-{-# SCC traverseWithKeyNM #-}
+traverseWithKeyNM f (NodeMap m) = NodeMap <$> HMS.traverseWithKey f m
+{-# INLINE traverseWithKeyNM #-}
 
 -- * Node Set
 

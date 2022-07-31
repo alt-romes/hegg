@@ -1,4 +1,5 @@
 {-# LANGUAGE MagicHash #-}
+{-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE UnliftedDatatypes #-}
@@ -20,6 +21,32 @@ type Mask        = Word#
 type InternalKey = Word#
 type Key         = Int#
 type Val         = Int#
+
+delete :: Key -> IntToIntMap -> IntToIntMap
+delete k = delete' (int2Word# k)
+{-# INLINE delete #-}
+
+delete' :: InternalKey -> IntToIntMap -> IntToIntMap
+delete' k t@(Bin p m l r)
+  | nomatch k p m = t
+  | zero k m      = binCheckLeft p m (delete' k l) r
+  | otherwise     = binCheckRight p m l (delete' k r)
+delete' k t@(Tip ky _)
+  | isTrue# (k `eqWord#` ky) = Nil
+  | otherwise      = t
+delete' _k Nil = Nil
+
+-- binCheckLeft only checks that the left subtree is non-empty
+binCheckLeft :: Prefix -> Mask -> IntToIntMap -> IntToIntMap -> IntToIntMap
+binCheckLeft _ _ Nil r = r
+binCheckLeft p m l r   = Bin p m l r
+{-# INLINE binCheckLeft #-}
+
+-- binCheckRight only checks that the right subtree is non-empty
+binCheckRight :: Prefix -> Mask -> IntToIntMap -> IntToIntMap -> IntToIntMap
+binCheckRight _ _ l Nil = l
+binCheckRight p m l r   = Bin p m l r
+{-# INLINE binCheckRight #-}
 
 insert :: Key -> Val -> IntToIntMap -> IntToIntMap
 insert k = insert' (int2Word# k)
@@ -99,3 +126,11 @@ zero :: InternalKey -> Mask -> Bool
 zero i m
   = isTrue# ((i `and#` m) `eqWord#` (int2Word# 0#))
 {-# INLINE zero #-}
+
+-- * Utils
+
+unliftedFoldr :: forall a {b :: TYPE ('BoxedRep 'Unlifted)} . (a -> b -> b) -> b -> [a] -> b 
+unliftedFoldr k z = go
+  where
+    go []     = z
+    go (y:ys) = y `k` go ys

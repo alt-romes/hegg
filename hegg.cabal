@@ -54,7 +54,8 @@ library
                       Data.Equality.Analysis,
                       Data.Equality.Saturation.Scheduler,
                       Data.Equality.Saturation.Rewrites,
-                      Data.Equality.Utils
+                      Data.Equality.Utils,
+                      Data.Equality.Utils.IntToIntMap
 
     if flag(vizdot)
         exposed-modules: Data.Equality.Graph.Dot

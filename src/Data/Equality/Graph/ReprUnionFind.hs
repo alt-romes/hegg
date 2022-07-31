@@ -10,6 +10,7 @@ module Data.Equality.Graph.ReprUnionFind where
 
 import Data.Equality.Graph.Classes.Id
 import qualified Data.Equality.Utils.IntToIntMap as IIM
+import qualified Data.IntMap as IM
 
 import GHC.Exts ((+#), Int(..), Int#)
 
@@ -18,10 +19,12 @@ import GHC.Exts ((+#), Int(..), Int#)
 -- Particularly, there's no value associated with identifier, so this union find serves only to find the representative of an e-class id
 --
 -- e.g. @FUF $ fromList [(y, Canonical), (x, Represented y)]@
-data ReprUnionFind = RUF !IIM.IntToIntMap RUFSize
+data ReprUnionFind = RUF !IIM.IntToIntMap -- ^ Map every id to either 0# (meaning its the representative) or to another int# (meaning its represented by some other id)
+                         RUFSize -- ^ Counter for new ids
+                         !(IM.IntMap [ClassId]) -- ^ Mapping from an id to all its children: This is used for "rebuilding" (compress all paths) when merging. Its a hashcons?
 
 instance Show ReprUnionFind where
-  show (RUF _ s) = "RUF with size:" <> show (I# s)
+  show (RUF _ s _) = "RUF with size:" <> show (I# s)
 
 type RUFSize = Int#
 
@@ -39,36 +42,50 @@ newtype Repr
 --
 -- TODO: Instance of 'ReprUnionFind' as Monoid, this is 'mempty'
 emptyUF :: ReprUnionFind
-emptyUF = RUF IIM.Nil 1# -- Must start with 1# since 0# means "Canonical"
+emptyUF = RUF IIM.Nil
+              1# -- Must start with 1# since 0# means "Canonical"
+              mempty
 
 -- | Create a new e-class id in the given 'ReprUnionFind'.
 makeNewSet :: ReprUnionFind
            -> (ClassId, ReprUnionFind) -- ^ Newly created e-class id and updated 'ReprUnionFind'
-makeNewSet (RUF im si) = ((I# si), RUF (IIM.insert si 0# im) ((si +# 1#)))
-
--- | Delete class from UF
--- TODO: Delete all classes represented by this class too (have map the other way around too)
--- deleteUF :: ClassId -> ReprUnionFind -> ReprUnionFind
--- deleteUF (I# a
+makeNewSet (RUF im si hc) = ((I# si), RUF (IIM.insert si 0# im) ((si +# 1#)) (IM.insert (I# si) mempty hc))
+{-# SCC makeNewSet #-}
 
 -- | Union operation of the union find.
 --
 -- Given two leader ids, unions the two eclasses making @a@ the leader.(that is,
 -- @b@ is represented by @a@
 unionSets :: ClassId -> ClassId -> ReprUnionFind -> (ClassId, ReprUnionFind)
-unionSets (I# a) (I# b) (RUF im si) = (I# a, RUF (IIM.insert b (a) im) si)
+unionSets a@(I# a#) b@(I# b#) (RUF im si hc) = (a, RUF new_im si new_hc)
+  where
+    -- Overwrite previous id of b (which should be 0#) with new representative (a)
+    -- AND "rebuild" all nodes represented by b by making them represented directly by a
+    new_im = {-# SCC "rebuild_im" #-} IIM.unliftedFoldr (\(I# x) -> IIM.insert x a#) (IIM.insert b# a# im) represented_by_b
+    new_hc = {-# SCC "adjust_hc" #-} IM.adjust ((b:represented_by_b) <>) a (IM.delete b hc)
+    represented_by_b = hc IM.! b
+
+{-# SCC unionSets #-}
+
+-- | Do some sort of path compression to list of nodes 
+-- rebuildUF :: ReprUnionFind -> ReprUnionFind
 
 -- | Find the canonical representation of an e-class id
 findRepr :: ClassId -> ReprUnionFind -> ClassId
-findRepr (I# v0) (RUF m _) = I# (go v0)
+findRepr (I# v0) (RUF m _ _) = go v0
   where
-    go :: Int# -> Int#
+    go :: Int# -> Int
     go v =
       case m IIM.! v of
-        0# -> v      -- v is Canonical (0# means canonical)
+        0# -> I# v      -- v is Canonical (0# means canonical)
         x  -> go x   -- v is Represented by x
 
-
-  -- ROMES:TODO: Path compression in immutable data structure? Is it worth
-  -- the copy + threading?
+-- ROMES:TODO: Path compression in immutable data structure? Is it worth
+-- the copy + threading?
+--
+-- ANSWER: According to my tests, findRepr is always quite shallow, going only
+-- (from what I saw) until, at max, depth 3!
+--
+-- When using the ad-hoc path compression in `unionSets`, the depth of
+-- recursion never even goes above 1!
 {-# SCC findRepr #-}

@@ -182,7 +182,7 @@ merge a b = get >>= \egr0 -> do
 
            -- Leader is the class with more parents
            let (leader, leader_class, sub, sub_class) =
-                   if ({-# SCC "size1" #-} sizeNM (class_a^._parents)) < ({-# SCC "size2" #-} sizeNM (class_b^._parents))
+                   if (sizeNM (class_a^._parents)) < (sizeNM (class_b^._parents))
                       then (b', class_b, a', class_a) -- b is leader
                       else (a', class_a, b', class_b) -- a is leader
 

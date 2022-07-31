@@ -115,7 +115,7 @@ foldrWithKeyNM f b (NodeMap m) = IM.foldrWithKey (\_ -> uncurry f) b m
 
 sizeNM :: NodeMap l a -> Int
 sizeNM = IM.size . unNodeMap
-{-# INLINE sizeNM #-}
+{-# SCC sizeNM #-}
 
 traverseWithKeyNM :: Applicative t => (ENode l -> a -> t b) -> NodeMap l a -> t (NodeMap l b) 
 traverseWithKeyNM f (NodeMap m) = NodeMap <$> traverse (\(n,x) -> (n,) <$> f n x) m

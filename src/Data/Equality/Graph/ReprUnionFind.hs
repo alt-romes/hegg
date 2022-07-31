@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE BangPatterns #-}
 {-|
 
@@ -7,10 +8,7 @@ Union-find like data structure that defines equivalence classes of e-class ids
 -}
 module Data.Equality.Graph.ReprUnionFind where
 
-import Data.Function
-
 import qualified Data.IntMap.Strict as IMS
-import qualified Data.IntMap.Lazy as IML
 
 import Data.Equality.Graph.Classes.Id
 
@@ -54,24 +52,13 @@ unionSets !a !b (RUF im si) = (a, RUF (IMS.insert b (Represented a) im) si)
 
 -- | Find the canonical representation of an e-class id
 findRepr :: ClassId -> ReprUnionFind -> ClassId
-findRepr !li (RUF m _) = fix findReprF li
-    -- ROMES:TODO: Path compression in immutable data structure? Is it worth
-    -- the copy + threading?
-  where
-
-    -- findReprF is such that (fix findReprF :: ClassId -> ClassId) and computes the representation of a classId
-    findReprF :: (ClassId -> ClassId) -> (ClassId -> ClassId)
-    findReprF f !v =
-      let Represented x = m IML.! v
-       in if x == v
-             then v   -- v is Canonical
-             else f x -- v is Represented by x
-
-    -- -- memoization
-    -- memoMap :: ClassIdMap ClassId
-    -- memoMap = IML.map (findReprF fastFindRepr . unRepr) m
-
-    -- fastFindRepr :: ClassId -> ClassId
-    -- fastFindRepr = (IML.!) memoMap
+findRepr !v uf@(RUF m _) =
+  case m IMS.! v of
+    Represented x ->
+      if x == v
+         then v -- v is Canonical
+         else findRepr x uf -- v is Represented by x
+  -- ROMES:TODO: Path compression in immutable data structure? Is it worth
+  -- the copy + threading?
 {-# SCC findRepr #-}
 

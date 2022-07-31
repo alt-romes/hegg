@@ -7,7 +7,10 @@ Union-find like data structure that defines equivalence classes of e-class ids
 -}
 module Data.Equality.Graph.ReprUnionFind where
 
-import qualified Data.IntMap.Strict as IM
+import Data.Function
+
+import qualified Data.IntMap.Strict as IMS
+import qualified Data.IntMap.Lazy as IML
 
 import Data.Equality.Graph.Classes.Id
 
@@ -16,7 +19,7 @@ import Data.Equality.Graph.Classes.Id
 -- Particularly, there's no value associated with identifier, so this union find serves only to find the representative of an e-class id
 --
 -- e.g. @FUF $ fromList [(y, Canonical), (x, Represented y)]@
-data ReprUnionFind = RUF !(ClassIdMap Int) {-# UNPACK #-} !RUFSize
+data ReprUnionFind = RUF !(ClassIdMap Repr) {-# UNPACK #-} !RUFSize
     deriving Show
 
 type RUFSize = Int
@@ -26,10 +29,10 @@ type RUFSize = Int
 --
 -- @(x, Represented y)@ would mean x is represented by y
 -- @(x, Canonical)@ would mean x is canonical -- represents itself
--- data Repr
---   = Represented {-# UNPACK #-} !ClassId -- ^ @Represented x@ is represented by @x@
+newtype Repr
+  = Represented { unRepr :: ClassId } -- ^ @Represented x@ is represented by @x@
 --   | Canonical -- ^ @Canonical x@ is the canonical representation, meaning @find(x) == x@
---   deriving Show
+  deriving Show
 
 -- | The empty 'ReprUnionFind'.
 --
@@ -40,22 +43,35 @@ emptyUF = RUF mempty 0
 -- | Create a new e-class id in the given 'ReprUnionFind'.
 makeNewSet :: ReprUnionFind
            -> (ClassId, ReprUnionFind) -- ^ Newly created e-class id and updated 'ReprUnionFind'
-makeNewSet (RUF im si) = (si, RUF (IM.insert si si im) (si+1))
+makeNewSet (RUF im si) = (si, RUF (IMS.insert si (Represented si) im) (si+1))
 
 -- | Union operation of the union find.
 --
--- Given two leader ids, unions the two eclasses making root1 the leader.
+-- Given two leader ids, unions the two eclasses making @a@ the leader.(that is,
+-- @b@ is represented by @a@
 unionSets :: ClassId -> ClassId -> ReprUnionFind -> (ClassId, ReprUnionFind)
-unionSets !a !b (RUF im si) = (a, RUF (IM.insert b a im) si)
+unionSets !a !b (RUF im si) = (a, RUF (IMS.insert b (Represented a) im) si)
 
 -- | Find the canonical representation of an e-class id
 findRepr :: ClassId -> ReprUnionFind -> ClassId
-findRepr !v (RUF m si) =
+findRepr !li (RUF m _) = fix findReprF li
     -- ROMES:TODO: Path compression in immutable data structure? Is it worth
     -- the copy + threading?
-    let !x = m IM.! v
-     in if x == v
-           then v -- v is Canonical
-           else findRepr x (RUF m si) -- v is Represented by x
+  where
+
+    -- findReprF is such that (fix findReprF :: ClassId -> ClassId) and computes the representation of a classId
+    findReprF :: (ClassId -> ClassId) -> (ClassId -> ClassId)
+    findReprF f !v =
+      let Represented x = m IML.! v
+       in if x == v
+             then v   -- v is Canonical
+             else f x -- v is Represented by x
+
+    -- -- memoization
+    -- memoMap :: ClassIdMap ClassId
+    -- memoMap = IML.map (findReprF fastFindRepr . unRepr) m
+
+    -- fastFindRepr :: ClassId -> ClassId
+    -- fastFindRepr = (IML.!) memoMap
 {-# SCC findRepr #-}
 

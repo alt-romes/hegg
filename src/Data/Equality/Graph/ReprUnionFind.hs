@@ -8,17 +8,20 @@ Union-find like data structure that defines equivalence classes of e-class ids
 -}
 module Data.Equality.Graph.ReprUnionFind where
 
-import qualified Data.IntMap.Strict as IMS
-
 import Data.Equality.Graph.Classes.Id
+import qualified Data.Equality.Utils.IntToIntMap as IIM
+
+import GHC.Exts ((==#), (+#), Int(..), Int#)
 
 -- | A union find for equivalence classes of e-class ids.
 --
 -- Particularly, there's no value associated with identifier, so this union find serves only to find the representative of an e-class id
 --
 -- e.g. @FUF $ fromList [(y, Canonical), (x, Represented y)]@
-data ReprUnionFind = RUF !(ClassIdMap Repr) {-# UNPACK #-} !RUFSize
-    deriving Show
+data ReprUnionFind = RUF !IIM.IntToIntMap {-# UNPACK #-} !RUFSize
+
+instance Show ReprUnionFind where
+  show (RUF _ s) = "RUF with size:" <> show s
 
 type RUFSize = Int
 
@@ -36,29 +39,33 @@ newtype Repr
 --
 -- TODO: Instance of 'ReprUnionFind' as Monoid, this is 'mempty'
 emptyUF :: ReprUnionFind
-emptyUF = RUF mempty 0
+emptyUF = RUF IIM.Nil 0
 
 -- | Create a new e-class id in the given 'ReprUnionFind'.
 makeNewSet :: ReprUnionFind
            -> (ClassId, ReprUnionFind) -- ^ Newly created e-class id and updated 'ReprUnionFind'
-makeNewSet (RUF im si) = (si, RUF (IMS.insert si (Represented si) im) (si+1))
+makeNewSet (RUF im (I# si)) = ((I# si), RUF (IIM.insert si (si) im) (I# (si +# 1#)))
 
 -- | Union operation of the union find.
 --
 -- Given two leader ids, unions the two eclasses making @a@ the leader.(that is,
 -- @b@ is represented by @a@
 unionSets :: ClassId -> ClassId -> ReprUnionFind -> (ClassId, ReprUnionFind)
-unionSets !a !b (RUF im si) = (a, RUF (IMS.insert b (Represented a) im) si)
+unionSets (I# a) (I# b) (RUF im si) = (I# a, RUF (IIM.insert b (a) im) si)
 
 -- | Find the canonical representation of an e-class id
 findRepr :: ClassId -> ReprUnionFind -> ClassId
-findRepr !v uf@(RUF m _) =
-  case m IMS.! v of
-    Represented x ->
-      if x == v
-         then v -- v is Canonical
-         else findRepr x uf -- v is Represented by x
+findRepr (I# v0) (RUF m _) = I# (go v0)
+  where
+    go :: Int# -> Int#
+    go v =
+      case m IIM.! v of
+        x ->
+          case x ==# v of
+            0# -> go x   -- v is Represented by x
+            _  -> v      -- v is Canonical
+
+
   -- ROMES:TODO: Path compression in immutable data structure? Is it worth
   -- the copy + threading?
 {-# SCC findRepr #-}
-

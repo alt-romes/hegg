@@ -95,23 +95,23 @@ newtype NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: IM.IntMap (ENode 
 
 insertNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> NodeMap l a
 insertNM e@(hashNode -> k) v = NodeMap . IM.insert k (e, v) . unNodeMap
-{-# INLINE insertNM #-}
+{-# SCC insertNM #-}
 
 lookupNM :: Hashable1 l => ENode l -> NodeMap l a -> Maybe a
 lookupNM (hashNode -> k) = fmap snd . IM.lookup k . unNodeMap
-{-# INLINE lookupNM #-}
+{-# SCC lookupNM #-}
 
 deleteNM :: Hashable1 l => ENode l -> NodeMap l a -> NodeMap l a
 deleteNM (hashNode -> k) = NodeMap . IM.delete k . unNodeMap
-{-# INLINE deleteNM #-}
+{-# SCC deleteNM #-}
 
 insertLookupNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> (Maybe a, NodeMap l a)
 insertLookupNM e@(hashNode -> k) v = bimap (fmap snd) NodeMap . IM.insertLookupWithKey (\_ a _ -> a) k (e, v) . unNodeMap
-{-# INLINE insertLookupNM #-}
+{-# SCC insertLookupNM #-}
 
 foldrWithKeyNM :: Hashable1 l => (ENode l -> a -> b -> b) -> b -> NodeMap l a -> b 
 foldrWithKeyNM f b (NodeMap m) = IM.foldrWithKey (\_ -> uncurry f) b m
-{-# INLINE foldrWithKeyNM #-}
+{-# SCC foldrWithKeyNM #-}
 
 sizeNM :: NodeMap l a -> Int
 sizeNM = IM.size . unNodeMap

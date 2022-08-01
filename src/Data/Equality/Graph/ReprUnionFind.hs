@@ -22,6 +22,7 @@ import GHC.Exts ((+#), Int(..), Int#)
 data ReprUnionFind = RUF !IIM.IntToIntMap -- ^ Map every id to either 0# (meaning its the representative) or to another int# (meaning its represented by some other id)
                          RUFSize -- ^ Counter for new ids
                          !(IM.IntMap [ClassId]) -- ^ Mapping from an id to all its children: This is used for "rebuilding" (compress all paths) when merging. Its a hashcons?
+                         -- [ClassId] -- ^ Ids that can be safely deleted after the e-graph is rebuilt
 
 instance Show ReprUnionFind where
   show (RUF _ s _) = "RUF with size:" <> show (I# s)
@@ -45,6 +46,7 @@ emptyUF :: ReprUnionFind
 emptyUF = RUF IIM.Nil
               1# -- Must start with 1# since 0# means "Canonical"
               mempty
+              -- mempty
 
 -- | Create a new e-class id in the given 'ReprUnionFind'.
 makeNewSet :: ReprUnionFind
@@ -59,26 +61,23 @@ makeNewSet (RUF im si hc) = ((I# si), RUF (IIM.insert si 0# im) ((si +# 1#)) (IM
 unionSets :: ClassId -> ClassId -> ReprUnionFind -> (ClassId, ReprUnionFind)
 unionSets a@(I# a#) b@(I# b#) (RUF im si hc) = (a, RUF new_im si new_hc)
   where
+    represented_by_b = hc IM.! b
     -- Overwrite previous id of b (which should be 0#) with new representative (a)
     -- AND "rebuild" all nodes represented by b by making them represented directly by a
     new_im = {-# SCC "rebuild_im" #-} IIM.unliftedFoldr (\(I# x) -> IIM.insert x a#) (IIM.insert b# a# im) represented_by_b
-    new_hc = {-# SCC "adjust_hc" #-} IM.adjust ((b:represented_by_b) <>) a (IM.delete b hc)
-    represented_by_b = hc IM.! b
-
+    new_hc = {-# SCC "adjust_hc" #-} IM.adjust ((b:) . (represented_by_b <>)) a (IM.delete b hc)
 {-# SCC unionSets #-}
-
--- | Do some sort of path compression to list of nodes 
--- rebuildUF :: ReprUnionFind -> ReprUnionFind
 
 -- | Find the canonical representation of an e-class id
 findRepr :: ClassId -> ReprUnionFind -> ClassId
-findRepr (I# v0) (RUF m _ _) = go v0
-  where
-    go :: Int# -> Int
-    go v =
-      case m IIM.! v of
-        0# -> I# v      -- v is Canonical (0# means canonical)
-        x  -> go x   -- v is Represented by x
+findRepr (I# v0) (RUF m' _ _) =
+  let
+    go :: IIM.IntToIntMap -> Int# -> Int#
+    go m v =
+      case {-# SCC "findRepr_TAKE" #-} m IIM.! v of
+        0# -> v        -- v is Canonical (0# means canonical)
+        x  -> go m x   -- v is Represented by x
+   in I# (go m' v0)
 
 -- ROMES:TODO: Path compression in immutable data structure? Is it worth
 -- the copy + threading?
@@ -89,3 +88,7 @@ findRepr (I# v0) (RUF m _ _) = go v0
 -- When using the ad-hoc path compression in `unionSets`, the depth of
 -- recursion never even goes above 1!
 {-# SCC findRepr #-}
+
+-- -- | Delete nodes that have been merged after e-graph has been rebuilt
+-- rebuildUF :: ReprUnionFind -> ReprUnionFind
+-- rebuildUF (RUF m' a b dl) = RUF (IIM.unliftedFoldr (\(I# x) -> IIM.delete x) m' dl) a b mempty

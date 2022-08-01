@@ -161,63 +161,77 @@ add :: forall l. Language l => ENode l -> EGS l ClassId
 add = StateT . fmap pure . add'
 {-# INLINE add #-}
 
+merge :: forall l. Language l => ClassId -> ClassId -> EGS l ClassId
+merge a b = StateT (pure <$> merge' a b)
+{-# INLINE merge #-}
 
 -- | Merge 2 e-classes by id
-merge :: forall l. Language l => ClassId -> ClassId -> EGS l ClassId
-merge a b = get >>= \egr0 -> do
+merge' :: forall l. Language l => ClassId -> ClassId -> EGraph l -> (ClassId, EGraph l)
+merge' a b egr0 =
 
-    -- Use canonical ids
-    let
-        a' = find a egr0
-        b' = find b egr0
-
-    if a' == b'
-       then return a'
-       else do
-
+  -- Use canonical ids
+  let
+      a' = find a egr0
+      b' = find b egr0
+   in
+   if a' == b'
+     then (a', egr0)
+     else
+       let
            -- Get classes being merged
-           let
-               class_a = egr0 ^._class a'
-               class_b = egr0 ^._class b'
+           class_a = egr0 ^._class a'
+           class_b = egr0 ^._class b'
 
            -- Leader is the class with more parents
-           let (leader, leader_class, sub, sub_class) =
-                   if (sizeNM (class_a^._parents)) < (sizeNM (class_b^._parents))
-                      then (b', class_b, a', class_a) -- b is leader
-                      else (a', class_a, b', class_b) -- a is leader
+           (leader, leader_class, sub, sub_class) =
+               if (sizeNM (class_a^._parents)) < (sizeNM (class_b^._parents))
+                  then (b', class_b, a', class_a) -- b is leader
+                  else (a', class_a, b', class_b) -- a is leader
 
-           new_id <- mergeUnionFindClasses leader sub
-
-           -- Delete subsumed class
-           modify (_classes %~ IM.delete sub)
-
-           -- Add all subsumed parents to worklist
-           -- We can do this instead of adding the new e-class itself to the worklist because it'll end up in doing this anyway
-           addToWorklist (sub_class^._parents)
+           -- Make leader the leader in the union find
+           (new_id, new_uf) = unionSets leader sub (unionFind egr0)
 
            -- Update leader class with all e-nodes and parents from the
            -- subsumed class
-           let updatedLeader = leader_class & _parents %~ (<> sub_class^._parents)
-                                            & _nodes   %~ (<> sub_class^._nodes)
-                                            & _data    .~ new_data
-               new_data = joinA @l (leader_class^._data) (sub_class^._data)
+           updatedLeader = leader_class & _parents %~ (<> sub_class^._parents)
+                                        & _nodes   %~ (<> sub_class^._nodes)
+                                        & _data    .~ new_data
+           new_data = joinA @l (leader_class^._data) (sub_class^._data)
+
+           -- Update leader in classes so that it has all nodes and parents
+           -- from subsumed class, and delete the subsumed class
+           new_classes = ((IM.insert leader updatedLeader) . (IM.delete sub)) (classes egr0)
+
+           -- Add all subsumed parents to worklist We can do this instead of
+           -- adding the new e-class itself to the worklist because it would end
+           -- up adding its parents anyway
+           new_worklist = sub_class^._parents <> (worklist egr0)
 
            -- If the new_data is different from the classes, the parents of the
            -- class whose data is different from the merged must be put on the
            -- analysisWorklist
-           when (new_data /= (leader_class^._data)) $
-               addToAnalysisWorklist (leader_class^._parents)
-           when (new_data /= (sub_class^._data)) $
-               addToAnalysisWorklist (leader_class^._parents)
+           new_analysis_worklist =
+             (if new_data /= (leader_class^._data)
+                then leader_class^._parents
+                else mempty) <>
+             (if new_data /= (sub_class^._data)
+                 then sub_class^._parents
+                 else mempty) <>
+             (analysisWorklist egr0)
 
-           -- Update leader so that it has all nodes and parents from
-           -- subsumed class
-           modify (_class leader .~ updatedLeader)
+           -- Build new e-graph
+           new_egr = egr0
+             { unionFind = new_uf
+             , classes   = new_classes
+             , worklist  = new_worklist
+             , analysisWorklist = new_analysis_worklist
+             }
 
-           modify (modifyA new_id)
+             -- Modify according to analysis
+             & modifyA new_id
 
-           return new_id
-{-# SCC merge #-}
+        in (new_id, new_egr)
+{-# SCC merge' #-}
             
 
 -- | Canonicalize an E-Node
@@ -314,15 +328,6 @@ clearAnalysisWorkList = do
     modify (\egr -> egr { analysisWorklist = mempty })
     return wl
 {-# SCC clearAnalysisWorkList #-}
-
--- | Merge two equivalent classes in the union find
-mergeUnionFindClasses :: ClassId -> ClassId -> EGS s ClassId
-mergeUnionFindClasses a b = do
-    uf <- gets unionFind
-    let (new_id, new_uf) = unionSets a b uf
-    modify (\egr -> egr { unionFind = new_uf })
-    return new_id
-{-# SCC mergeUnionFindClasses #-}
 
 emptyEGraph :: Language l => EGraph l
 emptyEGraph = EGraph emptyUF mempty mempty mempty mempty

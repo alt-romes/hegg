@@ -134,7 +134,7 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
 {-# SCC genericJoin #-}
 
 substitute :: Functor lang => Var -> ClassId -> [Atom lang] -> [Atom lang]
-substitute r i = map $ \case
+substitute !r !i = map $ \case
    Atom (Var v) l
      | v == r -> Atom (ClassId i) l
    Atom x l -> Atom x $ flip fmap l $ \case

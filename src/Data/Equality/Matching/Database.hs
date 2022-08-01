@@ -111,11 +111,13 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
 
      [] -> map mempty atoms
 
-     x:xs -> concatMap
-         (\x_in_D ->
-             map (IM.insert x x_in_D) $
-                     -- Each valid sub-query assumed the x -> x_in_D substitution
-                     genericJoin' (substitute x x_in_D atoms') xs)
+     x:xs -> IS.foldl'
+         (\acc x_in_D ->
+           map (IM.insert x x_in_D)
+             -- Each valid sub-query assumed the x -> x_in_D substitution
+             (genericJoin' (substitute x x_in_D atoms') xs)
+               <> acc)
+         mempty
          (domainX x atoms')
    {-# SCC genericJoin' #-}
 
@@ -123,7 +125,7 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
    atomsWithX x = filter (x `elemOfAtom`)
    {-# INLINE atomsWithX #-}
 
-   domainX :: Var -> [Atom l] -> [ClassId]
+   domainX :: Var -> [Atom l] -> IS.IntSet
    domainX x = intersectAtoms x d . atomsWithX x
    {-# INLINE domainX #-}
 
@@ -153,8 +155,8 @@ elemOfAtom x (Atom v l) = case v of
 -- @D_x@, the domain of variable x, that is, the values x can take
 --
 -- Returns the class id set of classes forming the domain of var @x@
-intersectAtoms :: forall l. Language l => Var -> Database l -> [Atom l] -> [ClassId]
-intersectAtoms !var (DB db) (a:atoms) = IS.toList $ foldr (\x xs -> (f x) `IS.intersection` xs) (f a) atoms
+intersectAtoms :: forall l. Language l => Var -> Database l -> [Atom l] -> IS.IntSet
+intersectAtoms !var (DB db) (a:atoms) = foldr (\x xs -> (f x) `IS.intersection` xs) (f a) atoms
   where
     -- Get the matching ids for an atom
     f :: Atom l -> IS.IntSet

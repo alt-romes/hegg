@@ -7,6 +7,7 @@ import Data.Foldable
 import Data.Bits
 
 import qualified Data.Set    as S
+import qualified Data.IntSet as IS
 import qualified Data.Map    as M
 import qualified Data.Map.Strict as MS
 import Data.Functor.Classes
@@ -48,3 +49,11 @@ insertLookup = M.insertLookupWithKey (\_ a _ -> a)
 insertLookup' :: Ord k => k -> a -> M.Map k a -> (Maybe a, M.Map k a)
 insertLookup' = MS.insertLookupWithKey (\_ a _ -> a)
 {-# INLINE insertLookup' #-}
+
+toSet :: (Ord a, Foldable f) => f a -> S.Set a
+toSet = foldl' (flip S.insert) mempty
+{-# INLINE toSet #-}
+
+toIntSet :: (Foldable f) => f Int -> IS.IntSet
+toIntSet = foldl' (flip IS.insert) mempty
+{-# INLINE toIntSet #-}

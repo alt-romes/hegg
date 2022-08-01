@@ -21,8 +21,6 @@ import Data.Foldable (foldl')
 
 import Data.Functor.Classes
 
-import Data.Hashable.Lifted
-
 import Control.Monad
 import Control.Monad.Trans.State.Strict
 
@@ -221,10 +219,14 @@ merge' a b egr0 =
                  else mempty) <>
              (analysisWorklist egr0)
 
+           -- ROMES:TODO: The code that makes the -1 * cos test pass when some other things are tweaked
+           -- new_memo = foldr (`insertNM` leader) (memo egr0) (sub_class^._nodes)
+
            -- Build new e-graph
            new_egr = egr0
              { unionFind = new_uf
              , classes   = new_classes
+             -- , memo      = new_memo
              , worklist  = new_worklist
              , analysisWorklist = new_analysis_worklist
              }
@@ -235,6 +237,54 @@ merge' a b egr0 =
         in (new_id, new_egr)
 {-# SCC merge' #-}
             
+
+rebuild :: Language l => EGS l ()
+rebuild = StateT (pure . ((),). rebuild')
+{-# INLINE rebuild #-}
+
+rebuild' :: Language l => EGraph l -> EGraph l
+rebuild' (EGraph uf cls mm wl awl) =
+  -- empty worklists
+
+  -- repair deduplicated e-classes
+  let
+    egr'  = foldrWithKeyNM' repair (EGraph uf cls mm mempty mempty) wl
+    egr'' = foldrWithKeyNM' repairAnal egr' awl
+  in
+  -- Loop until worklist is completely empty
+  if null (worklist egr'') && null (analysisWorklist egr'')
+     then egr''
+     else rebuild' egr''
+
+{-# SCC rebuild' #-}
+
+repair :: forall l. Language l => ENode l -> ClassId -> EGraph l -> EGraph l
+repair node repair_id egr =
+
+   case insertLookupNM (node `canonicalize` egr) (find repair_id egr) (deleteNM node $ memo egr) of-- TODO: I seem to really need it. Is find needed? (they don't use it)
+
+      (Nothing, memo2) -> egr { memo = memo2 } -- Return new memo but delete uncanonicalized node
+
+      (Just existing_class, memo2) -> snd (merge' existing_class repair_id egr{memo = memo2})
+{-# SCC repair #-}
+
+repairAnal :: forall l. Language l => ENode l -> ClassId -> EGraph l -> EGraph l
+repairAnal node repair_id egr =
+    let
+        canon_id = find repair_id egr
+        c        = egr^._class canon_id
+        new_data = joinA @l (c^._data) (makeA node egr)
+    in
+    -- Take action if the new_data is different from the existing data
+    if c^._data /= new_data
+        -- Merge result is different from original class data, update class
+        -- with new_data
+       then egr { analysisWorklist = c^._parents <> analysisWorklist egr
+                }
+                & _class canon_id._data .~ new_data
+                & modifyA canon_id
+       else egr
+{-# SCC repairAnal #-}
 
 -- | Canonicalize an E-Node
 --
@@ -253,83 +303,6 @@ canonicalize (Node enode) eg = Node $ fmap (`find` eg) enode
 find :: ClassId -> EGraph l -> ClassId
 find cid = findRepr cid . unionFind
 {-# INLINE find #-}
-
-rebuild :: Language l => EGS l ()
-rebuild = do
-    -- empty the worklist into a local variable
-    wl  <- clearWorkList
-    awl <- clearAnalysisWorkList
-
-    -- repair deduplicated eclasses
-    traverseWithKeyNM repair wl
-
-    traverseWithKeyNM repairAnal awl
-
-    -- Loop until worklist is completely empty
-    wl'  <- gets worklist
-    awl' <- gets analysisWorklist
-    unless (null wl' && null awl') rebuild
-{-# SCC rebuild #-}
-
-repair' :: forall l. Language l => ENode l -> ClassId -> EGraph l -> EGraph l
-repair' node repair_id egr =
-
-   case insertLookupNM (node `canonicalize` egr) (find repair_id egr) (deleteNM node $ memo egr) of-- TODO: I seem to really need it. Is find needed? (they don't use it)
-
-      (Nothing, memo2) -> egr { memo = memo2 } -- Return new memo but delete uncanonicalized node
-
-      (Just existing_class, memo2) -> snd $ runState (merge existing_class repair_id) egr{ memo = memo2 }
-
-{-# SCC repair' #-}
-
-repair :: forall l. Language l => ENode l -> ClassId -> EGS l ()
-repair x y = StateT (return . ((),) . repair' x y)
-{-# INLINE repair #-}
-
-repairAnal :: forall l. Language l => ENode l -> ClassId -> EGS l ()
-repairAnal node repair_id = do
-
-    egr <- get
-
-    let
-        canon_id = find repair_id egr
-        c        = egr^._class canon_id
-        new_data = joinA @l (c^._data) (makeA node egr)
-
-    -- Take action if the new_data is different from the existing data
-    when (c^._data /= new_data) $ do
-        -- Merge result is different from original class data, update class
-        -- with new_data
-        put (egr & _class canon_id._data .~ new_data)
-        addToAnalysisWorklist (c^._parents)
-        modify (modifyA canon_id)
-{-# SCC repairAnal #-}
-
-
-addToWorklist :: Hashable1 l => Worklist l -> EGS l ()
-addToWorklist li =
-    modify (\egr -> egr { worklist = li <> worklist egr})
-{-# SCC addToWorklist #-}
-
--- | Clear the e-graph worklist and return the existing work items
-clearWorkList :: Hashable1 l => EGS l (Worklist l)
-clearWorkList = do
-    wl <- gets worklist
-    modify (\egr -> egr { worklist = mempty })
-    return wl
-{-# SCC clearWorkList #-}
-
-addToAnalysisWorklist :: Hashable1 l => Worklist l -> EGS l ()
-addToAnalysisWorklist lx =
-    modify (\egr -> egr { analysisWorklist = lx <> analysisWorklist egr})
-{-# SCC addToAnalysisWorklist #-}
-
-clearAnalysisWorkList :: Hashable1 l => EGS l (Worklist l)
-clearAnalysisWorkList = do
-    wl <- gets analysisWorklist
-    modify (\egr -> egr { analysisWorklist = mempty })
-    return wl
-{-# SCC clearAnalysisWorkList #-}
 
 emptyEGraph :: Language l => EGraph l
 emptyEGraph = EGraph emptyUF mempty mempty mempty mempty

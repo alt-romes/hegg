@@ -54,12 +54,12 @@ newtype Operator l = Operator { unOperator :: l () }
 -- | Get the children class ids of an e-node
 children :: Traversable l => ENode l -> [ClassId]
 children = toList . unNode
-{-# INLINE children #-}
+{-# SCC children #-}
 
 -- | Get the operator (function symbol) of an e-node
 operator :: Traversable l => ENode l -> Operator l
 operator = Operator . void . unNode
-{-# INLINE operator #-}
+{-# SCC operator #-}
 
 instance Eq1 l => (Eq (ENode l)) where
     (==) (Node a) (Node b) = liftEq (==) a b
@@ -102,19 +102,19 @@ instance (Eq1 l, Hashable1 l) => Monoid (NodeMap l a) where
 
 insertNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> NodeMap l a
 insertNM e v (NodeMap m s) = NodeMap (HMS.insert e v m) (s+1)
-{-# SCC insertNM #-}
+{-# INLINE insertNM #-}
 
 lookupNM :: Hashable1 l => ENode l -> NodeMap l a -> Maybe a
 lookupNM e = HMS.lookup e . unNodeMap
-{-# SCC lookupNM #-}
+{-# INLINE lookupNM #-}
 
 deleteNM :: Hashable1 l => ENode l -> NodeMap l a -> NodeMap l a
 deleteNM e (NodeMap m s) = NodeMap (HMS.delete e m) (s-1)
-{-# SCC deleteNM #-}
+{-# INLINE deleteNM #-}
 
 insertLookupNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> (Maybe a, NodeMap l a)
 insertLookupNM e v (NodeMap m s) = (HMS.lookup e m, NodeMap (HMS.insert e v m) (s+1))
-{-# SCC insertLookupNM #-}
+{-# INLINE insertLookupNM #-}
 
 foldlWithKeyNM' :: Hashable1 l => (b -> ENode l -> a -> b) -> b -> NodeMap l a -> b 
 foldlWithKeyNM' f b = HMS.foldlWithKey' f b . unNodeMap
@@ -122,7 +122,7 @@ foldlWithKeyNM' f b = HMS.foldlWithKey' f b . unNodeMap
 
 foldrWithKeyNM' :: Hashable1 l => (ENode l -> a -> b -> b) -> b -> NodeMap l a -> b 
 foldrWithKeyNM' f b = HMS.foldrWithKey' f b . unNodeMap
-{-# SCC foldrWithKeyNM' #-}
+{-# INLINE foldrWithKeyNM' #-}
 
 sizeNM :: NodeMap l a -> Int
 sizeNM = sizeNodeMap
@@ -130,7 +130,7 @@ sizeNM = sizeNodeMap
 
 traverseWithKeyNM :: Applicative t => (ENode l -> a -> t b) -> NodeMap l a -> t (NodeMap l b) 
 traverseWithKeyNM f (NodeMap m s) = (`NodeMap` s) <$> HMS.traverseWithKey f m
-{-# SCC traverseWithKeyNM #-}
+{-# INLINE traverseWithKeyNM #-}
 
 -- * Node Set
 

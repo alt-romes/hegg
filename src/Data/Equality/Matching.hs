@@ -9,6 +9,7 @@ module Data.Equality.Matching
 
 import Data.Maybe (mapMaybe)
 import Data.Foldable (toList)
+import Data.Containers.ListUtils
 
 import Control.Monad
 import Control.Monad.Trans.State.Strict
@@ -17,7 +18,6 @@ import qualified Data.Map.Strict    as M
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
 
-import Data.Equality.Utils
 import Data.Equality.Graph
 import Data.Equality.Matching.Database
 import Data.Equality.Matching.Pattern
@@ -74,6 +74,7 @@ eGraphToDatabase EGraph{..} = foldrWithKeyNM' addENodeToDB (DB mempty) memo
         -- ROMES:TODO map find
         -- Insert or create a relation R_f(i1,i2,...,in) for lang in which 
         DB $ M.alter (populate (classid:children enode)) (operator enode) m
+    {-# SCC addENodeToDB #-}
 
     -- Populate or create a triemap given the population D_x (ClassIds)
     -- Insert remaining ids population doesn't exist, recursively merge tries with remaining ids
@@ -82,11 +83,13 @@ eGraphToDatabase EGraph{..} = foldrWithKeyNM' addENodeToDB (DB mempty) memo
     populate ids Nothing = Just $ populate' ids (MkIntTrie mempty mempty)
         -- If trie map entry already exists, populate the existing map with the remaining ids
     populate ids (Just a) = Just $ populate' ids a
+    {-# SCC populate #-}
 
     -- Populate a triemap given the population D_x (ClassIds)
     populate' :: [ClassId] -> IntTrie -> IntTrie
     populate' [] it = it
     populate' (x:xs) (MkIntTrie k m) = MkIntTrie (x `IS.insert` k) $ IM.alter (populate xs) x m
+    {-# SCC populate' #-}
 {-# SCC eGraphToDatabase #-}
 
 
@@ -95,7 +98,8 @@ data AuxResult lang = {-# UNPACK #-} !Var :~ [Atom lang]
 -- Return distinct variables in a pattern
 vars :: Foldable lang => Pattern lang -> [Var]
 vars (VariablePattern x) = [x]
-vars (NonVariablePattern p) = ordNub $ join $ map vars $ toList p
+vars (NonVariablePattern p) = nubInt $ join $ map vars $ toList p
+{-# SCC vars #-}
 
 -- | Compiles a 'Pattern' to a 'Query' and returns the query root variable with
 -- it.
@@ -108,7 +112,7 @@ compileToQuery = flip evalState 0 . compile_to_query'
         compile_to_query' (VariablePattern x) = return (SelectAllQuery x, x)
         compile_to_query' p@(NonVariablePattern _) = do
             root :~ atoms <- aux p
-            return (Query (ordNub $ root:vars p) atoms, root)
+            return (Query (nubInt $ root:vars p) atoms, root)
 
         aux :: (Traversable lang) => Pattern lang -> State Int (AuxResult lang)
         aux (VariablePattern x) = return $ x :~ [] -- from definition in relational e-matching paper (needed for as base case for recursion)

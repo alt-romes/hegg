@@ -19,7 +19,6 @@ import qualified Data.IntSet as IS
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 import Data.Equality.Language
-import Data.Equality.Utils
 
 -- | Query variable
 type Var = Int
@@ -44,7 +43,7 @@ data Atom lang
 
 atomLength :: Foldable lang => Atom lang -> Int
 atomLength (Atom _ l) = 1 + F.length l
-{-# INLINE atomLength #-}
+{-# SCC atomLength #-}
 
 data Query lang
     = Query ![Var] ![Atom lang]
@@ -69,19 +68,17 @@ data IntTrie = MkIntTrie
 
 orderedVarsInQuery :: Foldable lang => Query lang -> [Var]
 orderedVarsInQuery (SelectAllQuery x) = [x]
-orderedVarsInQuery (Query _ atoms) = ordNub $ sortBy (compare `on` varCost) $ foldl' f mempty atoms
+orderedVarsInQuery (Query _ atoms) = IS.toList . IS.fromAscList $ sortBy (compare `on` varCost) $ mapMaybe toVar $ foldl' f mempty atoms
     where
-        f :: Foldable lang => [Var] -> Atom lang -> [Var]
-        f s = \case
-            Atom (Var v) (toList -> l) -> (v : (mapMaybe toVar l)) <> s
-            Atom _       (toList -> l) -> (mapMaybe toVar l) <> s
-        {-# INLINE f #-}
+        f :: Foldable lang => [ClassIdOrVar] -> Atom lang -> [ClassIdOrVar]
+        f s (Atom v (toList -> l)) = v:(l <> s)
+        {-# SCC f #-}
 
         -- First, prioritize variables that occur in many relations; second,
         -- prioritize variables that occur in small relations
         varCost :: Var -> Int
         varCost v = foldr (\a acc -> if v `elemOfAtom` a then acc - 100 + atomLength a else acc) 0 atoms
-        {-# INLINE varCost #-}
+        {-# SCC varCost #-}
 {-# SCC orderedVarsInQuery #-} 
 
 queryHeadVars :: Foldable lang => Query lang -> [Var]
@@ -99,7 +96,7 @@ genericJoin :: forall l. Language l => Database l -> Query l -> [Subst]
 
 -- We want to match against ANYTHING, so we return a valid substitution for
 -- all existing e-class: get all relations and make a substition for each class in that relation, then join all substitutions across all classes
-genericJoin (DB m) (SelectAllQuery x) = concatMap (map (IM.singleton x) . IS.toList . tkeys) (M.elems m)
+genericJoin (DB m) (SelectAllQuery x) = {-# SCC "selectAllGJ" #-} concatMap (map (IM.singleton x) . IS.toList . tkeys) (M.elems m)
 
 -- This is the last variable, so we return a valid substitution for every
 -- possible value for the variable (hence, we prepend @x@ to each and make it
@@ -120,15 +117,15 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
                      -- Each valid sub-query assumed the x -> x_in_D substitution
                      genericJoin' (substitute x x_in_D atoms') xs)
          (domainX x atoms')
-
+   {-# SCC genericJoin' #-}
 
    atomsWithX :: Var -> [Atom l] -> [Atom l]
    atomsWithX x = filter (x `elemOfAtom`)
-   {-# INLINE atomsWithX #-}
+   {-# SCC atomsWithX #-}
 
    domainX :: Var -> [Atom l] -> [ClassId]
    domainX x = intersectAtoms x d . atomsWithX x
-   {-# INLINE domainX #-}
+   {-# SCC domainX #-}
 
 {-# INLINABLE genericJoin #-}
 {-# SCC genericJoin #-}

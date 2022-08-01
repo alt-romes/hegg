@@ -99,14 +99,15 @@ highestBitMask w =
 {-# INLINE (!) #-}
 
 find :: Key -> IntToIntMap -> Val
-find (int2Word# -> k) = go
-  where
-    go (Bin _p m l r) | zero k m  = go l
-                      | otherwise = go r
-    go (Tip kx x) | isTrue# (k `eqWord#` kx)  = x
+find (int2Word# -> k) = find' k
+{-# INLINE find #-}
 
-    -- Incomplete patterns
-    go _ = error ("IntMap.!: key ___ is not an element of the map")
+find' :: InternalKey -> IntToIntMap -> Val
+find' k (Bin _p m l r)
+  | zero k m  = find' k l
+  | otherwise = find' k r
+find' k (Tip kx x) | isTrue# (k `eqWord#` kx) = x
+find' _ _ = error ("IntMap.!: key ___ is not an element of the map")
 
 -- * Other stuff taken from IntMap
 

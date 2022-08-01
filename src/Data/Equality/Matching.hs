@@ -65,7 +65,7 @@ ematch db patr =
 --     }
 -- @
 eGraphToDatabase :: Language l => EGraph l -> Database l
-eGraphToDatabase EGraph{..} = foldrWithKeyNM addENodeToDB (DB mempty) memo
+eGraphToDatabase EGraph{..} = foldrWithKeyNM' addENodeToDB (DB mempty) memo
   where
 
     -- Add an enode in an e-graph, given its class, to a database

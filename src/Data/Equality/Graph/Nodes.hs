@@ -89,36 +89,48 @@ instance Show1 l => (Show (Operator l)) where
 
 -- * Node Map
 
-newtype NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: HMS.HashMap (ENode l) a }
-  deriving (Semigroup, Monoid, Functor, Foldable, Traversable, Show)
+data NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: HMS.HashMap (ENode l) a, sizeNodeMap :: {-# UNPACK #-} !Int }
+  deriving (Show, Functor, Foldable, Traversable)
+
+instance (Eq1 l, Hashable1 l) => Semigroup (NodeMap l a) where
+  NodeMap m1 s1 <> NodeMap m2 s2 = NodeMap (m1 <> m2) (s1 + s2)
+
+instance (Eq1 l, Hashable1 l) => Monoid (NodeMap l a) where
+  mempty = NodeMap mempty 0
+
+
 
 insertNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> NodeMap l a
-insertNM e v = NodeMap . HMS.insert e v . unNodeMap
-{-# INLINE insertNM #-}
+insertNM e v (NodeMap m s) = NodeMap (HMS.insert e v m) (s+1)
+{-# SCC insertNM #-}
 
 lookupNM :: Hashable1 l => ENode l -> NodeMap l a -> Maybe a
 lookupNM e = HMS.lookup e . unNodeMap
-{-# INLINE lookupNM #-}
+{-# SCC lookupNM #-}
 
 deleteNM :: Hashable1 l => ENode l -> NodeMap l a -> NodeMap l a
-deleteNM e = NodeMap . HMS.delete e . unNodeMap
-{-# INLINE deleteNM #-}
+deleteNM e (NodeMap m s) = NodeMap (HMS.delete e m) (s-1)
+{-# SCC deleteNM #-}
 
 insertLookupNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> (Maybe a, NodeMap l a)
-insertLookupNM e v (NodeMap m) = (HMS.lookup e m, NodeMap $ HMS.insert e v m)
-{-# INLINE insertLookupNM #-}
+insertLookupNM e v (NodeMap m s) = (HMS.lookup e m, NodeMap (HMS.insert e v m) (s+1))
+{-# SCC insertLookupNM #-}
 
-foldrWithKeyNM :: Hashable1 l => (ENode l -> a -> b -> b) -> b -> NodeMap l a -> b 
-foldrWithKeyNM f b = HMS.foldrWithKey f b . unNodeMap
-{-# INLINE foldrWithKeyNM #-}
+foldlWithKeyNM' :: Hashable1 l => (b -> ENode l -> a -> b) -> b -> NodeMap l a -> b 
+foldlWithKeyNM' f b = HMS.foldlWithKey' f b . unNodeMap
+{-# SCC foldlWithKeyNM' #-}
+
+foldrWithKeyNM' :: Hashable1 l => (ENode l -> a -> b -> b) -> b -> NodeMap l a -> b 
+foldrWithKeyNM' f b = HMS.foldrWithKey' f b . unNodeMap
+{-# SCC foldrWithKeyNM' #-}
 
 sizeNM :: NodeMap l a -> Int
-sizeNM = HMS.size . unNodeMap
+sizeNM = sizeNodeMap
 {-# INLINE sizeNM #-}
 
 traverseWithKeyNM :: Applicative t => (ENode l -> a -> t b) -> NodeMap l a -> t (NodeMap l b) 
-traverseWithKeyNM f (NodeMap m) = NodeMap <$> HMS.traverseWithKey f m
-{-# INLINE traverseWithKeyNM #-}
+traverseWithKeyNM f (NodeMap m s) = (`NodeMap` s) <$> HMS.traverseWithKey f m
+{-# SCC traverseWithKeyNM #-}
 
 -- * Node Set
 

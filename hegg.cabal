@@ -25,7 +25,7 @@ source-repository head
 library
     ghc-options:      -Wall -Wcompat
 
-                      -- -fno-prof-auto
+                      -fno-prof-auto
 
                       -ddump-simpl
                       -ddump-to-file

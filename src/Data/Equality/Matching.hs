@@ -41,18 +41,20 @@ ematch :: Language l
        -> Pattern l
        -> [Match]
 ematch db patr =
-    let (q, root) = compileToQuery patr
-     in mapMaybe (f root) (genericJoin db q)
-    where
+    let
+        (q, root) = compileToQuery patr
+
         -- | Convert each substitution into a match by getting the class-id
         -- where we matched from the subst
         --
         -- If the substitution is empty there is no match
-        f :: Var -> Subst -> Maybe Match
-        f root s = if IM.null s then Nothing
-                                else case IM.lookup root s of
-                                       Nothing -> error "how is root not in map?"
-                                       Just found -> pure (Match s found)
+        f :: Subst -> Maybe Match
+        f s = if IM.null s then Nothing
+                           else case IM.lookup root s of
+                                  Nothing -> error "how is root not in map?"
+                                  Just found -> pure (Match s found)
+
+     in mapMaybe f (genericJoin db q)
 
 -- | Convert an e-graph into a database in which we do the conjunctive queries
 --

@@ -66,6 +66,7 @@ data IntTrie = MkIntTrie
 --         show' s m = flip foldFix m $ \case
 --             (IM.toList -> m') -> unlines $ map (\(k,w) -> show k <> " --> " <> w) m'
 
+-- ROMES:TODO: Batching? How? https://arxiv.org/pdf/2108.02290.pdf
 orderedVarsInQuery :: Foldable lang => Query lang -> [Var]
 orderedVarsInQuery (SelectAllQuery x) = [x]
 orderedVarsInQuery (Query _ atoms) = IS.toList . IS.fromAscList $ sortBy (compare `on` varCost) $ mapMaybe toVar $ foldl' f mempty atoms
@@ -96,7 +97,7 @@ genericJoin :: forall l. Language l => Database l -> Query l -> [Subst]
 
 -- We want to match against ANYTHING, so we return a valid substitution for
 -- all existing e-class: get all relations and make a substition for each class in that relation, then join all substitutions across all classes
-genericJoin (DB m) (SelectAllQuery x) = {-# SCC "selectAllGJ" #-} concatMap (map (IM.singleton x) . IS.toList . tkeys) (M.elems m)
+genericJoin (DB m) (SelectAllQuery x) = concatMap (map (IM.singleton x) . IS.toList . tkeys) (M.elems m)
 
 -- This is the last variable, so we return a valid substitution for every
 -- possible value for the variable (hence, we prepend @x@ to each and make it
@@ -107,9 +108,8 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
  where
    genericJoin' :: [Atom l] -> [Var] -> [Subst]
    genericJoin' atoms' = \case
-     [] -> error "Query should always havorderede at least one var"
 
-     [x] -> map (IM.singleton x) (domainX x atoms')
+     [] -> map mempty atoms
 
      x:xs -> concatMap
          (\x_in_D ->
@@ -121,11 +121,11 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
 
    atomsWithX :: Var -> [Atom l] -> [Atom l]
    atomsWithX x = filter (x `elemOfAtom`)
-   {-# SCC atomsWithX #-}
+   {-# INLINE atomsWithX #-}
 
    domainX :: Var -> [Atom l] -> [ClassId]
    domainX x = intersectAtoms x d . atomsWithX x
-   {-# SCC domainX #-}
+   {-# INLINE domainX #-}
 
 {-# INLINABLE genericJoin #-}
 {-# SCC genericJoin #-}

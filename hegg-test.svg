@@ -1,6 +1,6 @@
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.1" width="1200" height="230" onload="init(evt)" viewBox="0 0 1200 230" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg version="1.1" width="1200" height="278" onload="init(evt)" viewBox="0 0 1200 278" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <!-- Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples. -->
 <!-- NOTES:  -->
 <defs >
@@ -329,190 +329,378 @@
 	}
 ]]>
 </script>
-<rect x="0.0" y="0" width="1200.0" height="230.0" fill="url(#background)"  />
+<rect x="0.0" y="0" width="1200.0" height="278.0" fill="url(#background)"  />
 <text text-anchor="middle" x="600.00" y="24" font-size="17" font-family="Verdana" fill="rgb(0,0,0)"  >Flame Graph</text>
-<text text-anchor="" x="10.00" y="213" font-size="12" font-family="Verdana" fill="rgb(0,0,0)" id="details" > </text>
+<text text-anchor="" x="10.00" y="261" font-size="12" font-family="Verdana" fill="rgb(0,0,0)" id="details" > </text>
 <text text-anchor="" x="10.00" y="24" font-size="12" font-family="Verdana" fill="rgb(0,0,0)" id="unzoom" onclick="unzoom()" style="opacity:0.0;cursor:pointer" >Reset Zoom</text>
 <text text-anchor="" x="1090.00" y="24" font-size="12" font-family="Verdana" fill="rgb(0,0,0)" id="search" onmouseover="searchover()" onmouseout="searchout()" onclick="search_prompt()" style="opacity:0.1;cursor:pointer" >Search</text>
-<text text-anchor="" x="1090.00" y="213" font-size="12" font-family="Verdana" fill="rgb(0,0,0)" id="matched" > </text>
+<text text-anchor="" x="1090.00" y="261" font-size="12" font-family="Verdana" fill="rgb(0,0,0)" id="matched" > </text>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Main.CAF (990 samples, 99.00%)</title><rect x="10.0" y="149" width="1168.2" height="15.0" fill="rgb(241,174,9)" rx="2" ry="2" />
-<text text-anchor="" x="13.00" y="159.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Main.CAF</text>
+<title>Data.Equality.Graph.Nodes.Data.Equality.Graph.Nodes.insertNM (12 samples, 1.20%)</title><rect x="198.2" y="101" width="14.2" height="15.0" fill="rgb(224,30,27)" rx="2" ry="2" />
+<text text-anchor="" x="201.24" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.liftCompare (11 samples, 1.10%)</title><rect x="1162.9" y="53" width="12.9" height="15.0" fill="rgb(206,76,53)" rx="2" ry="2" />
-<text text-anchor="" x="1165.86" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>MAIN.MAIN (1,003 samples, 100.00%)</title><rect x="10.0" y="213" width="1180.0" height="15.0" fill="rgb(240,100,28)" rx="2" ry="2" />
+<text text-anchor="" x="13.00" y="223.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >MAIN.MAIN</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>UNKNOWN (10 samples, 1.00%)</title><rect x="1178.2" y="165" width="11.8" height="15.0" fill="rgb(225,90,25)" rx="2" ry="2" />
-<text text-anchor="" x="1181.20" y="175.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.Nodes.Data.Equality.Graph.Nodes.insertNM (12 samples, 1.20%)</title><rect x="212.4" y="101" width="14.1" height="15.0" fill="rgb(249,190,33)" rx="2" ry="2" />
+<text text-anchor="" x="215.35" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.liftCompare (5 samples, 0.50%)</title><rect x="1103.9" y="53" width="5.9" height="15.0" fill="rgb(237,137,14)" rx="2" ry="2" />
-<text text-anchor="" x="1106.86" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.Data.Equality.Graph.merge' (99 samples, 9.87%)</title><rect x="259.4" y="133" width="116.5" height="15.0" fill="rgb(252,97,16)" rx="2" ry="2" />
+<text text-anchor="" x="262.41" y="143.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality...</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Main.main (990 samples, 99.00%)</title><rect x="10.0" y="133" width="1168.2" height="15.0" fill="rgb(254,4,26)" rx="2" ry="2" />
-<text text-anchor="" x="13.00" y="143.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Main.main</text>
+<title>Data.Equality.Graph.0 (8 samples, 0.80%)</title><rect x="1124.1" y="101" width="9.4" height="15.0" fill="rgb(250,117,8)" rx="2" ry="2" />
+<text text-anchor="" x="1127.12" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.liftCompare (5 samples, 0.50%)</title><rect x="123.3" y="69" width="5.9" height="15.0" fill="rgb(238,104,1)" rx="2" ry="2" />
-<text text-anchor="" x="126.28" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.ReprUnionFind.findRepr_TAKE (4 samples, 0.40%)</title><rect x="165.3" y="53" width="4.7" height="15.0" fill="rgb(241,64,49)" rx="2" ry="2" />
+<text text-anchor="" x="168.29" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Matching.Database.Data.Equality.Matching.Database.genericJoin (746 samples, 74.60%)</title><rect x="236.6" y="85" width="880.2" height="15.0" fill="rgb(218,59,1)" rx="2" ry="2" />
-<text text-anchor="" x="239.56" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality.Matching.Database.Data.Equality.Matching.Database.genericJoin</text>
+<title>Data.Equality.Matching.Database.Data.Equality.Matching.Database.genericJoin (353 samples, 35.19%)</title><rect x="628.8" y="133" width="415.3" height="15.0" fill="rgb(234,39,8)" rx="2" ry="2" />
+<text text-anchor="" x="631.82" y="143.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality.Matching.Database.Data.Equality.Matching.D..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Extraction.Data.Equality.Extraction.findCosts (67 samples, 6.70%)</title><rect x="13.5" y="69" width="79.1" height="15.0" fill="rgb(251,153,37)" rx="2" ry="2" />
-<text text-anchor="" x="16.54" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equa..</text>
+<title>Data.Hashable.LowLevel.hashInt (4 samples, 0.40%)</title><rect x="207.6" y="85" width="4.8" height="15.0" fill="rgb(216,170,16)" rx="2" ry="2" />
+<text text-anchor="" x="210.65" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Matching.Database.Data.Equality.Matching.Database.intersectAtoms (700 samples, 70.00%)</title><rect x="283.8" y="69" width="826.0" height="15.0" fill="rgb(229,154,44)" rx="2" ry="2" />
-<text text-anchor="" x="286.76" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality.Matching.Database.Data.Equality.Matching.Database.intersectAtoms</text>
+<title>Sym.fmap (4 samples, 0.40%)</title><rect x="165.3" y="85" width="4.7" height="15.0" fill="rgb(226,221,43)" rx="2" ry="2" />
+<text text-anchor="" x="168.29" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Saturation.Data.Equality.Saturation.equalitySaturation' (990 samples, 99.00%)</title><rect x="10.0" y="101" width="1168.2" height="15.0" fill="rgb(221,95,49)" rx="2" ry="2" />
-<text text-anchor="" x="13.00" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality.Saturation.Data.Equality.Saturation.equalitySaturation'</text>
+<title>Data.Equality.Graph.Data.Equality.Graph.rebuild (124 samples, 12.36%)</title><rect x="375.9" y="133" width="145.9" height="15.0" fill="rgb(227,124,45)" rx="2" ry="2" />
+<text text-anchor="" x="378.88" y="143.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality.Grap..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.symCost (8 samples, 0.80%)</title><rect x="58.4" y="37" width="9.4" height="15.0" fill="rgb(238,58,9)" rx="2" ry="2" />
-<text text-anchor="" x="61.38" y="47.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.ReprUnionFind.adjust_hc (4 samples, 0.40%)</title><rect x="427.6" y="53" width="4.8" height="15.0" fill="rgb(220,213,34)" rx="2" ry="2" />
+<text text-anchor="" x="430.65" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (2 samples, 0.20%)</title><rect x="195.3" y="53" width="2.3" height="15.0" fill="rgb(224,160,18)" rx="2" ry="2" />
-<text text-anchor="" x="198.26" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.unionSets (12 samples, 1.20%)</title><rect x="357.1" y="117" width="14.1" height="15.0" fill="rgb(234,43,6)" rx="2" ry="2" />
+<text text-anchor="" x="360.06" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.fmap (2 samples, 0.20%)</title><rect x="1160.5" y="53" width="2.4" height="15.0" fill="rgb(251,17,50)" rx="2" ry="2" />
-<text text-anchor="" x="1163.50" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Sym.rewrite (1,003 samples, 100.00%)</title><rect x="10.0" y="165" width="1180.0" height="15.0" fill="rgb(219,216,21)" rx="2" ry="2" />
+<text text-anchor="" x="13.00" y="175.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Sym.rewrite</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (2 samples, 0.20%)</title><rect x="163.4" y="69" width="2.4" height="15.0" fill="rgb(252,38,40)" rx="2" ry="2" />
-<text text-anchor="" x="166.40" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.5 (12 samples, 1.20%)</title><rect x="212.4" y="117" width="14.1" height="15.0" fill="rgb(222,12,54)" rx="2" ry="2" />
+<text text-anchor="" x="215.35" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.rewrite (990 samples, 99.00%)</title><rect x="10.0" y="117" width="1168.2" height="15.0" fill="rgb(249,55,41)" rx="2" ry="2" />
-<text text-anchor="" x="13.00" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Sym.rewrite</text>
+<title>Data.Equality.Matching.Data.Equality.Matching.eGraphToDatabase (91 samples, 9.07%)</title><rect x="521.8" y="133" width="107.0" height="15.0" fill="rgb(221,73,34)" rx="2" ry="2" />
+<text text-anchor="" x="524.76" y="143.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Extraction.Data.Equality.Extraction.extractBest (67 samples, 6.70%)</title><rect x="13.5" y="85" width="79.1" height="15.0" fill="rgb(224,153,50)" rx="2" ry="2" />
-<text text-anchor="" x="16.54" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equa..</text>
+<title>Data.Equality.Graph.Nodes.Data.Equality.Graph.Nodes.traverseWithKeyNM (124 samples, 12.36%)</title><rect x="375.9" y="117" width="145.9" height="15.0" fill="rgb(238,220,34)" rx="2" ry="2" />
+<text text-anchor="" x="378.88" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality.Grap..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.Data.Equality.Graph.merge (35 samples, 3.50%)</title><rect x="131.5" y="85" width="41.3" height="15.0" fill="rgb(217,102,18)" rx="2" ry="2" />
-<text text-anchor="" x="134.54" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Dat..</text>
+<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (16 samples, 1.60%)</title><rect x="338.2" y="117" width="18.9" height="15.0" fill="rgb(210,68,54)" rx="2" ry="2" />
+<text text-anchor="" x="341.24" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Matching.Database.Intersect_Var (7 samples, 0.70%)</title><rect x="559.9" y="37" width="8.2" height="15.0" fill="rgb(207,188,54)" rx="2" ry="2" />
-<text text-anchor="" x="562.88" y="47.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Sym.fmap (4 samples, 0.40%)</title><rect x="1119.4" y="69" width="4.7" height="15.0" fill="rgb(234,135,54)" rx="2" ry="2" />
+<text text-anchor="" x="1122.41" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.Data.Equality.Graph.merge (1 samples, 0.10%)</title><rect x="194.1" y="53" width="1.2" height="15.0" fill="rgb(236,104,48)" rx="2" ry="2" />
-<text text-anchor="" x="197.08" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.2 (24 samples, 2.39%)</title><rect x="170.0" y="117" width="28.2" height="15.0" fill="rgb(249,209,52)" rx="2" ry="2" />
+<text text-anchor="" x="173.00" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >D..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.Data.Equality.Graph.add (33 samples, 3.30%)</title><rect x="92.6" y="85" width="38.9" height="15.0" fill="rgb(217,139,37)" rx="2" ry="2" />
-<text text-anchor="" x="95.60" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Dat..</text>
+<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (4 samples, 0.40%)</title><rect x="240.6" y="85" width="4.7" height="15.0" fill="rgb(240,79,36)" rx="2" ry="2" />
+<text text-anchor="" x="243.59" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (4 samples, 0.40%)</title><rect x="197.6" y="37" width="4.7" height="15.0" fill="rgb(206,5,10)" rx="2" ry="2" />
-<text text-anchor="" x="200.62" y="47.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (8 samples, 0.80%)</title><rect x="1124.1" y="85" width="9.4" height="15.0" fill="rgb(215,154,38)" rx="2" ry="2" />
+<text text-anchor="" x="1127.12" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.fmap (4 samples, 0.40%)</title><rect x="197.6" y="53" width="4.7" height="15.0" fill="rgb(235,112,18)" rx="2" ry="2" />
-<text text-anchor="" x="200.62" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.5 (4 samples, 0.40%)</title><rect x="1180.6" y="101" width="4.7" height="15.0" fill="rgb(254,182,11)" rx="2" ry="2" />
+<text text-anchor="" x="1183.59" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.Data.Equality.Graph.add (43 samples, 4.30%)</title><rect x="1127.5" y="69" width="50.7" height="15.0" fill="rgb(225,11,13)" rx="2" ry="2" />
-<text text-anchor="" x="1130.46" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data...</text>
+<title>Sym.is_const_or_distinct_var (4 samples, 0.40%)</title><rect x="1044.1" y="117" width="4.7" height="15.0" fill="rgb(224,3,36)" rx="2" ry="2" />
+<text text-anchor="" x="1047.12" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.fmap (30 samples, 3.00%)</title><rect x="32.4" y="53" width="35.4" height="15.0" fill="rgb(228,59,51)" rx="2" ry="2" />
-<text text-anchor="" x="35.42" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Sy..</text>
+<title>Data.Hashable.Class.defaultHashWithSalt (4 samples, 0.40%)</title><rect x="460.6" y="69" width="4.7" height="15.0" fill="rgb(217,226,34)" rx="2" ry="2" />
+<text text-anchor="" x="463.59" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>MAIN.MAIN (990 samples, 99.00%)</title><rect x="10.0" y="165" width="1168.2" height="15.0" fill="rgb(221,70,19)" rx="2" ry="2" />
-<text text-anchor="" x="13.00" y="175.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >MAIN.MAIN</text>
+<title>Sym.modifyA (12 samples, 1.20%)</title><rect x="231.2" y="101" width="14.1" height="15.0" fill="rgb(221,52,48)" rx="2" ry="2" />
+<text text-anchor="" x="234.18" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Matching.Database.Intersect_Var (454 samples, 45.40%)</title><rect x="568.1" y="53" width="535.8" height="15.0" fill="rgb(254,203,29)" rx="2" ry="2" />
-<text text-anchor="" x="571.14" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality.Matching.Database.Intersect_Var</text>
+<title>Data.Equality.Graph.Data.Equality.Graph.merge' (28 samples, 2.79%)</title><rect x="404.1" y="85" width="33.0" height="15.0" fill="rgb(253,18,43)" rx="2" ry="2" />
+<text text-anchor="" x="407.12" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Da..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.liftCompare (4 samples, 0.40%)</title><rect x="165.8" y="69" width="4.7" height="15.0" fill="rgb(205,120,48)" rx="2" ry="2" />
-<text text-anchor="" x="168.76" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.Nodes.Data.Equality.Graph.Nodes.sizeNM (4 samples, 0.40%)</title><rect x="333.5" y="117" width="4.7" height="15.0" fill="rgb(224,68,15)" rx="2" ry="2" />
+<text text-anchor="" x="336.53" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (1 samples, 0.10%)</title><rect x="122.1" y="69" width="1.2" height="15.0" fill="rgb(215,23,52)" rx="2" ry="2" />
-<text text-anchor="" x="125.10" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.Data.Equality.Graph.canonicalize (8 samples, 0.80%)</title><rect x="1114.7" y="85" width="9.4" height="15.0" fill="rgb(221,138,13)" rx="2" ry="2" />
+<text text-anchor="" x="1117.71" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>all (1,000 samples, 100%)</title><rect x="10.0" y="181" width="1180.0" height="15.0" fill="rgb(243,215,2)" rx="2" ry="2" />
-<text text-anchor="" x="13.00" y="191.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Sym.rewrites (4 samples, 0.40%)</title><rect x="1044.1" y="133" width="4.7" height="15.0" fill="rgb(245,155,35)" rx="2" ry="2" />
+<text text-anchor="" x="1047.12" y="143.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.modifyA (2 samples, 0.20%)</title><rect x="170.5" y="69" width="2.3" height="15.0" fill="rgb(211,163,2)" rx="2" ry="2" />
-<text text-anchor="" x="173.48" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.Nodes.Data.Equality.Graph.Nodes.deleteNM (24 samples, 2.39%)</title><rect x="437.1" y="85" width="28.2" height="15.0" fill="rgb(233,133,50)" rx="2" ry="2" />
+<text text-anchor="" x="440.06" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >D..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (9 samples, 0.90%)</title><rect x="82.0" y="37" width="10.6" height="15.0" fill="rgb(212,25,16)" rx="2" ry="2" />
-<text text-anchor="" x="84.98" y="47.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.Nodes.Data.Equality.Graph.Nodes.lookupNM (8 samples, 0.80%)</title><rect x="155.9" y="101" width="9.4" height="15.0" fill="rgb(227,147,8)" rx="2" ry="2" />
+<text text-anchor="" x="158.88" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.modifyA (2 samples, 0.20%)</title><rect x="1175.8" y="53" width="2.4" height="15.0" fill="rgb(218,125,42)" rx="2" ry="2" />
-<text text-anchor="" x="1178.84" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.ReprUnionFind.findRepr_TAKE (4 samples, 0.40%)</title><rect x="240.6" y="69" width="4.7" height="15.0" fill="rgb(244,158,49)" rx="2" ry="2" />
+<text text-anchor="" x="243.59" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.modifyA (2 samples, 0.20%)</title><rect x="129.2" y="69" width="2.3" height="15.0" fill="rgb(243,35,23)" rx="2" ry="2" />
-<text text-anchor="" x="132.18" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Sym.fmap (20 samples, 1.99%)</title><rect x="1020.6" y="101" width="23.5" height="15.0" fill="rgb(229,225,27)" rx="2" ry="2" />
+<text text-anchor="" x="1023.59" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >S..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.fmap (6 samples, 0.60%)</title><rect x="1109.8" y="69" width="7.0" height="15.0" fill="rgb(251,182,24)" rx="2" ry="2" />
-<text text-anchor="" x="1112.76" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.ReprUnionFind.findRepr_TAKE (4 samples, 0.40%)</title><rect x="1119.4" y="37" width="4.7" height="15.0" fill="rgb(254,77,36)" rx="2" ry="2" />
+<text text-anchor="" x="1122.41" y="47.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (2 samples, 0.20%)</title><rect x="1158.1" y="53" width="2.4" height="15.0" fill="rgb(249,173,31)" rx="2" ry="2" />
-<text text-anchor="" x="1161.14" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (24 samples, 2.39%)</title><rect x="104.1" y="85" width="28.3" height="15.0" fill="rgb(252,185,2)" rx="2" ry="2" />
+<text text-anchor="" x="107.12" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >D..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Matching.Data.Equality.Matching.eGraphToDatabase (19 samples, 1.90%)</title><rect x="214.1" y="85" width="22.5" height="15.0" fill="rgb(225,37,6)" rx="2" ry="2" />
-<text text-anchor="" x="217.14" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >D..</text>
+<title>Sym.foldr (8 samples, 0.80%)</title><rect x="926.5" y="101" width="9.4" height="15.0" fill="rgb(225,158,20)" rx="2" ry="2" />
+<text text-anchor="" x="929.47" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.traverse (52 samples, 5.20%)</title><rect x="1116.8" y="85" width="61.4" height="15.0" fill="rgb(215,90,37)" rx="2" ry="2" />
-<text text-anchor="" x="1119.84" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Sym.tr..</text>
+<title>Sym.modifyA (4 samples, 0.40%)</title><rect x="371.2" y="117" width="4.7" height="15.0" fill="rgb(212,178,29)" rx="2" ry="2" />
+<text text-anchor="" x="374.18" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.Data.Equality.Graph.rebuild (35 samples, 3.50%)</title><rect x="172.8" y="85" width="41.3" height="15.0" fill="rgb(243,50,7)" rx="2" ry="2" />
-<text text-anchor="" x="175.84" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Dat..</text>
+<title>Data.Equality.Matching.Database.Data.Equality.Matching.Database.intersectInTrie (71 samples, 7.08%)</title><rect x="842.9" y="101" width="83.6" height="15.0" fill="rgb(226,51,30)" rx="2" ry="2" />
+<text text-anchor="" x="845.94" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equa..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.traverse (19 samples, 1.90%)</title><rect x="70.2" y="53" width="22.4" height="15.0" fill="rgb(241,114,14)" rx="2" ry="2" />
-<text text-anchor="" x="73.18" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >S..</text>
+<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (20 samples, 1.99%)</title><rect x="380.6" y="53" width="23.5" height="15.0" fill="rgb(218,137,28)" rx="2" ry="2" />
+<text text-anchor="" x="383.59" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >D..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.compare (1 samples, 0.10%)</title><rect x="1174.7" y="37" width="1.1" height="15.0" fill="rgb(230,9,9)" rx="2" ry="2" />
-<text text-anchor="" x="1177.66" y="47.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.Nodes.Data.Equality.Graph.Nodes.insertLookupNM (24 samples, 2.39%)</title><rect x="465.3" y="85" width="28.2" height="15.0" fill="rgb(239,115,6)" rx="2" ry="2" />
+<text text-anchor="" x="468.29" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >D..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (1 samples, 0.10%)</title><rect x="130.4" y="53" width="1.1" height="15.0" fill="rgb(213,153,25)" rx="2" ry="2" />
-<text text-anchor="" x="133.36" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.ReprUnionFind.adjust_hc (8 samples, 0.80%)</title><rect x="357.1" y="101" width="9.4" height="15.0" fill="rgb(234,125,50)" rx="2" ry="2" />
+<text text-anchor="" x="360.06" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Matching.Database.Intersect_ClassId (13 samples, 1.30%)</title><rect x="552.8" y="53" width="15.3" height="15.0" fill="rgb(225,136,22)" rx="2" ry="2" />
-<text text-anchor="" x="555.80" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Data.Equality.Graph.4 (12 samples, 1.20%)</title><rect x="198.2" y="117" width="14.2" height="15.0" fill="rgb(210,197,20)" rx="2" ry="2" />
+<text text-anchor="" x="201.24" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.symCost (2 samples, 0.20%)</title><rect x="67.8" y="53" width="2.4" height="15.0" fill="rgb(254,51,29)" rx="2" ry="2" />
-<text text-anchor="" x="70.82" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Sym.traverse (56 samples, 5.58%)</title><rect x="66.5" y="101" width="65.9" height="15.0" fill="rgb(234,122,15)" rx="2" ry="2" />
+<text text-anchor="" x="69.47" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Sym.tra..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Sym.liftCompare (2 samples, 0.20%)</title><rect x="234.2" y="69" width="2.4" height="15.0" fill="rgb(229,199,11)" rx="2" ry="2" />
-<text text-anchor="" x="237.20" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+<title>Sym.foldr (20 samples, 1.99%)</title><rect x="174.7" y="101" width="23.5" height="15.0" fill="rgb(228,115,31)" rx="2" ry="2" />
+<text text-anchor="" x="177.71" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >S..</text>
 </g>
 <g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
-<title>Data.Equality.Graph.Data.Equality.Graph.repair (34 samples, 3.40%)</title><rect x="174.0" y="69" width="40.1" height="15.0" fill="rgb(252,8,20)" rx="2" ry="2" />
-<text text-anchor="" x="177.02" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Dat..</text>
+<title>Data.Equality.Graph.2 (40 samples, 3.99%)</title><rect x="1133.5" y="101" width="47.1" height="15.0" fill="rgb(248,74,26)" rx="2" ry="2" />
+<text text-anchor="" x="1136.53" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.Data.Equality.Graph.canonicalize (4 samples, 0.40%)</title><rect x="165.3" y="101" width="4.7" height="15.0" fill="rgb(228,75,19)" rx="2" ry="2" />
+<text text-anchor="" x="168.29" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Sym.traverse (120 samples, 11.96%)</title><rect x="1048.8" y="133" width="141.2" height="15.0" fill="rgb(251,133,51)" rx="2" ry="2" />
+<text text-anchor="" x="1051.82" y="143.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Sym.traverse</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.unionSets (8 samples, 0.80%)</title><rect x="427.6" y="69" width="9.5" height="15.0" fill="rgb(240,201,50)" rx="2" ry="2" />
+<text text-anchor="" x="430.65" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.Data.Equality.Graph.add' (80 samples, 7.98%)</title><rect x="1095.9" y="117" width="94.1" height="15.0" fill="rgb(238,225,25)" rx="2" ry="2" />
+<text text-anchor="" x="1098.88" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equali..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Matching.Database.Data.Equality.Matching.Database.intersectAtoms (206 samples, 20.54%)</title><rect x="731.2" y="117" width="242.3" height="15.0" fill="rgb(238,70,41)" rx="2" ry="2" />
+<text text-anchor="" x="734.18" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality.Matching.Database...</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Extraction.Data.Equality.Extraction.findCosts (84 samples, 8.37%)</title><rect x="33.5" y="117" width="98.9" height="15.0" fill="rgb(228,191,8)" rx="2" ry="2" />
+<text text-anchor="" x="36.53" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equali..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.-2 (8 samples, 0.80%)</title><rect x="1114.7" y="101" width="9.4" height="15.0" fill="rgb(239,63,27)" rx="2" ry="2" />
+<text text-anchor="" x="1117.71" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.Data.Equality.Graph.add' (108 samples, 10.77%)</title><rect x="132.4" y="133" width="127.0" height="15.0" fill="rgb(233,59,28)" rx="2" ry="2" />
+<text text-anchor="" x="135.35" y="143.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality.G..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Sym.fmap (12 samples, 1.20%)</title><rect x="52.4" y="101" width="14.1" height="15.0" fill="rgb(215,212,41)" rx="2" ry="2" />
+<text text-anchor="" x="55.35" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.6 (16 samples, 1.60%)</title><rect x="226.5" y="117" width="18.8" height="15.0" fill="rgb(240,119,2)" rx="2" ry="2" />
+<text text-anchor="" x="229.47" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.ReprUnionFind.findRepr_TAKE (12 samples, 1.20%)</title><rect x="342.9" y="101" width="14.2" height="15.0" fill="rgb(242,125,21)" rx="2" ry="2" />
+<text text-anchor="" x="345.94" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.Data.Equality.Graph.canonicalize (20 samples, 1.99%)</title><rect x="380.6" y="85" width="23.5" height="15.0" fill="rgb(232,12,6)" rx="2" ry="2" />
+<text text-anchor="" x="383.59" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >D..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Sym.fmap (20 samples, 1.99%)</title><rect x="380.6" y="69" width="23.5" height="15.0" fill="rgb(206,154,24)" rx="2" ry="2" />
+<text text-anchor="" x="383.59" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >S..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Hashable.LowLevel.hashInt (4 samples, 0.40%)</title><rect x="488.8" y="69" width="4.7" height="15.0" fill="rgb(215,46,30)" rx="2" ry="2" />
+<text text-anchor="" x="491.82" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.ReprUnionFind.rebuild_im (4 samples, 0.40%)</title><rect x="432.4" y="53" width="4.7" height="15.0" fill="rgb(229,73,7)" rx="2" ry="2" />
+<text text-anchor="" x="435.35" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.ReprUnionFind.findRepr_TAKE (12 samples, 1.20%)</title><rect x="390.0" y="37" width="14.1" height="15.0" fill="rgb(224,210,47)" rx="2" ry="2" />
+<text text-anchor="" x="393.00" y="47.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (4 samples, 0.40%)</title><rect x="1119.4" y="53" width="4.7" height="15.0" fill="rgb(217,70,28)" rx="2" ry="2" />
+<text text-anchor="" x="1122.41" y="63.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.-1 (8 samples, 0.80%)</title><rect x="155.9" y="117" width="9.4" height="15.0" fill="rgb(223,183,27)" rx="2" ry="2" />
+<text text-anchor="" x="158.88" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.Nodes.Data.Equality.Graph.Nodes.foldrWithKeyNM (91 samples, 9.07%)</title><rect x="521.8" y="117" width="107.0" height="15.0" fill="rgb(216,158,11)" rx="2" ry="2" />
+<text text-anchor="" x="524.76" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Hashable.Class.defaultHashWithSalt (4 samples, 0.40%)</title><rect x="1110.0" y="69" width="4.7" height="15.0" fill="rgb(212,141,14)" rx="2" ry="2" />
+<text text-anchor="" x="1113.00" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.ReprUnionFind.findRepr_TAKE (8 samples, 0.80%)</title><rect x="1124.1" y="69" width="9.4" height="15.0" fill="rgb(228,123,10)" rx="2" ry="2" />
+<text text-anchor="" x="1127.12" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Main.main (1,003 samples, 100.00%)</title><rect x="10.0" y="181" width="1180.0" height="15.0" fill="rgb(250,165,19)" rx="2" ry="2" />
+<text text-anchor="" x="13.00" y="191.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Main.main</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.Nodes.Data.Equality.Graph.Nodes.lookupNM (8 samples, 0.80%)</title><rect x="1105.3" y="85" width="9.4" height="15.0" fill="rgb(223,212,53)" rx="2" ry="2" />
+<text text-anchor="" x="1108.29" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.makeNewSet (4 samples, 0.40%)</title><rect x="1185.3" y="101" width="4.7" height="15.0" fill="rgb(218,144,41)" rx="2" ry="2" />
+<text text-anchor="" x="1188.29" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Sym.liftCompare (32 samples, 3.19%)</title><rect x="935.9" y="101" width="37.6" height="15.0" fill="rgb(250,113,33)" rx="2" ry="2" />
+<text text-anchor="" x="938.88" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Sym..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Sym.makeA (8 samples, 0.80%)</title><rect x="250.0" y="117" width="9.4" height="15.0" fill="rgb(249,121,30)" rx="2" ry="2" />
+<text text-anchor="" x="253.00" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.makeNewSet (4 samples, 0.40%)</title><rect x="245.3" y="117" width="4.7" height="15.0" fill="rgb(213,101,2)" rx="2" ry="2" />
+<text text-anchor="" x="248.29" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.Data.Equality.Graph.repair' (120 samples, 11.96%)</title><rect x="380.6" y="101" width="141.2" height="15.0" fill="rgb(242,46,26)" rx="2" ry="2" />
+<text text-anchor="" x="383.59" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality.Gra..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Matching.Database.Data.Equality.Matching.Database.elemOfAtom (20 samples, 1.99%)</title><rect x="707.6" y="117" width="23.6" height="15.0" fill="rgb(221,228,8)" rx="2" ry="2" />
+<text text-anchor="" x="710.65" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >D..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Hashable.LowLevel.hashInt (4 samples, 0.40%)</title><rect x="221.8" y="85" width="4.7" height="15.0" fill="rgb(241,137,36)" rx="2" ry="2" />
+<text text-anchor="" x="224.76" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Matching.Database.Data.Equality.Matching.Database.orderedVarsInQuery (4 samples, 0.40%)</title><rect x="973.5" y="117" width="4.7" height="15.0" fill="rgb(250,23,35)" rx="2" ry="2" />
+<text text-anchor="" x="976.53" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Main.CAF (1,003 samples, 100.00%)</title><rect x="10.0" y="197" width="1180.0" height="15.0" fill="rgb(211,198,24)" rx="2" ry="2" />
+<text text-anchor="" x="13.00" y="207.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Main.CAF</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>all (1,003 samples, 100%)</title><rect x="10.0" y="229" width="1180.0" height="15.0" fill="rgb(219,138,46)" rx="2" ry="2" />
+<text text-anchor="" x="13.00" y="239.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.-1 (12 samples, 1.20%)</title><rect x="1100.6" y="101" width="14.1" height="15.0" fill="rgb(227,94,19)" rx="2" ry="2" />
+<text text-anchor="" x="1103.59" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Hashable.Class.defaultHashWithSalt (4 samples, 0.40%)</title><rect x="160.6" y="85" width="4.7" height="15.0" fill="rgb(212,19,24)" rx="2" ry="2" />
+<text text-anchor="" x="163.59" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Saturation.Data.Equality.Saturation.equalitySaturation' (1,003 samples, 100.00%)</title><rect x="10.0" y="149" width="1180.0" height="15.0" fill="rgb(231,125,39)" rx="2" ry="2" />
+<text text-anchor="" x="13.00" y="159.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equality.Saturation.Data.Equality.Saturation.equalitySaturation'</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.Nodes.Data.Equality.Graph.Nodes.insertNM (12 samples, 1.20%)</title><rect x="1166.5" y="69" width="14.1" height="15.0" fill="rgb(227,220,43)" rx="2" ry="2" />
+<text text-anchor="" x="1169.47" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Sym.foldr (36 samples, 3.59%)</title><rect x="1138.2" y="85" width="42.4" height="15.0" fill="rgb(224,132,15)" rx="2" ry="2" />
+<text text-anchor="" x="1141.24" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Sym..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.ReprUnionFind.Data.Equality.Graph.ReprUnionFind.findRepr (4 samples, 0.40%)</title><rect x="165.3" y="69" width="4.7" height="15.0" fill="rgb(242,166,54)" rx="2" ry="2" />
+<text text-anchor="" x="168.29" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.ReprUnionFind.findRepr_TAKE (24 samples, 2.39%)</title><rect x="104.1" y="69" width="28.3" height="15.0" fill="rgb(208,117,27)" rx="2" ry="2" />
+<text text-anchor="" x="107.12" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >D..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.ReprUnionFind.rebuild_im (4 samples, 0.40%)</title><rect x="366.5" y="101" width="4.7" height="15.0" fill="rgb(219,98,45)" rx="2" ry="2" />
+<text text-anchor="" x="369.47" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Matching.Database.Data.Equality.Matching.Database.substitute (56 samples, 5.58%)</title><rect x="978.2" y="117" width="65.9" height="15.0" fill="rgb(229,193,6)" rx="2" ry="2" />
+<text text-anchor="" x="981.24" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Eq..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.Nodes.Data.Equality.Graph.Nodes.insertNM (4 samples, 0.40%)</title><rect x="193.5" y="85" width="4.7" height="15.0" fill="rgb(209,67,45)" rx="2" ry="2" />
+<text text-anchor="" x="196.53" y="95.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Extraction.Data.Equality.Extraction.extractBest (84 samples, 8.37%)</title><rect x="33.5" y="133" width="98.9" height="15.0" fill="rgb(215,35,25)" rx="2" ry="2" />
+<text text-anchor="" x="36.53" y="143.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  >Data.Equali..</text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.Nodes.Data.Equality.Graph.Nodes.sizeNM (8 samples, 0.80%)</title><rect x="418.2" y="69" width="9.4" height="15.0" fill="rgb(250,172,0)" rx="2" ry="2" />
+<text text-anchor="" x="421.24" y="79.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Sym.foldr (4 samples, 0.40%)</title><rect x="726.5" y="101" width="4.7" height="15.0" fill="rgb(218,176,45)" rx="2" ry="2" />
+<text text-anchor="" x="729.47" y="111.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
+</g>
+<g class="func_g" onmouseover="s(this)" onmouseout="c()" onclick="zoom(this)">
+<title>Data.Equality.Graph.-2 (4 samples, 0.40%)</title><rect x="165.3" y="117" width="4.7" height="15.0" fill="rgb(241,51,16)" rx="2" ry="2" />
+<text text-anchor="" x="168.29" y="127.5" font-size="12" font-family="Verdana" fill="rgb(0,0,0)"  ></text>
 </g>
 </svg>

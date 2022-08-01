@@ -21,6 +21,8 @@ import Data.Foldable (foldl')
 
 import Data.Functor.Classes
 
+import Data.Hashable.Lifted
+
 import Control.Monad
 import Control.Monad.Trans.State.Strict
 
@@ -304,25 +306,25 @@ repairAnal node repair_id = do
 {-# SCC repairAnal #-}
 
 
-addToWorklist :: Ord1 l => Worklist l -> EGS l ()
+addToWorklist :: Hashable1 l => Worklist l -> EGS l ()
 addToWorklist li =
     modify (\egr -> egr { worklist = li <> worklist egr})
 {-# SCC addToWorklist #-}
 
 -- | Clear the e-graph worklist and return the existing work items
-clearWorkList :: Ord1 l => EGS l (Worklist l)
+clearWorkList :: Hashable1 l => EGS l (Worklist l)
 clearWorkList = do
     wl <- gets worklist
     modify (\egr -> egr { worklist = mempty })
     return wl
 {-# SCC clearWorkList #-}
 
-addToAnalysisWorklist :: Ord1 l => Worklist l -> EGS l ()
+addToAnalysisWorklist :: Hashable1 l => Worklist l -> EGS l ()
 addToAnalysisWorklist lx =
     modify (\egr -> egr { analysisWorklist = lx <> analysisWorklist egr})
 {-# SCC addToAnalysisWorklist #-}
 
-clearAnalysisWorkList :: Ord1 l => EGS l (Worklist l)
+clearAnalysisWorkList :: Hashable1 l => EGS l (Worklist l)
 clearAnalysisWorkList = do
     wl <- gets analysisWorklist
     modify (\egr -> egr { analysisWorklist = mempty })

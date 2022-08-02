@@ -74,11 +74,12 @@ instance (Show (Domain l), Show1 l) => Show (EGraph l) where
                     "\n\nWorklist: " <> show d <>
                         "\n\nAnalWorklist: " <> show e
 
+
 -- | Represent an expression (@Fix lang@) in an e-graph
-represent :: Language lang => Fix lang -> EGS lang ClassId
 -- Represent each sub-expression and add the resulting e-node to the e-graph
+represent :: Language lang => Fix lang -> EGS lang ClassId
 represent = cata $ sequence >=> add . Node
-{-# SCC represent #-}
+{-# INLINE represent #-}
 
 -- | Add an e-node to the e-graph
 --
@@ -245,7 +246,6 @@ rebuild = StateT (pure . ((),). rebuild')
 rebuild' :: Language l => EGraph l -> EGraph l
 rebuild' (EGraph uf cls mm wl awl) =
   -- empty worklists
-
   -- repair deduplicated e-classes
   let
     egr'  = foldrWithKeyNM' repair (EGraph uf cls mm mempty mempty) wl

@@ -26,9 +26,9 @@ cata :: Functor f => (f a -> a) -> (Fix f -> a)
 cata f = f . fmap (cata f) . unFix
 {-# INLINE cata #-}
 
-ordNub :: Ord a => [a] -> [a]
-ordNub = S.toList . S.fromList
-{-# INLINE ordNub #-}
+-- ordNub :: Ord a => [a] -> [a]
+-- ordNub = S.toList . S.fromList
+-- {-# INLINE ordNub #-}
 
 hashString :: String -> Int
 hashString = foldl' (\h c -> 33*h `xor` fromEnum c) 5381

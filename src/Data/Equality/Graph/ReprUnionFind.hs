@@ -69,14 +69,17 @@ unionSets a@(I# a#) (I# b#) (RUF im si) = (a, RUF (IIM.insert b# a# im) si)
 
 -- | Find the canonical representation of an e-class id
 findRepr :: ClassId -> ReprUnionFind -> ClassId
-findRepr (I# v0) (RUF m' _) =
-  let
-    go :: IIM.IntToIntMap -> Int# -> Int#
-    go m v =
-      case {-# SCC "findRepr_TAKE" #-} m IIM.! v of
-        0# -> v        -- v is Canonical (0# means canonical)
-        x  -> go m x   -- v is Represented by x
-   in I# (go m' v0)
+findRepr v@(I# v#) (RUF m s) =
+  case {-# SCC "findRepr_TAKE" #-} m IIM.! v# of
+    0# -> v
+    x  -> findRepr (I# x) (RUF m s)
+  -- let
+  --   go :: IIM.IntToIntMap -> Int# -> Int#
+  --   go m v =
+  --     case {-# SCC "findRepr_TAKE" #-} m IIM.! v of
+  --       0# -> v        -- v is Canonical (0# means canonical)
+  --       x  -> go m x   -- v is Represented by x
+  --  in I# (go m' v0)
 -- ROMES:TODO: Path compression in immutable data structure? Is it worth
 -- the copy + threading?
 --

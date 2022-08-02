@@ -9,11 +9,16 @@ module Data.Equality.Utils.IntToIntMap where
 
 import GHC.Exts
 import Data.Bits
+import Data.Array.Unboxed
+import Data.Array.IArray as IA
+import Data.Array.MArray as M
+import Data.Array.Base
+import Data.Array.ST
 
 -- | A map of integers to integers
 type IntToIntMap :: TYPE ('BoxedRep 'Unlifted)
 data IntToIntMap = Bin Prefix Mask IntToIntMap IntToIntMap
-                 | Tip InternalKey Val
+                 | Tip InternalKey (UArray Int Int)
                  | Nil
 
 type Prefix      = Word#
@@ -22,19 +27,25 @@ type InternalKey = Word#
 type Key         = Int#
 type Val         = Int#
 
-delete :: Key -> IntToIntMap -> IntToIntMap
-delete k = delete' (int2Word# k)
-{-# INLINE delete #-}
+-- Could do this with IntMap.Internal?
 
-delete' :: InternalKey -> IntToIntMap -> IntToIntMap
-delete' k t@(Bin p m l r)
-  | nomatch k p m = t
-  | zero k m      = binCheckLeft p m (delete' k l) r
-  | otherwise     = binCheckRight p m l (delete' k r)
-delete' k t@(Tip ky _)
-  | isTrue# (k `eqWord#` ky) = Nil
-  | otherwise      = t
-delete' _k Nil = Nil
+-- The intmap maps to an array of ints of size [1024]. The first 10 bits are
+-- used to index the array, and the remaining ones are shifted 10 bits to the
+-- right and are used to get the array out of the intmap
+
+-- delete :: Key -> IntToIntMap -> IntToIntMap
+-- delete k = delete' (int2Word# k)
+-- {-# INLINE delete #-}
+
+-- delete' :: InternalKey -> IntToIntMap -> IntToIntMap
+-- delete' k t@(Bin p m l r)
+--   | nomatch k p m = t
+--   | zero k m      = binCheckLeft p m (delete' k l) r
+--   | otherwise     = binCheckRight p m l (delete' k r)
+-- delete' k t@(Tip ky _)
+--   | isTrue# (k `eqWord#` ky) = Nil
+--   | otherwise      = t
+-- delete' _k Nil = Nil
 
 -- binCheckLeft only checks that the left subtree is non-empty
 binCheckLeft :: Prefix -> Mask -> IntToIntMap -> IntToIntMap -> IntToIntMap
@@ -49,18 +60,27 @@ binCheckRight p m l r   = Bin p m l r
 {-# INLINE binCheckRight #-}
 
 insert :: Key -> Val -> IntToIntMap -> IntToIntMap
-insert k = insert' (int2Word# k)
+insert x@(int2Word# -> k) = insert' (k `shiftL#` 10#) (I# (x `andI#` 1023#))
 {-# INLINE insert #-}
 
-insert' :: InternalKey -> Val -> IntToIntMap -> IntToIntMap
-insert' k x t@(Bin p m l r)
-  | nomatch k p m = link k (Tip k x) p t
-  | zero k m      = Bin p m (insert' k x l) r
-  | otherwise     = Bin p m l (insert' k x r)
-insert' k x t@(Tip ky _)
-  | isTrue# (k `eqWord#` ky) = Tip k x
-  | otherwise                = link k (Tip k x) ky t
-insert' k x Nil = Tip k x
+-- | The first key is the prefix for the intmap, the second key is the index in the array
+insert' :: Word# -> Int -> Val -> IntToIntMap -> IntToIntMap
+insert' k0 k1 x t@(Bin p m l r)
+  | nomatch k0 p m = link k0 (Tip k0 (newLeafArrayWithXAt k1 x)) p t
+  | zero k0 m      = Bin p m (insert' k0 k1 x l) r
+  | otherwise      = Bin p m l (insert' k0 k1 x r)
+insert' k0 k1 x t@(Tip ky arr)
+  | isTrue# (k0 `eqWord#` ky) = Tip k0 (arr // [(k1,I# x)])
+  | otherwise                 = link k0 (Tip k0 (newLeafArrayWithXAt k1 x)) ky t
+insert' k0 k1 x Nil = Tip k0 $ newLeafArrayWithXAt k1 x
+
+newLeafArrayWithXAt :: Int -> Val -> UArray Int Int
+newLeafArrayWithXAt k1 x = runSTUArray $ do
+  a <- newArray_ (0,1023)
+  unsafeWrite a k1 (I# x)
+  return a
+{-# INLINE newLeafArrayWithXAt #-}
+
 
 link :: Prefix -> IntToIntMap -> Prefix -> IntToIntMap -> IntToIntMap
 link p1 t1 p2 t2 = linkWithMask (branchMask p1 p2) p1 t1 {-p2-} t2
@@ -99,15 +119,15 @@ highestBitMask w =
 {-# INLINE (!) #-}
 
 find :: Key -> IntToIntMap -> Val
-find (int2Word# -> k) = find' k
+find k = find' (int2Word# k `shiftL#` 10#) (I# (k `andI#` 1023#))
 {-# INLINE find #-}
 
-find' :: InternalKey -> IntToIntMap -> Val
-find' k (Bin _p m l r)
-  | zero k m  = find' k l
-  | otherwise = find' k r
-find' k (Tip kx x) | isTrue# (k `eqWord#` kx) = x
-find' _ _ = error ("IntMap.!: key ___ is not an element of the map")
+find' :: Word# -> Int -> IntToIntMap -> Val
+find' k0 k1 (Bin _p m l r)
+  | zero k0 m  = find' k0 k1 l
+  | otherwise  = find' k0 k1 r
+find' k0 k1 (Tip kx arr) | isTrue# (k0 `eqWord#` kx) = case arr IA.! k1 of I# v -> v
+find' _ _ _ = error ("IntMap.!: key ___ is not an element of the map")
 
 -- * Other stuff taken from IntMap
 

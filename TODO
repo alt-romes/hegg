@@ -1,3 +1,13 @@
+Consider rolling my own hash functions because if I can uniquely identify the
+constructor, since the map only consists of nodes, only need to make a
+composite hash function with the unique identifier and the e-class ids. better
+yet, I should do that on my side with generics. I can also do a O(1) length
+with generics
+
+better substitutions
+
+~~findRepr with Virtual Memory paging like structure mapping ints to arrays where the items are (higher bits map to arrays, lower bits map to index in array)~~
+
 FindRepr is almost always at depth0, meaning the issue is with 1time in lookup times, the number of times findRepr is called, and the constant factors
 Memoization for Database
 Memoization for ReprUnionFind

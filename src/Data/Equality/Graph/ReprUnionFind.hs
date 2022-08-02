@@ -61,11 +61,11 @@ makeNewSet (RUF im si hc) = ((I# si), RUF (IIM.insert si 0# im) ((si +# 1#)) (IM
 unionSets :: ClassId -> ClassId -> ReprUnionFind -> (ClassId, ReprUnionFind)
 unionSets a@(I# a#) b@(I# b#) (RUF im si hc) = (a, RUF (IIM.insert b# a# im) si hc)
   where
-    represented_by_b = hc IM.! b
-    -- Overwrite previous id of b (which should be 0#) with new representative (a)
-    -- AND "rebuild" all nodes represented by b by making them represented directly by a
-    new_im = {-# SCC "rebuild_im" #-} IIM.unliftedFoldr (\(I# x) -> IIM.insert x a#) (IIM.insert b# a# im) represented_by_b
-    new_hc = {-# SCC "adjust_hc" #-} IM.adjust ((b:) . (represented_by_b <>)) a (IM.delete b hc)
+    -- represented_by_b = hc IM.! b
+    -- -- Overwrite previous id of b (which should be 0#) with new representative (a)
+    -- -- AND "rebuild" all nodes represented by b by making them represented directly by a
+    -- new_im = {-# SCC "rebuild_im" #-} IIM.unliftedFoldr (\(I# x) -> IIM.insert x a#) (IIM.insert b# a# im) represented_by_b
+    -- new_hc = {-# SCC "adjust_hc" #-} IM.adjust ((b:) . (represented_by_b <>)) a (IM.delete b hc)
 {-# SCC unionSets #-}
 
 -- | Find the canonical representation of an e-class id

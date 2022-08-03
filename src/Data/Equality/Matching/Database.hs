@@ -67,19 +67,19 @@ data IntTrie = MkIntTrie
 --             (IM.toList -> m') -> unlines $ map (\(k,w) -> show k <> " --> " <> w) m'
 
 -- ROMES:TODO: Batching? How? https://arxiv.org/pdf/2108.02290.pdf
-orderedVarsInQuery :: Foldable lang => Query lang -> [Var]
+orderedVarsInQuery :: (Functor lang, Foldable lang) => Query lang -> [Var]
 orderedVarsInQuery (SelectAllQuery x) = [x]
 orderedVarsInQuery (Query _ atoms) = IS.toList . IS.fromAscList $ sortBy (compare `on` varCost) $ mapMaybe toVar $ foldl' f mempty atoms
     where
         f :: Foldable lang => [ClassIdOrVar] -> Atom lang -> [ClassIdOrVar]
         f s (Atom v (toList -> l)) = v:(l <> s)
-        {-# SCC f #-}
+        {-# INLINE f #-}
 
         -- First, prioritize variables that occur in many relations; second,
         -- prioritize variables that occur in small relations
         varCost :: Var -> Int
-        varCost v = foldr (\a acc -> if v `elemOfAtom` a then acc - 100 + atomLength a else acc) 0 atoms
-        {-# SCC varCost #-}
+        varCost v = foldl' (\acc a -> if v `elemOfAtom` a then acc - 100 + atomLength a else acc) 0 atoms
+        {-# INLINE varCost #-}
 {-# SCC orderedVarsInQuery #-} 
 
 queryHeadVars :: Foldable lang => Query lang -> [Var]
@@ -107,11 +107,15 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
 
  where
    genericJoin' :: [Atom l] -> [Var] -> [Subst]
-   genericJoin' atoms' = \case
+   genericJoin' !atoms' = \case
 
      [] -> map mempty atoms
 
-     x:xs -> IS.foldl'
+     x:xs -> 
+       -- IS.foldl' (\acc x_in_D -> genericJoin' (substitute x x_in_D atoms') (map (IM.insert x x_in_D) substs) xs <> acc)
+       --           mempty
+       --           (domainX x atoms')
+       IS.foldl'
          (\acc x_in_D ->
            map (IM.insert x x_in_D)
              -- Each valid sub-query assumed the x -> x_in_D substitution
@@ -134,18 +138,13 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
 
 substitute :: Functor lang => Var -> ClassId -> [Atom lang] -> [Atom lang]
 substitute !r !i = map $ \case
-   Atom (Var v) l
-     | v == r -> Atom (ClassId i) l
-   Atom x l -> Atom x $ flip fmap l $ \case
-                   Var vi
-                     | vi == r -> ClassId i
-                   vi -> vi
+   Atom x l -> Atom (if Var r == x then ClassId i else x) $ fmap (\v -> if Var r == v then ClassId i else v) l
 {-# SCC substitute #-}
 
-elemOfAtom :: Foldable lang => Var -> Atom lang -> Bool
-elemOfAtom x (Atom v l) = case v of
+elemOfAtom :: (Functor lang, Foldable lang) => Var -> Atom lang -> Bool
+elemOfAtom !x (Atom v l) = case v of
   Var v' -> x == v'
-  _ -> foldr (\i acc -> case i of Var v' -> x == v' || acc; _ -> acc) False (toList l)
+  _ -> or $ fmap (\v' -> Var x == v') l
 {-# SCC elemOfAtom #-}
 
 

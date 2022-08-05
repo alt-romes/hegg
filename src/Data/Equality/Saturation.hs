@@ -29,7 +29,10 @@ import Control.Monad
 import Data.Proxy
 
 import Data.Equality.Utils
-import Data.Equality.Graph
+import qualified Data.Equality.Graph as G
+import Data.Equality.Graph.Monad
+import Data.Equality.Language
+import Data.Equality.Graph.Classes
 import Data.Equality.Matching
 import Data.Equality.Extraction
 
@@ -56,7 +59,7 @@ equalitySaturation' :: forall l schd
                     -> [Rewrite l]       -- ^ List of rewrite rules
                     -> CostFunction l    -- ^ Cost function to extract the best equivalent representation
                     -> (Fix l, EGraph l) -- ^ Best equivalent expression and resulting e-graph
-equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
+equalitySaturation' _ expr rewrites cost = egraph $ do
 
     -- Represent expression as an e-graph
     origClass <- represent expr
@@ -72,11 +75,11 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
         -- Take map each rewrite rule to stats on its usage so we can do
         -- backoff scheduling. Each rewrite rule is assigned an integer
         -- (corresponding to its position in the list of rewrite rules)
-        equalitySaturation'' :: Int -> IM.IntMap (Stat schd) -> EGS l ()
+        equalitySaturation'' :: Int -> IM.IntMap (Stat schd) -> EGraphM l ()
         equalitySaturation'' 30 _ = return () -- Stop after X iterations
         equalitySaturation'' i stats = do
 
-            egr@EGraph{ memo = beforeMemo, classes = beforeClasses } <- get
+            egr@G.EGraph{ G.memo = beforeMemo, G.classes = beforeClasses } <- get
 
             let db = eGraphToDatabase egr
 
@@ -91,13 +94,13 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
             -- Restore the invariants once per iteration
             rebuild
             
-            EGraph { memo = afterMemo, classes = afterClasses } <- get
+            G.EGraph { G.memo = afterMemo, G.classes = afterClasses } <- get
 
             -- ROMES:TODO: Node limit...
             -- ROMES:TODO: Actual Timeout... not just iteration timeout
             -- ROMES:TODO Better saturation (see Runner)
             -- Apply rewrites until saturated or ROMES:TODO: timeout
-            unless (sizeNM afterMemo == sizeNM beforeMemo
+            unless (G.sizeNM afterMemo == G.sizeNM beforeMemo
                       && IM.size afterClasses == IM.size beforeClasses)
                 (equalitySaturation'' (i+1) newStats)
 
@@ -121,7 +124,7 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
 
                       (map (lhs := rhs,) matches', newStats)
 
-        applyMatchesRhs :: (Rewrite l, Match) -> EGS l ()
+        applyMatchesRhs :: (Rewrite l, Match) -> EGraphM l ()
         applyMatchesRhs =
             \case
                 (rw :| cond, m@(Match subst _)) -> do
@@ -150,8 +153,8 @@ equalitySaturation' _ expr rewrites cost = runEGS emptyEGraph $ do
                     return ()
 
         -- | Represent a pattern in the e-graph a pattern given substitions
-        reprPat :: Subst -> l (Pattern l) -> EGS l ClassId
-        reprPat subst = add . Node <=< traverse \case
+        reprPat :: Subst -> l (Pattern l) -> EGraphM l ClassId
+        reprPat subst = add . G.Node <=< traverse \case
             VariablePattern v ->
                 case IM.lookup v subst of
                     Nothing -> error "impossible: couldn't find v in subst?"

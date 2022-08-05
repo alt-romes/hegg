@@ -25,8 +25,9 @@ import Data.Functor.Classes
 import Control.Applicative (liftA2)
 import Control.Monad (unless)
 
-import Data.Equality.Graph
+import Data.Equality.Graph.Monad as GM
 import Data.Equality.Graph.Lens
+import Data.Equality.Graph
 import Data.Equality.Matching
 import Data.Equality.Saturation
 
@@ -221,11 +222,11 @@ instance Analysis Expr where
     modifyA i egr =
         case egr ^._class i._data of
           Nothing -> egr
-          Just d  -> snd $ runEGS egr $ do
+          Just d  -> snd $ runEGraphM egr $ do
 
             -- Add constant as e-node
             new_c <- represent (Fix $ Const d)
-            _ <- merge i new_c
+            _ <- GM.merge i new_c
 
             -- Prune all except leaf e-nodes
             modify (_class i._nodes %~ S.filter (null . children))

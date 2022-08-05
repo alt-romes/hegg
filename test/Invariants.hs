@@ -24,6 +24,7 @@ import qualified Data.List   as L
 import qualified Data.Set    as S
 import qualified Data.IntMap.Strict as IM
 
+import Data.Equality.Graph.Monad as GM
 import Data.Equality.Graph
 import Data.Equality.Saturation
 import Data.Equality.Matching
@@ -134,14 +135,14 @@ instance Arbitrary (EGraph SimpleExpr) where
     arbitrary = sized $ \n -> do
         exps <- forM [0..n] $ const arbitrary
         -- rws :: [Rewrite Expr] <- forM [0..n] $ const arbitrary
-        (ids, eg) <- return $ runEGS emptyEGraph $
+        (ids, eg) <- return $ egraph $
             mapM represent exps
         ids1 <- sublistOf ids
         ids2 <- sublistOf ids
-        return $ snd $ runEGS eg $ do
+        return $ snd $ runEGraphM eg $ do
             forM_ (zip ids1 ids2) $ \(a,b) -> do
-                merge a b
-            rebuild
+                GM.merge a b
+            GM.rebuild
 
 instance Arbitrary BOp where
     arbitrary = oneof [ return Add

@@ -11,7 +11,6 @@ module Data.Equality.Graph
     , module Data.Equality.Graph.Classes
     , module Data.Equality.Graph.Nodes
     , module Data.Equality.Language
-    , modify, get, gets
     ) where
 
 -- import GHC.Conc
@@ -21,29 +20,14 @@ import Data.Foldable (foldl')
 
 import Data.Functor.Classes
 
-import Control.Monad
-import Control.Monad.Trans.State.Strict
-
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
 
-import Data.Equality.Utils
 import Data.Equality.Graph.ReprUnionFind
 import Data.Equality.Graph.Classes
 import Data.Equality.Graph.Nodes
 import Data.Equality.Language
 import Data.Equality.Graph.Lens
-
--- | E-graph stateful computation
-type EGS s = State (EGraph s)
-
-runEGS :: EGraph s -> EGS s a -> (a, EGraph s)
-runEGS = flip runState
-{-# INLINE runEGS #-}
-
-egraph :: Language l => EGS l a -> EGraph l
-egraph = snd . runEGS emptyEGraph
-{-# INLINE egraph #-}
 
 -- | E-graph
 --
@@ -75,17 +59,11 @@ instance (Show (Domain l), Show1 l) => Show (EGraph l) where
                         "\n\nAnalWorklist: " <> show e
 
 
--- | Represent an expression (@Fix lang@) in an e-graph
--- Represent each sub-expression and add the resulting e-node to the e-graph
-represent :: Language lang => Fix lang -> EGS lang ClassId
-represent = cata $ sequence >=> add . Node
-{-# INLINE represent #-}
-
 -- | Add an e-node to the e-graph
 --
 -- E-node lookup depends on e-node correctly defining equality
-add' :: forall l. Language l => ENode l -> EGraph l -> (ClassId, EGraph l)
-add' uncanon_e egr =
+add :: forall l. Language l => ENode l -> EGraph l -> (ClassId, EGraph l)
+add uncanon_e egr =
     let new_en = {-# SCC "-2" #-} canonicalize uncanon_e egr
 
      in case {-# SCC "-1" #-} lookupNM new_en (memo egr) of
@@ -153,22 +131,11 @@ add' uncanon_e egr =
                   & {-# SCC "6" #-} modifyA new_eclass_id
 
             )
-{-# SCC add' #-}
-
--- | Add an e-node to the e-graph
---
--- E-node lookup depends on e-node correctly defining equality
-add :: forall l. Language l => ENode l -> EGS l ClassId
-add = StateT . fmap pure . add'
-{-# INLINE add #-}
-
-merge :: forall l. Language l => ClassId -> ClassId -> EGS l ClassId
-merge a b = StateT (pure <$> merge' a b)
-{-# INLINE merge #-}
+{-# SCC add #-}
 
 -- | Merge 2 e-classes by id
-merge' :: forall l. Language l => ClassId -> ClassId -> EGraph l -> (ClassId, EGraph l)
-merge' a b egr0 =
+merge :: forall l. Language l => ClassId -> ClassId -> EGraph l -> (ClassId, EGraph l)
+merge a b egr0 =
 
   -- Use canonical ids
   let
@@ -236,15 +203,10 @@ merge' a b egr0 =
              & modifyA new_id
 
         in (new_id, new_egr)
-{-# SCC merge' #-}
+{-# SCC merge #-}
             
-
-rebuild :: Language l => EGS l ()
-rebuild = StateT (pure . ((),). rebuild')
-{-# INLINE rebuild #-}
-
-rebuild' :: Language l => EGraph l -> EGraph l
-rebuild' (EGraph uf cls mm wl awl) =
+rebuild :: Language l => EGraph l -> EGraph l
+rebuild (EGraph uf cls mm wl awl) =
   -- empty worklists
   -- repair deduplicated e-classes
   let
@@ -254,9 +216,9 @@ rebuild' (EGraph uf cls mm wl awl) =
   -- Loop until worklist is completely empty
   if null (worklist egr'') && null (analysisWorklist egr'')
      then egr''
-     else rebuild' egr''
+     else rebuild egr''
 
-{-# SCC rebuild' #-}
+{-# SCC rebuild #-}
 
 repair :: forall l. Language l => ENode l -> ClassId -> EGraph l -> EGraph l
 repair node repair_id egr =
@@ -265,7 +227,7 @@ repair node repair_id egr =
 
       (Nothing, memo2) -> egr { memo = memo2 } -- Return new memo but delete uncanonicalized node
 
-      (Just existing_class, memo2) -> snd (merge' existing_class repair_id egr{memo = memo2})
+      (Just existing_class, memo2) -> snd (merge existing_class repair_id egr{memo = memo2})
 {-# SCC repair #-}
 
 repairAnal :: forall l. Language l => ENode l -> ClassId -> EGraph l -> EGraph l

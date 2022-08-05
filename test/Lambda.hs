@@ -24,6 +24,7 @@ import Data.Ord.Deriving
 import Text.Show.Deriving
 
 import Data.Equality.Graph.Lens
+import Data.Equality.Graph.Monad as GM
 import Data.Equality.Graph
 import Data.Equality.Saturation
 import Data.Equality.Matching
@@ -98,9 +99,9 @@ instance Analysis Lambda where
     modifyA i egr = 
         case constant (egr^._class i._data) of
           Nothing -> egr
-          Just c -> snd $ runEGS egr $ do
+          Just c -> snd $ runEGraphM egr $ do
             new_c <- represent c
-            merge i new_c
+            GM.merge i new_c
 
 instance Language Lambda
 

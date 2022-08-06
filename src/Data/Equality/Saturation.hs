@@ -14,7 +14,9 @@ module Data.Equality.Saturation
     , Rewrite(..), RewriteCondition
 
       -- ** Cost
-    , CostFunction, Cost, depthCost
+      --
+      -- | Re-exported from 'Data.Equality.Extraction' since they are required to do equality saturation
+    , CostFunction--, Cost, depthCost
 
       -- ** Fix
     , Fix(..), cata

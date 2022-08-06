@@ -2,8 +2,6 @@
 module Data.Equality.Utils where
 
 import GHC.Conc
-import qualified GHC.Exts    as Exts
-
 import Data.Foldable
 import Data.Bits
 

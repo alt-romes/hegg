@@ -26,6 +26,8 @@ import Text.Show.Deriving
 import Data.Equality.Graph.Lens
 import Data.Equality.Graph.Monad as GM
 import Data.Equality.Graph
+import Data.Equality.Extraction
+import Data.Equality.Analysis
 import Data.Equality.Saturation
 import Data.Equality.Matching
 

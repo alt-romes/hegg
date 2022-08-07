@@ -4,8 +4,6 @@
 Defines 'Language', which is the required constraint for most e-graph and
 equality saturation operations.
 
-A 'Language' is the form of the data manipulated by an e-graph.
-
 === Example
 @
 data Expr a = Sym String
@@ -28,10 +26,7 @@ instance Language Expr
 
 @
 -}
-module Data.Equality.Language
-    ( module Data.Equality.Language
-    , module Data.Equality.Analysis
-    ) where
+module Data.Equality.Language where
 
 import Data.Hashable.Lifted
 
@@ -39,8 +34,13 @@ import Data.Functor.Classes
 
 import Data.Equality.Analysis
 
--- | A language is a recursive data type written in its functor \"form\"
+-- | A 'Language' is the type of things that are to be represented in an
+-- e-graph.
 --
--- Must satisfy all other class constraints
+-- Recursive data types must be expressed in its functor form to instance
+-- 'Language'. Additionally, for a datatype to be a 'Language' (used in
+-- e-graphs), note that it must satisfy the other class constraints. In
+-- particular an 'Data.Equality.Analysis.Analysis' must be defined for the
+-- language.
 class (Analysis l, Traversable l, Ord1 l, Hashable1 l) => Language l where
 

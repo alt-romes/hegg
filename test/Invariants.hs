@@ -26,6 +26,8 @@ import qualified Data.IntMap.Strict as IM
 
 import Data.Equality.Graph.Monad as GM
 import Data.Equality.Graph
+import Data.Equality.Analysis
+import Data.Equality.Extraction
 import Data.Equality.Saturation
 import Data.Equality.Matching
 import Data.Equality.Matching.Database

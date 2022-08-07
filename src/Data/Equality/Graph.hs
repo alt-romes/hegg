@@ -26,6 +26,7 @@ import qualified Data.Set    as S
 import Data.Equality.Graph.ReprUnionFind
 import Data.Equality.Graph.Classes
 import Data.Equality.Graph.Nodes
+import Data.Equality.Analysis
 import Data.Equality.Language
 import Data.Equality.Graph.Lens
 

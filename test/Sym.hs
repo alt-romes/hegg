@@ -28,6 +28,8 @@ import Control.Monad (unless)
 import Data.Equality.Graph.Monad as GM
 import Data.Equality.Graph.Lens
 import Data.Equality.Graph
+import Data.Equality.Extraction
+import Data.Equality.Analysis
 import Data.Equality.Matching
 import Data.Equality.Saturation
 

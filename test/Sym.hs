@@ -1,5 +1,4 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -8,13 +7,8 @@
 {-# LANGUAGE LambdaCase #-}
 module Sym where
 
-import GHC.Generics
-
 import Test.Tasty
 import Test.Tasty.HUnit
-
-import Data.Hashable
-import Data.Hashable.Lifted
 
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
@@ -39,10 +33,7 @@ data Expr a = Sym String
             | BinOp BOp a a
             deriving ( Eq, Ord, Functor
                      , Foldable, Traversable
-                     , Generic1
                      )
-
-instance Hashable1 Expr
 
 instance Eq1 Expr where
     liftEq eq a b = case (a, b) of
@@ -85,16 +76,13 @@ data BOp = Add
          | Pow
          | Diff
          | Integral
-        deriving (Eq, Ord, Generic)
+        deriving (Eq, Ord)
 
 data UOp = Sin
          | Cos
          | Sqrt
          | Ln
-    deriving (Eq, Ord, Generic)
-
-instance Hashable BOp
-instance Hashable UOp
+    deriving (Eq, Ord)
 
 instance Show BOp where
     show = \case

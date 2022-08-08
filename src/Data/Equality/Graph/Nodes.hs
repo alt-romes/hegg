@@ -20,12 +20,9 @@ import Data.Foldable
 
 import Data.Kind
 
-import Data.Hashable
-import Data.Hashable.Lifted
-
 import Control.Monad (void)
 
-import qualified Data.HashMap.Strict as HMS
+import qualified Data.Map.Strict as M
 
 import Data.Equality.Graph.Classes.Id
 
@@ -40,10 +37,6 @@ import Data.Equality.Graph.Classes.Id
 -- recursive field (so, every argument passed to this expr) is a 'ClassId'
 -- rather than an explicit expression
 newtype ENode l = Node { unNode :: l ClassId }
-
-hashNode :: Hashable1 l => ENode l -> Int
-hashNode = hash
-{-# INLINE hashNode #-}
 
 -- | Operator
 --
@@ -72,10 +65,6 @@ instance Ord1 l => (Ord (ENode l)) where
 instance Show1 l => (Show (ENode l)) where
     showsPrec p (Node l) = liftShowsPrec showsPrec showList p l
 
-instance Hashable1 l => Hashable (ENode l) where
-  hashWithSalt i (Node l) = liftHashWithSalt hashWithSalt i l
-  {-# INLINE hashWithSalt #-}
-
 instance Eq1 l => (Eq (Operator l)) where
     (==) (Operator a) (Operator b) = liftEq (\_ _ -> True) a b
     {-# INLINE (==) #-}
@@ -89,39 +78,40 @@ instance Show1 l => (Show (Operator l)) where
 
 -- * Node Map
 
-data NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: HMS.HashMap (ENode l) a, sizeNodeMap :: {-# UNPACK #-} !Int }
+data NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: M.Map (ENode l) a, sizeNodeMap :: {-# UNPACK #-} !Int }
   deriving (Show, Functor, Foldable, Traversable)
 
-instance (Eq1 l, Hashable1 l) => Semigroup (NodeMap l a) where
+instance (Eq1 l, Ord1 l) => Semigroup (NodeMap l a) where
   NodeMap m1 s1 <> NodeMap m2 s2 = NodeMap (m1 <> m2) (s1 + s2)
 
-instance (Eq1 l, Hashable1 l) => Monoid (NodeMap l a) where
+instance (Eq1 l, Ord1 l) => Monoid (NodeMap l a) where
   mempty = NodeMap mempty 0
 
 
 
-insertNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> NodeMap l a
-insertNM e v (NodeMap m s) = NodeMap (HMS.insert e v m) (s+1)
+insertNM :: Ord1 l => ENode l -> a -> NodeMap l a -> NodeMap l a
+insertNM e v (NodeMap m s) = NodeMap (M.insert e v m) (s+1)
 {-# INLINE insertNM #-}
 
-lookupNM :: Hashable1 l => ENode l -> NodeMap l a -> Maybe a
-lookupNM e = HMS.lookup e . unNodeMap
+lookupNM :: Ord1 l => ENode l -> NodeMap l a -> Maybe a
+lookupNM e = M.lookup e . unNodeMap
 {-# INLINE lookupNM #-}
 
-deleteNM :: Hashable1 l => ENode l -> NodeMap l a -> NodeMap l a
-deleteNM e (NodeMap m s) = NodeMap (HMS.delete e m) (s-1)
+deleteNM :: Ord1 l => ENode l -> NodeMap l a -> NodeMap l a
+deleteNM e (NodeMap m s) = NodeMap (M.delete e m) (s-1)
 {-# INLINE deleteNM #-}
 
-insertLookupNM :: Hashable1 l => ENode l -> a -> NodeMap l a -> (Maybe a, NodeMap l a)
-insertLookupNM e v (NodeMap m s) = (HMS.lookup e m, NodeMap (HMS.insert e v m) (s+1))
+-- ROMES:TODO Use M.insertLookup
+insertLookupNM :: Ord1 l => ENode l -> a -> NodeMap l a -> (Maybe a, NodeMap l a)
+insertLookupNM e v (NodeMap m s) = (M.lookup e m, NodeMap (M.insert e v m) (s+1))
 {-# INLINE insertLookupNM #-}
 
-foldlWithKeyNM' :: Hashable1 l => (b -> ENode l -> a -> b) -> b -> NodeMap l a -> b 
-foldlWithKeyNM' f b = HMS.foldlWithKey' f b . unNodeMap
+foldlWithKeyNM' :: Ord1 l => (b -> ENode l -> a -> b) -> b -> NodeMap l a -> b 
+foldlWithKeyNM' f b = M.foldlWithKey' f b . unNodeMap
 {-# SCC foldlWithKeyNM' #-}
 
-foldrWithKeyNM' :: Hashable1 l => (ENode l -> a -> b -> b) -> b -> NodeMap l a -> b 
-foldrWithKeyNM' f b = HMS.foldrWithKey' f b . unNodeMap
+foldrWithKeyNM' :: Ord1 l => (ENode l -> a -> b -> b) -> b -> NodeMap l a -> b 
+foldrWithKeyNM' f b = M.foldrWithKey' f b . unNodeMap
 {-# INLINE foldrWithKeyNM' #-}
 
 sizeNM :: NodeMap l a -> Int
@@ -129,7 +119,7 @@ sizeNM = sizeNodeMap
 {-# INLINE sizeNM #-}
 
 traverseWithKeyNM :: Applicative t => (ENode l -> a -> t b) -> NodeMap l a -> t (NodeMap l b) 
-traverseWithKeyNM f (NodeMap m s) = (`NodeMap` s) <$> HMS.traverseWithKey f m
+traverseWithKeyNM f (NodeMap m s) = (`NodeMap` s) <$> M.traverseWithKey f m
 {-# INLINE traverseWithKeyNM #-}
 
 -- * Node Set

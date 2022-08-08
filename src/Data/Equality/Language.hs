@@ -28,8 +28,6 @@ instance Language Expr
 -}
 module Data.Equality.Language where
 
-import Data.Hashable.Lifted
-
 import Data.Functor.Classes
 
 import Data.Equality.Analysis
@@ -42,5 +40,5 @@ import Data.Equality.Analysis
 -- e-graphs), note that it must satisfy the other class constraints. In
 -- particular an 'Data.Equality.Analysis.Analysis' must be defined for the
 -- language.
-class (Analysis l, Traversable l, Ord1 l, Hashable1 l) => Language l where
+class (Analysis l, Traversable l, Ord1 l) => Language l where
 

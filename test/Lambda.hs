@@ -11,10 +11,6 @@ module Lambda where
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import GHC.Generics
-
-import Data.Hashable.Lifted
-
 import qualified Data.Set as S
 
 import Control.Applicative ((<|>))
@@ -45,14 +41,11 @@ data Lambda a
     | Symbol String
     deriving ( Eq, Ord, Functor
              , Foldable, Traversable
-             , Generic1
              )
 
 deriveEq1 ''Lambda
 deriveOrd1 ''Lambda
 deriveShow1 ''Lambda
-
-instance Hashable1 Lambda
 
 data Data = Data { free :: S.Set ClassId
                  , constant :: Maybe (Fix Lambda)

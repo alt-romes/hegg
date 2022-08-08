@@ -18,8 +18,6 @@ import Test.Tasty.QuickCheck as QC hiding (classes)
 import Data.Functor.Classes
 import Control.Monad
 
-import Data.Hashable.Lifted
-
 import qualified Data.List   as L
 import qualified Data.Set    as S
 import qualified Data.IntMap.Strict as IM
@@ -37,7 +35,7 @@ import Sym
 -- TODO: Use type level symbol to define the analysis
 type role SimpleExpr nominal
 newtype SimpleExpr l = SE (Expr l)
-    deriving (Functor, Foldable, Traversable, Show1, Eq1, Ord1, Hashable1, Language)
+    deriving (Functor, Foldable, Traversable, Show1, Eq1, Ord1, Language)
 
 instance Analysis SimpleExpr where
     type Domain SimpleExpr = ()

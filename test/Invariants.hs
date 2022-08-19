@@ -18,6 +18,7 @@ import Test.Tasty.QuickCheck as QC hiding (classes)
 import Data.Functor.Classes
 import Control.Monad
 
+import qualified Data.Foldable as F
 import qualified Data.List   as L
 import qualified Data.Set    as S
 import qualified Data.IntMap.Strict as IM
@@ -77,7 +78,7 @@ testCompileToQuery p = case fst $ compileToQuery p of
     where
         numNonVarPatterns :: Foldable lang => Pattern lang -> Int
         numNonVarPatterns (VariablePattern _) = 0
-        numNonVarPatterns (NonVariablePattern l) = foldr ((+) . numNonVarPatterns) 1 l
+        numNonVarPatterns (NonVariablePattern l) = F.foldl' (flip $ (+) . numNonVarPatterns) 1 l
 
 
 -- | If we match a singleton variable pattern against an e-graph, we should get

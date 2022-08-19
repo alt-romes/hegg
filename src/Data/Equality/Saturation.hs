@@ -15,7 +15,7 @@ module Data.Equality.Saturation
 
       -- ** Cost
       --
-      -- | Re-exported from 'Data.Equality.Extraction' since they are required to do equality saturation
+      -- | Cost functions re-exported from 'Data.Equality.Extraction' since they are required to do equality saturation
     , CostFunction--, Cost, depthCost
 
       -- ** Fix

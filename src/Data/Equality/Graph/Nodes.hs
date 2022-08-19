@@ -78,7 +78,7 @@ instance Show1 l => (Show (Operator l)) where
 
 -- * Node Map
 
-data NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: M.Map (ENode l) a, sizeNodeMap :: {-# UNPACK #-} !Int }
+data NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: !(M.Map (ENode l) a), sizeNodeMap :: {-# UNPACK #-} !Int }
   deriving (Show, Functor, Foldable, Traversable)
 
 instance (Eq1 l, Ord1 l) => Semigroup (NodeMap l a) where

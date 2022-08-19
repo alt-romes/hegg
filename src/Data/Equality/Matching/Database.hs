@@ -56,8 +56,8 @@ newtype Database l
 
 -- | A triemap that keeps a cache of all keys in each level
 data IntTrie = MkIntTrie
-  { tkeys :: IS.IntSet
-  , trie :: IM.IntMap IntTrie
+  { tkeys :: !IS.IntSet
+  , trie :: !(IM.IntMap IntTrie)
   }
 
 -- instance Show (lang ()) => Show (Database lang) where
@@ -111,13 +111,13 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
 
      [] -> map mempty atoms
 
-     x:xs -> 
+     !x:xs -> 
        -- IS.foldl' (\acc x_in_D -> genericJoin' (substitute x x_in_D atoms') (map (IM.insert x x_in_D) substs) xs <> acc)
        --           mempty
        --           (domainX x atoms')
        IS.foldl'
          (\acc x_in_D ->
-           map (IM.insert x x_in_D)
+           map (\y -> let !y' = IM.insert x x_in_D y in y') -- TODO: A bit contrieved, perhaps better to avoid map ?
              -- Each valid sub-query assumed the x -> x_in_D substitution
              (genericJoin' (substitute x x_in_D atoms') xs)
                <> acc)

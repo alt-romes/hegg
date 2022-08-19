@@ -22,10 +22,10 @@ import Data.Equality.Graph
 import Data.Equality.Matching.Database
 import Data.Equality.Matching.Pattern
 
--- |  Matching a pattern on an e-graph returns substitutions for every variable
+-- | Matching a pattern on an e-graph returns substitutions for every variable
 -- in the pattern and the e-class that matched the pattern
 data Match = Match
-    { matchSubst :: Subst
+    { matchSubst :: !Subst
     , matchClassId :: {-# UNPACK #-} !ClassId
     }
 
@@ -75,23 +75,19 @@ eGraphToDatabase EGraph{..} = foldrWithKeyNM' addENodeToDB (DB mempty) memo
     addENodeToDB enode classid (DB m) =
         -- ROMES:TODO map find
         -- Insert or create a relation R_f(i1,i2,...,in) for lang in which 
-        DB $ M.alter (populate (classid:children enode)) (operator enode) m
+        DB $ M.alter (Just . populate (classid:children enode)) (operator enode) m
     {-# SCC addENodeToDB #-}
 
     -- Populate or create a triemap given the population D_x (ClassIds)
     -- Insert remaining ids population doesn't exist, recursively merge tries with remaining ids
-    populate :: [ClassId] -> Maybe IntTrie -> Maybe IntTrie
+    populate :: [ClassId] -> Maybe IntTrie -> IntTrie
     -- If trie map entry doesn't exist yet, populate an empty map with the remaining ids
-    populate ids Nothing = Just $ populate' ids (MkIntTrie mempty mempty)
-        -- If trie map entry already exists, populate the existing map with the remaining ids
-    populate ids (Just a) = Just $ populate' ids a
+    populate []     Nothing = MkIntTrie mempty mempty
+    populate (x:xs) Nothing = MkIntTrie (IS.singleton x) $ IM.singleton x (populate xs Nothing)
+    -- If trie map entry already exists, populate the existing map with the remaining ids
+    populate []     (Just it)              = it
+    populate (x:xs) (Just (MkIntTrie k m)) = MkIntTrie (x `IS.insert` k) $ IM.alter (Just . populate xs) x m
     {-# SCC populate #-}
-
-    -- Populate a triemap given the population D_x (ClassIds)
-    populate' :: [ClassId] -> IntTrie -> IntTrie
-    populate' [] it = it
-    populate' (x:xs) (MkIntTrie k m) = MkIntTrie (x `IS.insert` k) $ IM.alter (populate xs) x m
-    {-# SCC populate' #-}
 {-# SCC eGraphToDatabase #-}
 
 

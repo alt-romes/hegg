@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TupleSections #-}
 -- {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
@@ -65,7 +66,7 @@ instance (Show (Domain l), Show1 l) => Show (EGraph l) where
 -- E-node lookup depends on e-node correctly defining equality
 add :: forall l. Language l => ENode l -> EGraph l -> (ClassId, EGraph l)
 add uncanon_e egr =
-    let new_en = {-# SCC "-2" #-} canonicalize uncanon_e egr
+    let !new_en = {-# SCC "-2" #-} canonicalize uncanon_e egr
 
      in case {-# SCC "-1" #-} lookupNM new_en (memo egr) of
       Just canon_enode_id -> {-# SCC "0" #-} (find canon_enode_id egr, egr)
@@ -85,8 +86,9 @@ add uncanon_e egr =
             -- to the e-class parents the new e-node and its e-class id
             --
             -- And add new e-class to existing e-classes
+            new_parents      = insertNM new_en new_eclass_id
             new_classes      = {-# SCC "2" #-} IM.insert new_eclass_id new_eclass $
-                                  foldl' (flip $ IM.adjust (_parents %~ insertNM new_en new_eclass_id))
+                                  foldl' (flip $ IM.adjust (_parents %~ new_parents))
                                          (classes egr)
                                          (unNode new_en)
 

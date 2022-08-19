@@ -28,8 +28,8 @@ import Data.Equality.Matching
 --
 --     ]
 -- @
-data Rewrite lang = Pattern lang := Pattern lang
-                  | Rewrite lang :| RewriteCondition lang -- Conditional rewrites
+data Rewrite lang = !(Pattern lang) := !(Pattern lang)
+                  | !(Rewrite lang) :| !(RewriteCondition lang) -- Conditional rewrites
 infix 3 :=
 infixl 2 :|
 

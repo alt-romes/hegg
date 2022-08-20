@@ -17,7 +17,6 @@ module Data.Equality.Graph
 -- import GHC.Conc
 
 import Data.Function
-import Data.Foldable (foldl')
 
 import Data.Functor.Classes
 
@@ -88,9 +87,9 @@ add uncanon_e egr =
             -- And add new e-class to existing e-classes
             new_parents      = insertNM new_en new_eclass_id
             new_classes      = {-# SCC "2" #-} IM.insert new_eclass_id new_eclass $
-                                  foldl' (flip $ IM.adjust (_parents %~ new_parents))
-                                         (classes egr)
-                                         (unNode new_en)
+                                    foldr  (IM.adjust (_parents %~ new_parents))
+                                           (classes egr)
+                                           (unNode new_en)
 
             -- TODO: From egg: Is this needed?
             -- This is required if we want math pruning to work. Unfortunately, it

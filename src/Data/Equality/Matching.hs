@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Data.Equality.Matching
     ( module Data.Equality.Matching
@@ -104,19 +105,20 @@ vars (NonVariablePattern p) = nubInt $ join $ map vars $ toList p
 -- The root variable's substitutions are the e-classes where the pattern
 -- matched
 compileToQuery :: (Traversable lang) => Pattern lang -> (Query lang, Var)
-compileToQuery = flip evalState 0 . compile_to_query'
+compileToQuery (VariablePattern x) = (SelectAllQuery x, x)
+compileToQuery pa@(NonVariablePattern _) =
+
+  let root :~ atoms = evalState (aux pa) 0
+   in (Query (nubInt $ root:vars pa) atoms, root)
+
     where
-        compile_to_query' :: (Traversable lang) => Pattern lang -> State Int (Query lang, Var)
-        compile_to_query' (VariablePattern x) = return (SelectAllQuery x, x)
-        compile_to_query' p@(NonVariablePattern _) = do
-            root :~ atoms <- aux p
-            return (Query (nubInt $ root:vars p) atoms, root)
 
         aux :: (Traversable lang) => Pattern lang -> State Int (AuxResult lang)
-        aux (VariablePattern x) = return $ x :~ [] -- from definition in relational e-matching paper (needed for as base case for recursion)
+        aux (VariablePattern x) = return (x :~ []) -- from definition in relational e-matching paper (needed for as base case for recursion)
         aux (NonVariablePattern p) = do
-            v <- next
-            auxs <- sequence (toList (fmap aux p))
+            v <- get
+            modify' (+1)
+            (toList -> auxs) <- traverse aux p
             let boundVars = map (\(b :~ _) -> b) auxs
                 atoms     = join $ map (\(_ :~ a) -> a) auxs
                 -- Number of bound vars should match number of children of this
@@ -128,17 +130,5 @@ compileToQuery = flip evalState 0 . compile_to_query'
                     -- State keeps track of the index of the variable we're
                     -- taking from the bound vars array
                     subPatsToVars :: Traversable lang => lang (Pattern lang) -> [Var] -> State Int (lang Var)
-                    subPatsToVars p' boundVars = traverse (const $ (boundVars !!) <$> next) p'
+                    subPatsToVars p' boundVars = traverse (const $ (boundVars !!) <$> (get >>= \i -> modify' (+1) >> return i)) p'
 {-# SCC compileToQuery #-}
-
-fresh :: State Int String
-fresh = ('$':) . ('~':) . (letters !!) <$> next
-    where letters :: [String]
-          letters = [1..] >>= flip replicateM ['a'..'z']
-
--- Gives next negative int for bound variable
-next :: State Int Int
-next = do
-    i <- get
-    put (i+1)
-    return i

@@ -17,6 +17,7 @@ module Data.Equality.Graph.Nodes where
 
 import Data.Functor.Classes
 import Data.Foldable
+import Data.Bifunctor
 
 import Data.Kind
 
@@ -101,9 +102,8 @@ deleteNM :: Ord1 l => ENode l -> NodeMap l a -> NodeMap l a
 deleteNM e (NodeMap m s) = NodeMap (M.delete e m) (s-1)
 {-# INLINE deleteNM #-}
 
--- ROMES:TODO Use M.insertLookup
 insertLookupNM :: Ord1 l => ENode l -> a -> NodeMap l a -> (Maybe a, NodeMap l a)
-insertLookupNM e v (NodeMap m s) = (M.lookup e m, NodeMap (M.insert e v m) (s+1))
+insertLookupNM e v (NodeMap m s) = second (flip NodeMap (s+1)) $ M.insertLookupWithKey (\_ a _ -> a) e v m
 {-# INLINE insertLookupNM #-}
 
 foldlWithKeyNM' :: Ord1 l => (b -> ENode l -> a -> b) -> b -> NodeMap l a -> b 

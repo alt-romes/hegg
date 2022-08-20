@@ -27,10 +27,10 @@ import Data.Equality.Analysis
 import Data.Equality.Matching
 import Data.Equality.Saturation
 
-data Expr a = Sym String
-            | Const Double
-            | UnOp  UOp a
-            | BinOp BOp a a
+data Expr a = Sym   !String
+            | Const !Double
+            | UnOp  !UOp !a
+            | BinOp !BOp !a !a
             deriving ( Eq, Ord, Functor
                      , Foldable, Traversable
                      )
@@ -216,7 +216,7 @@ instance Analysis Expr where
 
             -- Add constant as e-node
             new_c <- represent (Fix $ Const d)
-            _ <- GM.merge i new_c
+            _     <- GM.merge i new_c
 
             -- Prune all except leaf e-nodes
             modify (_class i._nodes %~ S.filter (null . children))

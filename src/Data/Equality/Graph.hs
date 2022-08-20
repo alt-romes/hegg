@@ -7,6 +7,11 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-|
+   An e-graph efficiently represents a congruence relation over many expressions.
+
+   Based on \"egg: Fast and Extensible Equality Saturation\" https://arxiv.org/abs/2004.03082.
+ -}
 module Data.Equality.Graph
     ( module Data.Equality.Graph
     , module Data.Equality.Graph.Classes
@@ -42,7 +47,10 @@ data EGraph l = EGraph
     , analysisWorklist :: !(Worklist l)        -- ^ like 'worklist' but for analysis repairing
     }
 
+-- | The hashcons 𝐻  is a map from e-nodes to e-class ids
 type Memo l = NodeMap l ClassId
+
+-- | Maintained worklist of e-class ids that need to be “upward merged”
 type Worklist l = NodeMap l ClassId
 
 -- ROMES:TODO: join things built in paralell?
@@ -207,6 +215,12 @@ merge a b egr0 =
         in (new_id, new_egr)
 {-# SCC merge #-}
             
+
+-- | The rebuild operation processes the e-graph's current 'Worklist',
+-- restoring the invariants of deduplication and congruence. Rebuilding is
+-- similar to other approaches in how it restores congruence; but it uniquely
+-- allows the client to choose when to restore invariants in the context of a
+-- larger algorithm like equality saturation.
 rebuild :: Language l => EGraph l -> EGraph l
 rebuild (EGraph uf cls mm wl awl) =
   -- empty worklists
@@ -222,6 +236,9 @@ rebuild (EGraph uf cls mm wl awl) =
 
 {-# SCC rebuild #-}
 
+-- ROMES:TODO: find repair_id could be shared between repair and repairAnal?
+
+-- | Repair a single worklist entry.
 repair :: forall l. Language l => ENode l -> ClassId -> EGraph l -> EGraph l
 repair node repair_id egr =
 
@@ -232,6 +249,7 @@ repair node repair_id egr =
       (Just existing_class, memo2) -> snd (merge existing_class repair_id egr{memo = memo2})
 {-# SCC repair #-}
 
+-- | Repair a single analysis-worklist entry.
 repairAnal :: forall l. Language l => ENode l -> ClassId -> EGraph l -> EGraph l
 repairAnal node repair_id egr =
     let
@@ -268,6 +286,7 @@ find :: ClassId -> EGraph l -> ClassId
 find cid = findRepr cid . unionFind
 {-# INLINE find #-}
 
+-- | The empty e-graph. Nothing is represented in it yet.
 emptyEGraph :: Language l => EGraph l
 emptyEGraph = EGraph emptyUF mempty mempty mempty mempty
 {-# INLINE emptyEGraph #-}

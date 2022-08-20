@@ -1,8 +1,16 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-|
+   All about equality-matching, implemented using a relational database
+   (defined in 'Data.Equality.Matching.Database') according to the paper
+   \"Relational E-Matching\" https://arxiv.org/abs/2108.02290.
+ -}
 module Data.Equality.Matching
-    ( module Data.Equality.Matching
+    ( ematch
+    , eGraphToDatabase
+    , Match(..)
+    , vars, compileToQuery
     , module Data.Equality.Matching.Pattern
     , Database, Subst, Var
     )
@@ -30,13 +38,13 @@ data Match = Match
     , matchClassId :: {-# UNPACK #-} !ClassId
     }
 
+-- TODO: Perhaps e-graph could carry database and rebuild it on rebuild
+
 -- | Match a pattern against an AST, returnin a list of equivalence classes
 -- that match the pattern and the corresponding substitution
 --
 -- ematch takes the built database because it can be shared accross matching.
 -- One can convert an e-graph to a database with 'eGraphToDatabase'
---
--- TODO: Perhaps e-graph could carry database and rebuild it on rebuild
 ematch :: Language l
        => Database l
        -> Pattern l
@@ -91,10 +99,12 @@ eGraphToDatabase EGraph{..} = foldrWithKeyNM' addENodeToDB (DB mempty) memo
     {-# SCC populate #-}
 {-# SCC eGraphToDatabase #-}
 
+-- * Database related internals
 
+-- | Auxiliary result in 'compileToQuery' algorithm
 data AuxResult lang = {-# UNPACK #-} !Var :~ [Atom lang]
 
--- Return distinct variables in a pattern
+-- | Return distinct variables in a pattern
 vars :: Foldable lang => Pattern lang -> [Var]
 vars (VariablePattern x) = [x]
 vars (NonVariablePattern p) = nubInt $ join $ map vars $ toList p
@@ -125,7 +135,7 @@ compileToQuery pa@(NonVariablePattern _) =
                 -- lang. We can traverse the pattern and replace sub-patterns with
                 -- their corresponding bound variable
                 p' = evalState (subPatsToVars p boundVars) 0
-            return (v :~ (Atom (Var v) (fmap Var p'):atoms))
+            return (v :~ (Atom (CVar v) (fmap CVar p'):atoms))
                 where
                     -- State keeps track of the index of the variable we're
                     -- taking from the bound vars array

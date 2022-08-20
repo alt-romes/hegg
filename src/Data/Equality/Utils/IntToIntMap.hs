@@ -5,7 +5,19 @@
 {-# LANGUAGE UnliftedDatatypes #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
-module Data.Equality.Utils.IntToIntMap where
+{-|
+   This module defines 'IntToIntMap', a variant of 'Data.IntMap' in which the
+   values are fixed to 'Int'.
+
+   We make use of this structure in 'Data.Equality.Graph.ReprUnionFind' to
+   improve performance by a constant factor
+ -}
+module Data.Equality.Utils.IntToIntMap
+  ( IntToIntMap(Nil)
+  , Key, Val
+  , find, insert, (!)
+  , unliftedFoldr
+  ) where
 
 import GHC.Exts
 import Data.Bits
@@ -14,12 +26,15 @@ import Data.Bits
 type IntToIntMap :: TYPE ('BoxedRep 'Unlifted)
 data IntToIntMap = Bin Prefix Mask IntToIntMap IntToIntMap
                  | Tip InternalKey Val
-                 | Nil
+                 | Nil -- ^ An empty 'IntToIntMap'. Ideally this would be defined as a function instead of an exported constructor, but it's currently not possible to have top-level bindings for unlifted datatypes
 
 type Prefix      = Word#
 type Mask        = Word#
 type InternalKey = Word#
+
+-- | Key type synonym in an 'IntToIntMap'
 type Key         = Int#
+-- | Value type synonym in an 'IntToIntMap'
 type Val         = Int#
 
 -- | \(O(\min(n,W))\). Find the value at a key.
@@ -28,10 +43,12 @@ type Val         = Int#
 (!) m k = find k m
 {-# INLINE (!) #-}
 
+-- | Find the 'Val' for a 'Key' in an 'IntToIntMap'
 find :: Key -> IntToIntMap -> Val
 find (int2Word# -> k) = find' k
 {-# INLINE find #-}
 
+-- | Insert a 'Val' at a 'Key' in an 'IntToIntMap'
 insert :: Key -> Val -> IntToIntMap -> IntToIntMap
 insert k = insert' (int2Word# k)
 {-# INLINE insert #-}
@@ -107,8 +124,7 @@ zero i m
   = isTrue# ((i `and#` m) `eqWord#` (int2Word# 0#))
 {-# INLINE zero #-}
 
--- * Utils
-
+-- | A 'foldr' in which the accumulator is unlifted
 unliftedFoldr :: forall a {b :: TYPE ('BoxedRep 'Unlifted)} . (a -> b -> b) -> b -> [a] -> b 
 unliftedFoldr k z = go
   where

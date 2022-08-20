@@ -5,6 +5,17 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE BlockArguments #-}
+{-|
+  Given an input program 𝑝, equality saturation constructs an e-graph 𝐸 that
+  represents a large set of programs equivalent to 𝑝, and then extracts the
+  “best” program from 𝐸. The e-graph is grown by repeatedly applying
+  pattern-based rewrites.  Critically, these rewrites only add information to
+  the e-graph, eliminating the need for careful ordering. Upon reaching a
+  fixed point (saturation), 𝐸 will represent all equivalent ways to express 𝑝
+  with respect to the given rewrites. After saturation (or timeout), a final
+  extraction procedure analyzes 𝐸 and selects the optimal program according
+  to a user-provided cost function.
+ -}
 module Data.Equality.Saturation
     (
       -- * Equality saturation

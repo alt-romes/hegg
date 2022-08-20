@@ -1,3 +1,7 @@
+{-|
+   Definition of 'Pattern' for use in equality matching
+   ('Data.Equality.Matching'), where patterns are matched against the e-graph
+ -}
 module Data.Equality.Matching.Pattern where
 
 import Data.Functor.Classes
@@ -12,6 +16,7 @@ data Pattern lang
     = NonVariablePattern (lang (Pattern lang))
     | VariablePattern Var -- ^ Should be a >0 positive number
 
+-- | Synonym for 'NonVariablePattern'
 pat :: lang (Pattern lang) -> Pattern lang
 pat = NonVariablePattern
 

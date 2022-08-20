@@ -1,5 +1,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE Rank2Types #-}
+{-|
+  Lenses on e-graphs and e-classes
+ -}
 module Data.Equality.Graph.Lens where
 
 import qualified Data.IntMap.Strict as IM
@@ -14,6 +17,7 @@ import Data.Equality.Graph.Classes
 import Data.Equality.Analysis
 import {-# SOURCE #-} Data.Equality.Graph (EGraph(..), Memo, find)
 
+-- | A 'Lens'' as defined in other lenses libraries
 type Lens' s a = forall f. Functor f => (a -> f a) -> (s -> f s)
 
 
@@ -34,22 +38,27 @@ _class i afa s =
      in (\c' -> s { classes = IM.insert canon_id c' (classes s) }) <$> afa (classes s IM.! canon_id)
 {-# INLINE _class #-}
 
+-- | Lens for the 'Memo' of e-nodes in an e-graph
 _memo :: Lens' (EGraph l) (Memo l)
 _memo afa egr = (\m1 -> egr {memo = m1}) <$> afa (memo egr)
 {-# INLINE _memo #-}
 
+-- | Lens for the map of existing classes by id in an e-graph
 _classes :: Lens' (EGraph l) (ClassIdMap (EClass l))
 _classes afa egr = (\m1 -> egr {classes = m1}) <$> afa (classes egr)
 {-# INLINE _classes #-}
 
+-- | Lens for the 'Domain' of an e-class
 _data :: Lens' (EClass l) (Domain l)
 _data afa EClass{..} = (\d1 -> EClass eClassId eClassNodes d1 eClassParents) <$> afa eClassData
 {-# INLINE _data #-}
 
+-- | Lens for the parent e-classes of an e-class
 _parents :: Lens' (EClass l) (NodeMap l ClassId)
 _parents afa EClass{..} = EClass eClassId eClassNodes eClassData <$> afa eClassParents
 {-# INLINE _parents #-}
 
+-- | Lens for the e-nodes in an e-class
 _nodes :: Lens' (EClass l) (S.Set (ENode l))
 _nodes afa EClass{..} = (\ns -> EClass eClassId ns eClassData eClassParents) <$> afa eClassNodes
 {-# INLINE _nodes #-}
@@ -72,14 +81,17 @@ infixr 4 .~
 infixr 4 %~
 {-# INLINE (%~) #-}
 
+-- | Applies a getter to a value
 view :: Lens' s a -> (s -> a)
 view ln = getConst . ln Const
 {-# INLINE view #-}
 
+-- | Applies a setter to a value
 set :: Lens' s a -> a -> (s -> s)
 set ln x = over ln (const x)
 {-# INLINE set #-}
 
+-- | Applies a function to the target
 over :: Lens' s a -> (a -> a) -> (s -> s)
 over ln f = runIdentity . ln (Identity . f)
 {-# INLINE over #-}

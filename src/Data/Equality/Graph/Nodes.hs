@@ -79,6 +79,7 @@ instance Show1 l => (Show (Operator l)) where
 
 -- * Node Map
 
+-- | A mapping from e-nodes of @l@ to @a@
 data NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: !(M.Map (ENode l) a), sizeNodeMap :: {-# UNPACK #-} !Int }
   deriving (Show, Functor, Foldable, Traversable)
 
@@ -88,36 +89,44 @@ instance (Eq1 l, Ord1 l) => Semigroup (NodeMap l a) where
 instance (Eq1 l, Ord1 l) => Monoid (NodeMap l a) where
   mempty = NodeMap mempty 0
 
-
-
+-- | Insert a value given an e-node in a 'NodeMap'
 insertNM :: Ord1 l => ENode l -> a -> NodeMap l a -> NodeMap l a
 insertNM e v (NodeMap m s) = NodeMap (M.insert e v m) (s+1)
 {-# INLINE insertNM #-}
 
+-- | Lookup an e-node in a 'NodeMap'
 lookupNM :: Ord1 l => ENode l -> NodeMap l a -> Maybe a
 lookupNM e = M.lookup e . unNodeMap
 {-# INLINE lookupNM #-}
 
+-- | Delete an e-node in a 'NodeMap'
 deleteNM :: Ord1 l => ENode l -> NodeMap l a -> NodeMap l a
 deleteNM e (NodeMap m s) = NodeMap (M.delete e m) (s-1)
 {-# INLINE deleteNM #-}
 
+-- | Insert a value and lookup by e-node in a 'NodeMap'
 insertLookupNM :: Ord1 l => ENode l -> a -> NodeMap l a -> (Maybe a, NodeMap l a)
 insertLookupNM e v (NodeMap m s) = second (flip NodeMap (s+1)) $ M.insertLookupWithKey (\_ a _ -> a) e v m
 {-# INLINE insertLookupNM #-}
 
+-- | As 'Data.Map.foldlWithKeyNM'' but in a 'NodeMap'
 foldlWithKeyNM' :: Ord1 l => (b -> ENode l -> a -> b) -> b -> NodeMap l a -> b 
 foldlWithKeyNM' f b = M.foldlWithKey' f b . unNodeMap
-{-# SCC foldlWithKeyNM' #-}
+{-# INLINE foldlWithKeyNM' #-}
 
+-- | As 'Data.Map.foldrWithKeyNM'' but in a 'NodeMap'
 foldrWithKeyNM' :: Ord1 l => (ENode l -> a -> b -> b) -> b -> NodeMap l a -> b 
 foldrWithKeyNM' f b = M.foldrWithKey' f b . unNodeMap
 {-# INLINE foldrWithKeyNM' #-}
 
+-- | Get the number of entries in a 'NodeMap'.
+--
+-- This operation takes constant time (__O(1)__)
 sizeNM :: NodeMap l a -> Int
 sizeNM = sizeNodeMap
 {-# INLINE sizeNM #-}
 
+-- | As 'Data.Map.traverseWithKeyNM' but in a 'NodeMap'
 traverseWithKeyNM :: Applicative t => (ENode l -> a -> t b) -> NodeMap l a -> t (NodeMap l b) 
 traverseWithKeyNM f (NodeMap m s) = (`NodeMap` s) <$> M.traverseWithKey f m
 {-# INLINE traverseWithKeyNM #-}

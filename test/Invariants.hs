@@ -18,6 +18,7 @@ import Test.Tasty.QuickCheck as QC hiding (classes)
 import Data.Functor.Classes
 import Control.Monad
 
+import qualified Data.Containers.ListUtils as LU
 import qualified Data.Foldable as F
 import qualified Data.List   as L
 import qualified Data.Set    as S
@@ -80,6 +81,14 @@ testCompileToQuery p = case fst $ compileToQuery p of
         numNonVarPatterns (VariablePattern _) = 0
         numNonVarPatterns (NonVariablePattern l) = F.foldl' (flip $ (+) . numNonVarPatterns) 1 l
 
+        queryHeadVars :: Foldable lang => Query lang -> [Var]
+        queryHeadVars (SelectAllQuery x) = [x]
+        queryHeadVars (Query qv _) = qv
+
+        -- | Return distinct variables in a pattern
+        vars :: Foldable lang => Pattern lang -> [Var]
+        vars (VariablePattern x) = [x]
+        vars (NonVariablePattern p') = LU.nubInt $ join $ map vars $ F.toList p'
 
 -- | If we match a singleton variable pattern against an e-graph, we should get
 -- a match on all e-classes in the e-graph

@@ -1,7 +1,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE Rank2Types #-}
 {-|
-  Lenses on e-graphs and e-classes
+  Hand-rolled lenses on e-graphs and e-classes which come in quite handy and
+  are heavily used in 'Data.Equality.Graph'.
  -}
 module Data.Equality.Graph.Lens where
 
@@ -32,6 +33,8 @@ type Lens' s a = forall f. Functor f => (a -> f a) -> (s -> f s)
 -- Invariant: The e-class exists.
 
 -- | Lens for the e-class with the given id in an e-graph
+--
+-- Calls 'error' when the e-class doesn't exist
 _class :: ClassId -> Lens' (EGraph l) (EClass l)
 _class i afa s =
     let canon_id = find i s

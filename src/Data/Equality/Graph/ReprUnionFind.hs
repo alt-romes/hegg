@@ -3,7 +3,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-|
 
-Union-find like data structure that defines equivalence classes of e-class ids
+Union-find-like data structure that defines equivalence classes of e-class ids.
 
 -}
 module Data.Equality.Graph.ReprUnionFind
@@ -20,17 +20,14 @@ import qualified Data.Equality.Utils.IntToIntMap as IIM
 import GHC.Exts ((+#), Int(..), Int#)
 
 -- | A union find for equivalence classes of e-class ids.
---
--- Particularly, there's no value associated with identifier, so this union find serves only to find the representative of an e-class id
---
--- e.g. @FUF $ fromList [(y, Canonical), (x, Represented y)]@
-data ReprUnionFind = RUF !IIM.IntToIntMap -- ^ Map every id to either 0# (meaning its the representative) or to another int# (meaning its represented by some other id)
+data ReprUnionFind = RUF IIM.IntToIntMap -- ^ Map every id to either 0# (meaning its the representative) or to another int# (meaning its represented by some other id)
                          RUFSize -- ^ Counter for new ids
                          -- !(IM.IntMap [ClassId]) -- ^ Mapping from an id to all its children: This is used for "rebuilding" (compress all paths) when merging. Its a hashcons?
                          -- [ClassId] -- ^ Ids that can be safely deleted after the e-graph is rebuilt
+-- Particularly, there's no value associated with identifier, so this union find serves only to find the representative of an e-class id
 
 instance Show ReprUnionFind where
-  show (RUF _ s) = "RUF with size:" <> show (I# s)
+  show (RUF _ s) = "Warning: Incomplete! ReprUnionFind with size " <> show (I# s)
 
 type RUFSize = Int#
 
@@ -45,9 +42,8 @@ newtype Repr
   deriving Show
 
 -- | The empty 'ReprUnionFind'.
---
--- TODO: Instance of 'ReprUnionFind' as Monoid, this is 'mempty'
 emptyUF :: ReprUnionFind
+-- TODO: If I can make an instance of 'ReprUnionFind' for Monoid(?), this is 'mempty'
 emptyUF = RUF IIM.Nil
               1# -- Must start with 1# since 0# means "Canonical"
               -- mempty
@@ -61,9 +57,12 @@ makeNewSet (RUF im si) = ((I# si), RUF (IIM.insert si 0# im) ((si +# 1#)))
 
 -- | Union operation of the union find.
 --
--- Given two leader ids, unions the two eclasses making @a@ the leader.(that is,
--- @b@ is represented by @a@
-unionSets :: ClassId -> ClassId -> ReprUnionFind -> (ClassId, ReprUnionFind)
+-- Given two leader ids, unions the two eclasses making @a@ the leader, that
+-- is, @b@ is now represented by @a@
+unionSets :: ClassId -- ^ @a@
+          -> ClassId -- ^ @b@
+          -> ReprUnionFind -- ^ Union-find containing @a@ and @b@
+          -> (ClassId, ReprUnionFind) -- ^ The new leader and the updated union-find
 unionSets a@(I# a#) (I# b#) (RUF im si) = (a, RUF (IIM.insert b# a# im) si)
   -- where
     -- represented_by_b = hc IM.! b
@@ -74,7 +73,8 @@ unionSets a@(I# a#) (I# b#) (RUF im si) = (a, RUF (IIM.insert b# a# im) si)
 {-# SCC unionSets #-}
 
 -- | Find the canonical representation of an e-class id
-findRepr :: ClassId -> ReprUnionFind -> ClassId
+findRepr :: ClassId -> ReprUnionFind
+         -> ClassId -- ^ The found canonical representation
 findRepr v@(I# v#) (RUF m s) =
   case {-# SCC "findRepr_TAKE" #-} m IIM.! v# of
     0# -> v

@@ -25,6 +25,7 @@ import Data.Equality.Graph
 import Data.Equality.Extraction
 import Data.Equality.Analysis
 import Data.Equality.Matching
+import Data.Equality.Matching.Database
 import Data.Equality.Saturation
 
 data Expr a = Sym   !String

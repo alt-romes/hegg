@@ -47,6 +47,7 @@ import Data.Equality.Graph.Monad
 import Data.Equality.Language
 import Data.Equality.Graph.Classes
 import Data.Equality.Matching
+import Data.Equality.Matching.Database
 import Data.Equality.Extraction
 
 import Data.Equality.Saturation.Rewrites

@@ -13,7 +13,18 @@
 
    You probably don't need this module.
  -}
-module Data.Equality.Matching.Database where
+module Data.Equality.Matching.Database
+  (
+    genericJoin
+
+  , Database(..)
+  , Query(..)
+  , IntTrie(..)
+  , Subst
+  , Var
+  , Atom(..)
+  , ClassIdOrVar(..)
+  ) where
 
 import Data.List (sortBy)
 import Data.Function (on)
@@ -29,11 +40,16 @@ import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 import Data.Equality.Language
 
--- | Query variable
+-- | A variable in a query is identified by an 'Int'.
+-- This is much more efficient than using e.g. a 'String'.
+--
+-- As a consequence, patterns also use 'Int' to represent a variable, but we
+-- can still have an 'Data.String.IsString' instance for variable patterns by hashing the
+-- string into a unique number.
 type Var = Int
 
--- | Mapping from 'Var' to @['ClassId']@. Multiple possible substitutions for
--- each variable
+-- | Mapping from 'Var' to 'ClassId'. In a 'Subst' there is only one
+-- substitution for each variable
 type Subst = IM.IntMap ClassId
 
 -- | A value which is either a 'ClassId' or a 'Var'
@@ -41,79 +57,56 @@ data ClassIdOrVar = CClassId {-# UNPACK #-} !ClassId
                   | CVar     {-# UNPACK #-} !Var
     deriving (Show, Eq, Ord)
 
--- | Extract 'Var' from 'ClassIdOrVar'
-toVar :: ClassIdOrVar -> Maybe Var
-toVar (CVar v) = Just v
-toVar (CClassId _) = Nothing
-{-# INLINE toVar #-}
-
--- | An Atom ... in pattern ... is R_f(v, v1, ..., vk), so we define it as a
--- functor ast over pattern variables + the additional var for the e-class id
+-- | An 'Atom' 𝑅ᵢ(𝑣, 𝑣1, ..., 𝑣𝑘) is defined by the relation 𝑅ᵢ and by the
+-- class-ids or variables 𝑣, 𝑣1, ..., 𝑣𝑘. It represents one conjunctive query's body atom.
 data Atom lang
-    = Atom !ClassIdOrVar !(lang ClassIdOrVar)
-
--- | Get the size of an atom
-atomLength :: Foldable lang => Atom lang -> Int
-atomLength (Atom _ l) = 1 + F.length l
-{-# SCC atomLength #-}
+    = Atom
+        !ClassIdOrVar        -- ^ Represents 𝑣
+        !(lang ClassIdOrVar) -- ^ Represents 𝑅ᵢ(𝑣1, ..., 𝑣𝑘). Note how 𝑣 isn't included since the arity of the constructor is 𝑘 instead of 𝑘+1.
 
 -- | A conjunctive query to be run on the database
 data Query lang
     = Query ![Var] ![Atom lang]
     | SelectAllQuery {-# UNPACK #-} !Var
 
--- | Database made of trie maps for each relation. Each relation is uniquely
--- identified by the expressions modulo children expressions (hence @lang ()@)
-newtype Database l
-    = DB (M.Map (Operator l) IntTrie)
+-- | The relational representation of an e-graph, as described in section 3.1
+-- of \"Relational E-Matching\".
+--
+-- Every e-node with symbol 𝑓 in the e-graph corresponds to a tuple in the relation 𝑅𝑓 in the database.
+-- If 𝑓 has arity 𝑘, then 𝑅𝑓 will have arity 𝑘 + 1; its first attribute is the e-class id that contains the
+-- corresponding e-node , and the remaining attributes are the 𝑘 children of the 𝑓 e-node
+--
+-- For every existing symbol in the e-graph the 'Database' has a table.
+--
+-- In concrete, we map 'Operator's to 'IntTrie's -- each operator has one table
+-- represented by an 'IntTrie'
+newtype Database lang
+    = DB (M.Map (Operator lang) IntTrie)
 
--- | A triemap that keeps a cache of all keys in each level
+-- | An integer triemap that keeps a cache of all keys in at each level.
+--
+-- As described in the paper:
+-- Generic join requires two important performance bounds to be met in order for its own run time
+-- to meet the AGM bound. First, the intersection [...] must run in 𝑂 (min(|𝑅𝑗 .𝑥 |)) time. Second,
+-- the residual relations should be computed in constant time, i.e., computing from the relation 𝑅(𝑥, 𝑦)
+-- the relation 𝑅(𝑣𝑥 , 𝑦) for some 𝑣𝑥 ∈ 𝑅(𝑥, 𝑦).𝑥 must take constant time. Both of these can be solved by
+-- using tries (sometimes called prefix or suffix trees) as an indexing data structure.
 data IntTrie = MkIntTrie
   { tkeys :: !IS.IntSet
   , trie :: !(IM.IntMap IntTrie)
   }
 
--- instance Show (lang ()) => Show (Database lang) where
---     show (DB m) = unlines $ map (\(a,b) -> show a <> ": " <> show' 0 b) $ M.toList m where
---         show' :: Int -> Fix ClassIdMap -> String
---         show' s m = flip foldFix m $ \case
---             (IM.toList -> m') -> unlines $ map (\(k,w) -> show k <> " --> " <> w) m'
 
-
--- ROMES:TODO: Batching? How? https://arxiv.org/pdf/2108.02290.pdf
-
--- | Extract a list of unique variables from a 'Query', ordered by prioritizing
--- variables that occur in many relations, and secondly by prioritizing
--- variables that occur in small relations.
---
--- We use these heuristics because the variables' ordering is significant in
--- the query run-time performance.
---
--- This extraction could still be improved as some other strategies are
--- described in the paper (such as batching)
-orderedVarsInQuery :: (Functor lang, Foldable lang) => Query lang -> [Var]
-orderedVarsInQuery (SelectAllQuery x) = [x]
-orderedVarsInQuery (Query _ atoms) = IS.toList . IS.fromAscList $ sortBy (compare `on` varCost) $ mapMaybe toVar $ foldl' f mempty atoms
-    where
-        f :: Foldable lang => [ClassIdOrVar] -> Atom lang -> [ClassIdOrVar]
-        f s (Atom v (toList -> l)) = v:(l <> s)
-        {-# INLINE f #-}
-
-        -- First, prioritize variables that occur in many relations; second,
-        -- prioritize variables that occur in small relations
-        varCost :: Var -> Int
-        varCost v = foldl' (\acc a -> if v `elemOfAtom` a then acc - 100 + atomLength a else acc) 0 atoms
-        {-# INLINE varCost #-}
-{-# SCC orderedVarsInQuery #-} 
-
+-- TODO use this somehow?
 -- queryHeadVars :: Foldable lang => Query lang -> [Var]
 -- queryHeadVars (SelectAllQuery x) = [x]
 -- queryHeadVars (Query qv _) = qv
 -- {-# INLINE queryHeadVars #-}
 
--- | Take a query and produce a list of valid substitutions from query
--- variables to actual classids. Each list is a fully valid substitution on its
--- own
+-- | Run a conjunctive 'Query' on a 'Database'
+--
+-- Produce the list of valid substitutions from query variables to the
+-- query-matching class ids.
 genericJoin :: forall l. Language l => Database l -> Query l -> [Subst]
 -- ROMES:TODO a less ad-hoc/specialized implementation of generic join...
 -- ROMES:TODO query ordering is very important!
@@ -158,6 +151,47 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
 
 {-# INLINABLE genericJoin #-}
 {-# SCC genericJoin #-}
+
+
+-- ROMES:TODO: Batching? How? https://arxiv.org/pdf/2108.02290.pdf
+
+-- | Extract a list of unique variables from a 'Query', ordered by prioritizing
+-- variables that occur in many relations, and secondly by prioritizing
+-- variables that occur in small relations.
+--
+-- We use these heuristics because the variables' ordering is significant in
+-- the query run-time performance.
+--
+-- This extraction could still be improved as some other strategies are
+-- described in the paper (such as batching)
+orderedVarsInQuery :: (Functor lang, Foldable lang) => Query lang -> [Var]
+orderedVarsInQuery (SelectAllQuery x) = [x]
+orderedVarsInQuery (Query _ atoms) = IS.toList . IS.fromAscList $ sortBy (compare `on` varCost) $ mapMaybe toVar $ foldl' f mempty atoms
+    where
+
+        f :: Foldable lang => [ClassIdOrVar] -> Atom lang -> [ClassIdOrVar]
+        f s (Atom v (toList -> l)) = v:(l <> s)
+        {-# INLINE f #-}
+
+        -- First, prioritize variables that occur in many relations; second,
+        -- prioritize variables that occur in small relations
+        varCost :: Var -> Int
+        varCost v = foldl' (\acc a -> if v `elemOfAtom` a then acc - 100 + atomLength a else acc) 0 atoms
+        {-# INLINE varCost #-}
+
+        -- | Get the size of an atom
+        atomLength :: Foldable lang => Atom lang -> Int
+        atomLength (Atom _ l) = 1 + F.length l
+        {-# SCC atomLength #-}
+
+        -- | Extract 'Var' from 'ClassIdOrVar'
+        toVar :: ClassIdOrVar -> Maybe Var
+        toVar (CVar v) = Just v
+        toVar (CClassId _) = Nothing
+        {-# INLINE toVar #-}
+
+{-# SCC orderedVarsInQuery #-} 
+
 
 -- | Substitute all occurrences of 'Var' with given 'ClassId' in all given atoms.
 substitute :: Functor lang => Var -> ClassId -> [Atom lang] -> [Atom lang]
@@ -277,13 +311,13 @@ intersectInTrie !var !substs (MkIntTrie trieKeys m) = \case
             case intersectInTrie var (IM.insert x k substs) ls xs of
                 Nothing -> acc
                 Just rs -> rs <> acc) mempty m
+    where
 
+      -- | Returns True if given 'ClassIdOrVar' holds a 'Var' and is different from given 'Var'.
+      isVarDifferentFrom :: Var -> ClassIdOrVar -> Bool
+      isVarDifferentFrom _ (CClassId _) = False
+      isVarDifferentFrom x (CVar     y) = x /= y
+      {-# INLINE isVarDifferentFrom #-}
 
 {-# INLINABLE intersectInTrie #-}
 {-# SCC intersectInTrie #-}
-
--- | Returns True if given 'ClassIdOrVar' holds a 'Var' and is different from given 'Var'.
-isVarDifferentFrom :: Var -> ClassIdOrVar -> Bool
-isVarDifferentFrom _ (CClassId _) = False
-isVarDifferentFrom x (CVar     y) = x /= y
-{-# INLINE isVarDifferentFrom #-}

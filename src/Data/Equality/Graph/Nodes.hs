@@ -27,9 +27,7 @@ import qualified Data.Map.Strict as M
 
 import Data.Equality.Graph.Classes.Id
 
--- | E-node
---
--- An E-node is a function symbol paired with a list of children e-classes.
+-- | An E-node is a function symbol paired with a list of children e-classes.
 -- 
 -- We define an e-node to be the base functor of some recursive data type
 -- parametrized over ClassId, i.e. all recursive fields are rather e-class ids.
@@ -39,9 +37,7 @@ import Data.Equality.Graph.Classes.Id
 -- rather than an explicit expression
 newtype ENode l = Node { unNode :: l ClassId }
 
--- | Operator
---
--- An operator is solely the function symbol part of the e-node, that is,
+-- | An operator is solely the function symbol part of the e-node, that is,
 -- children e-classes are ignored.
 newtype Operator l = Operator { unOperator :: l () }
 

@@ -2,7 +2,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-|
-   All about equality-matching, implemented using a relational database
+   Equality-matching, implemented using a relational database
    (defined in 'Data.Equality.Matching.Database') according to the paper
    \"Relational E-Matching\" https://arxiv.org/abs/2108.02290.
  -}
@@ -10,9 +10,9 @@ module Data.Equality.Matching
     ( ematch
     , eGraphToDatabase
     , Match(..)
-    , vars, compileToQuery
+    , compileToQuery
+
     , module Data.Equality.Matching.Pattern
-    , Database, Subst, Var
     )
     where
 
@@ -31,8 +31,8 @@ import Data.Equality.Graph
 import Data.Equality.Matching.Database
 import Data.Equality.Matching.Pattern
 
--- | Matching a pattern on an e-graph returns substitutions for every variable
--- in the pattern and the e-class that matched the pattern
+-- | Matching a pattern on an e-graph returns the e-class in which the pattern
+-- was matched and an e-class substitution for every 'VariablePattern' in the pattern.
 data Match = Match
     { matchSubst :: !Subst
     , matchClassId :: {-# UNPACK #-} !ClassId
@@ -40,11 +40,13 @@ data Match = Match
 
 -- TODO: Perhaps e-graph could carry database and rebuild it on rebuild
 
--- | Match a pattern against an AST, returnin a list of equivalence classes
--- that match the pattern and the corresponding substitution
+-- | Match a pattern against a 'Database', which can be gotten from an 'EGraph' with 'eGraphToDatabase'
 --
--- ematch takes the built database because it can be shared accross matching.
--- One can convert an e-graph to a database with 'eGraphToDatabase'
+-- Returns a list of matches, one 'Match' for each set of valid substitutions
+-- for all variables and the equivalence class in which the pattern was matched.
+--
+-- 'ematch' takes a 'Database' instead of an 'EGraph' because the 'Database'
+-- could be constructed only once and shared accross matching.
 ematch :: Language l
        => Database l
        -> Pattern l
@@ -65,16 +67,7 @@ ematch db patr =
 
      in mapMaybe f (genericJoin db q)
 
--- | Convert an e-graph into a database in which we do the conjunctive queries
---
--- @
--- newtype Database lang = DB (Map (lang ()) (Fix ClassIdMap))
---
--- data EGraph s = EGraph
---     { ...
---     , memo      :: Map (ENode s) ClassId
---     }
--- @
+-- | Convert an e-graph into a database
 eGraphToDatabase :: Language l => EGraph l -> Database l
 eGraphToDatabase EGraph{..} = foldrWithKeyNM' addENodeToDB (DB mempty) memo
   where
@@ -99,16 +92,11 @@ eGraphToDatabase EGraph{..} = foldrWithKeyNM' addENodeToDB (DB mempty) memo
     {-# SCC populate #-}
 {-# SCC eGraphToDatabase #-}
 
+
 -- * Database related internals
 
 -- | Auxiliary result in 'compileToQuery' algorithm
 data AuxResult lang = {-# UNPACK #-} !Var :~ [Atom lang]
-
--- | Return distinct variables in a pattern
-vars :: Foldable lang => Pattern lang -> [Var]
-vars (VariablePattern x) = [x]
-vars (NonVariablePattern p) = nubInt $ join $ map vars $ toList p
-{-# SCC vars #-}
 
 -- | Compiles a 'Pattern' to a 'Query' and returns the query root variable with
 -- it.
@@ -141,4 +129,9 @@ compileToQuery pa@(NonVariablePattern _) =
                     -- taking from the bound vars array
                     subPatsToVars :: Traversable lang => lang (Pattern lang) -> [Var] -> State Int (lang Var)
                     subPatsToVars p' boundVars = traverse (const $ (boundVars !!) <$> (get >>= \i -> modify' (+1) >> return i)) p'
+
+        -- | Return distinct variables in a pattern
+        vars :: Foldable lang => Pattern lang -> [Var]
+        vars (VariablePattern x) = [x]
+        vars (NonVariablePattern p) = nubInt $ join $ map vars $ toList p
 {-# SCC compileToQuery #-}

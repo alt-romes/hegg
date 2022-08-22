@@ -8,6 +8,7 @@ module Data.Equality.Saturation.Rewrites where
 
 import Data.Equality.Graph
 import Data.Equality.Matching
+import Data.Equality.Matching.Database
 
 -- | A rewrite rule that might have conditions for being applied
 --

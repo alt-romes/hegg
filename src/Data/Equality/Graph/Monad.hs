@@ -10,10 +10,14 @@ module Data.Equality.Graph.Monad
   , rebuild
   , EG.canonicalize
   , EG.find
+  , EG.emptyEGraph
+
+  -- * E-graph stateful computations
   , EGraphM
   , runEGraphM
+
+  -- * E-graph definition re-export
   , EG.EGraph
-  , EG.emptyEGraph
 
   -- * 'State' monad re-exports
   , modify, get, gets
@@ -57,7 +61,7 @@ add = StateT . fmap pure . EG.add
 -- | Merge two e-classes by id
 --
 -- E-graph invariants may be broken by merging, and 'rebuild' should be used
--- __eventually__ to restore them
+-- /eventually/ to restore them
 merge :: Language l => ClassId -> ClassId -> EGraphM l ClassId
 merge a b = StateT (pure <$> EG.merge a b)
 {-# INLINE merge #-}
@@ -65,10 +69,10 @@ merge a b = StateT (pure <$> EG.merge a b)
 -- | Rebuild: Restore e-graph invariants
 --
 -- E-graph invariants are traditionally maintained after every merge, but we
--- allow operations to temporarilly break the invariants -- until we call
--- 'rebuild'
+-- allow operations to temporarilly break the invariants (specifically, until we call
+-- 'rebuild')
 --
--- The paper describing rebuilding: https://arxiv.org/abs/2004.03082
+-- The paper describing rebuilding in detail is https://arxiv.org/abs/2004.03082
 rebuild :: Language l => EGraphM l ()
 rebuild = StateT (pure . ((),). EG.rebuild)
 {-# INLINE rebuild #-}

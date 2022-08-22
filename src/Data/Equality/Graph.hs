@@ -13,7 +13,23 @@
    Based on \"egg: Fast and Extensible Equality Saturation\" https://arxiv.org/abs/2004.03082.
  -}
 module Data.Equality.Graph
-    ( module Data.Equality.Graph
+    (
+      -- * Definition of e-graph
+      EGraph(..)
+
+    , Memo, Worklist
+
+      -- * Functions on e-graphs
+    , emptyEGraph
+
+      -- ** Transformations
+    , add, merge, rebuild
+    -- , repair, repairAnal
+
+      -- ** Querying
+    , find, canonicalize
+
+      -- * Re-exports
     , module Data.Equality.Graph.Classes
     , module Data.Equality.Graph.Nodes
     , module Data.Equality.Language
@@ -35,16 +51,17 @@ import Data.Equality.Analysis
 import Data.Equality.Language
 import Data.Equality.Graph.Lens
 
--- | E-graph
+-- | E-graph representing terms of language @l@.
 --
--- @s@ for the e-node term
--- @nid@ type of e-node ids
+-- Intuitively, an e-graph is a set of equivalence classes (e-classes). Each e-class is a
+-- set of e-nodes representing equivalent terms from a given language, and an e-node is a function
+-- symbol paired with a list of children e-classes.
 data EGraph l = EGraph
     { unionFind :: !ReprUnionFind           -- ^ Union find like structure to find canonical representation of an e-class id
     , classes   :: !(ClassIdMap (EClass l)) -- ^ Map canonical e-class ids to their e-classes
     , memo      :: !(Memo l)                -- ^ Hashcons maps all canonical e-nodes to their e-class ids
-    , worklist  :: !(Worklist l)               -- ^ e-class ids that needs repair and the class it's in
-    , analysisWorklist :: !(Worklist l)        -- ^ like 'worklist' but for analysis repairing
+    , worklist  :: !(Worklist l)            -- ^ Worklist of e-class ids that need to be upward merged
+    , analysisWorklist :: !(Worklist l)     -- ^ Like 'worklist' but for analysis repairing
     }
 
 -- | The hashcons 𝐻  is a map from e-nodes to e-class ids
@@ -70,7 +87,8 @@ instance (Show (Domain l), Show1 l) => Show (EGraph l) where
 
 -- | Add an e-node to the e-graph
 --
--- E-node lookup depends on e-node correctly defining equality
+-- If the e-node is already represented in this e-graph, the class-id of the
+-- class it's already represented in will be returned.
 add :: forall l. Language l => ENode l -> EGraph l -> (ClassId, EGraph l)
 add uncanon_e egr =
     let !new_en = {-# SCC "-2" #-} canonicalize uncanon_e egr
@@ -268,14 +286,14 @@ repairAnal node repair_id egr =
        else egr
 {-# SCC repairAnal #-}
 
--- | Canonicalize an E-Node
+-- | Canonicalize an e-node
 --
 -- Two e-nodes are equal when their canonical form is equal. Canonicalization
 -- makes the list of e-class ids the e-node holds a list of canonical ids.
 -- Meaning two seemingly different e-nodes might be equal when we figure out
 -- that their e-class ids are represented by the same e-class canonical ids
 --
--- canonicalize(f(a,b,c,...)) = f((find a), (find b), (find c),...)
+-- canonicalize(𝑓(𝑎,𝑏,𝑐,...)) = 𝑓((find 𝑎), (find 𝑏), (find 𝑐),...)
 canonicalize :: Functor l => ENode l -> EGraph l -> ENode l
 canonicalize (Node enode) eg = Node $ fmap (`find` eg) enode
 {-# SCC canonicalize #-}

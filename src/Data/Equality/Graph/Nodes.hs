@@ -7,10 +7,8 @@
 {-# LANGUAGE DeriveTraversable #-}
 {-|
 
-Definition of e-nodes, instances and some operations on them.
-
-Additionally, defines the 'Operator' of an e-node as the language functor
-parametrised over @()@.
+Module defining e-nodes ('ENode'), the e-node function symbol ('Operator'), and
+mappings from e-nodes ('NodeMap').
 
 -}
 module Data.Equality.Graph.Nodes where
@@ -27,24 +25,25 @@ import qualified Data.Map.Strict as M
 
 import Data.Equality.Graph.Classes.Id
 
--- | An E-node is a function symbol paired with a list of children e-classes.
+
+-- * E-node
+
+-- | An e-node is a function symbol paired with a list of children e-classes.
 -- 
 -- We define an e-node to be the base functor of some recursive data type
--- parametrized over ClassId, i.e. all recursive fields are rather e-class ids.
---
--- When @l@ is an expression-like data type, @ENode l = l ClassId@ means every
--- recursive field (so, every argument passed to this expr) is a 'ClassId'
--- rather than an explicit expression
+-- parametrized over 'ClassId', i.e. all recursive fields are rather e-class ids.
 newtype ENode l = Node { unNode :: l ClassId }
 
--- | An operator is solely the function symbol part of the e-node, that is,
--- children e-classes are ignored.
-newtype Operator l = Operator { unOperator :: l () }
-
--- | Get the children class ids of an e-node
+-- | Get the children e-class ids of an e-node
 children :: Traversable l => ENode l -> [ClassId]
 children = toList . unNode
 {-# SCC children #-}
+
+-- * Operator
+
+-- | An operator is solely the function symbol part of the e-node. Basically,
+-- this means children e-classes are ignored.
+newtype Operator l = Operator { unOperator :: l () }
 
 -- | Get the operator (function symbol) of an e-node
 operator :: Traversable l => ENode l -> Operator l
@@ -77,6 +76,8 @@ instance Show1 l => (Show (Operator l)) where
 
 -- | A mapping from e-nodes of @l@ to @a@
 data NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: !(M.Map (ENode l) a), sizeNodeMap :: {-# UNPACK #-} !Int }
+-- TODO: Investigate whether it would be worth it requiring a trie-map for the
+-- e-node definition. Probably it isn't better since e-nodes aren't recursive.
   deriving (Show, Functor, Foldable, Traversable)
 
 instance (Eq1 l, Ord1 l) => Semigroup (NodeMap l a) where
@@ -127,7 +128,7 @@ traverseWithKeyNM :: Applicative t => (ENode l -> a -> t b) -> NodeMap l a -> t 
 traverseWithKeyNM f (NodeMap m s) = (`NodeMap` s) <$> M.traverseWithKey f m
 {-# INLINE traverseWithKeyNM #-}
 
--- * Node Set
+-- Node Set
 
 -- newtype NodeSet l a = NodeSet { unNodeSet :: IM.IntMap (a, ENode l) }
 --   deriving (Semigroup, Monoid)

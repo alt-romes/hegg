@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -15,7 +16,10 @@ import qualified Data.Set    as S
 import Data.String
 import Data.Maybe (isJust)
 
-import Data.Functor.Classes
+import Data.Eq.Deriving
+import Data.Ord.Deriving
+import Text.Show.Deriving
+
 import Control.Applicative (liftA2)
 import Control.Monad (unless)
 
@@ -35,41 +39,6 @@ data Expr a = Sym   !String
             deriving ( Eq, Ord, Functor
                      , Foldable, Traversable
                      )
-
-instance Eq1 Expr where
-    liftEq eq a b = case (a, b) of
-        (Sym x, Sym y) -> x == y
-        (Const x, Const y) -> x == y
-        (UnOp op x, UnOp op' y) -> op == op' && x `eq` y
-        (BinOp op x y, BinOp op' x' y') -> op == op' && x `eq` x' && y `eq` y'
-        _ -> False
-    {-# INLINE liftEq #-}
-
-instance Ord1 Expr where
-    liftCompare cmp a b = case (a, b) of
-        (Sym x, Sym y) -> compare x y
-        (Const x, Const y) -> compare x y
-        (UnOp op x, UnOp op' y) -> case compare op op' of
-                                     EQ -> cmp x y
-                                     o  -> o
-        (BinOp op x y, BinOp op' x' y') -> case compare op op' of
-                                             EQ -> case cmp x x' of
-                                                     EQ -> cmp y y'
-                                                     o  -> o
-                                             o  -> o
-        (x, y) -> compare (expIx x) (expIx y)
-      where
-        expIx :: Expr a -> Int
-        expIx = \case
-            Sym _ -> 1
-            Const _ -> 2
-            UnOp _ _ -> 3
-            BinOp {} -> 4
-        {-# INLINE expIx #-}
-    {-# INLINE liftCompare #-}
-
-instance Language Expr
-
 data BOp = Add
          | Sub
          | Mul
@@ -77,70 +46,35 @@ data BOp = Add
          | Pow
          | Diff
          | Integral
-        deriving (Eq, Ord)
+        deriving (Eq, Ord, Show)
 
 data UOp = Sin
          | Cos
          | Sqrt
          | Ln
-    deriving (Eq, Ord)
+         deriving (Eq, Ord, Show)
 
-instance Show BOp where
-    show = \case
-        Add -> "+"
-        Sub -> "-"
-        Mul -> "*"
-        Div -> "/"
-        Pow -> "^"
-        Diff -> "d/d_"
-        Integral -> "∫"
+deriveEq1 ''Expr
+deriveOrd1 ''Expr
+deriveShow1 ''Expr
 
-instance Show UOp where
-    show = \case
-        Sin -> "sin"
-        Cos -> "cos"
-        Sqrt -> "√"
-        Ln -> "ln"
-
-instance {-# OVERLAPPING #-} Show (Fix Expr) where
-    show = cata $ \case
-        BinOp Diff a b -> show Diff <> a <> " " <> b
-        BinOp Integral a b -> show Integral <> a <> " " <> b
-        BinOp op a b -> "(" <> a <> " " <> show op <> " " <> b <> ")"
-        UnOp op a -> "( " <> show op <> "(" <> a <> ")" <> " )"
-        Const x -> show x
-        Sym x -> x
+instance Language Expr
 
 instance IsString (Fix Expr) where
     fromString = Fix . Sym
 
--- WARNING: Careful with negate implementation!!
--- The default implementation makes -1 = 0 - 1
--- Together with some rules this can be disastrous (infinitely)
 instance Num (Fix Expr) where
     (+) a b = Fix (BinOp Add a b)
     (-) a b = Fix (BinOp Sub a b)
     (*) a b = Fix (BinOp Mul a b)
     fromInteger = Fix . Const . fromInteger
-    negate = error "DONT USE" -- Fix . BinOp Mul (fromInteger $ -1)
-    abs = error "abs"
+    negate = error "DONT USE"
+    abs    = error "abs"
     signum = error "signum"
 
 instance Fractional (Fix Expr) where
     (/) a b = Fix (BinOp Div a b)
     fromRational = Fix . Const . fromRational
-
-instance Show1 Expr where
-    -- ROMES:TODO: Don't ignore precedence?
-    liftShowsPrec sp _ d = \case
-        BinOp Diff e1 e2 -> showString (show Diff) . sp d e1 . showString " " . sp d e2
-        BinOp Integral e1 e2 -> showString (show Integral) . sp d e1 . showString " " . sp d e2
-        BinOp op e1 e2 ->
-            showString "(" . sp d e1 . showString (show op) . sp d e2 . showString ")"
-
-        UnOp op e1 -> showString (show op) . sp d e1
-        Const f -> showString (show f)
-        Sym x -> showString x
 
 symCost :: Expr Cost -> Cost
 symCost = \case
@@ -170,25 +104,6 @@ instance Num (Pattern Expr) where
 instance Fractional (Pattern Expr) where
     (/) a b = NonVariablePattern $ BinOp Div a b
     fromRational = NonVariablePattern . Const . fromRational
-
-powP :: Pattern Expr -> Pattern Expr -> Pattern Expr
-powP a b = NonVariablePattern (BinOp Pow a b)
-
-diffP :: Pattern Expr -> Pattern Expr -> Pattern Expr
-diffP a b = NonVariablePattern (BinOp Diff a b)
-
-intP :: Pattern Expr -> Pattern Expr -> Pattern Expr
-intP a b = NonVariablePattern (BinOp Integral a b)
-
-cosP :: Pattern Expr -> Pattern Expr
-cosP a = NonVariablePattern (UnOp Cos a)
-
-sinP :: Pattern Expr -> Pattern Expr
-sinP a = NonVariablePattern (UnOp Sin a)
-
-lnP :: Pattern Expr -> Pattern Expr
-lnP a = NonVariablePattern (UnOp Ln a)
-
 
 -- | Define analysis for the @Expr@ language over domain @Maybe Double@ for
 -- constant folding
@@ -328,7 +243,7 @@ rewrites =
 
     , intP ("f" + "g") "x" := intP "f" "x" + intP "g" "x"
 
-    -- , intP ("f" - "g") "x" := intP "f" "x" - intP "g" "x"
+    , intP ("f" - "g") "x" := intP "f" "x" - intP "g" "x"
 
     , intP ("a" * "b") "x" := (-) ((*) "a" (intP "b" "x")) (intP ((*) (diffP "x" "a") (intP "b" "x")) "x")
 
@@ -436,3 +351,21 @@ _ln, _cos, _sin :: Fix Expr -> Fix Expr
 _ln a = Fix (UnOp Ln a)
 _cos a = Fix (UnOp Cos a)
 _sin a = Fix (UnOp Sin a)
+
+powP :: Pattern Expr -> Pattern Expr -> Pattern Expr
+powP a b = NonVariablePattern (BinOp Pow a b)
+
+diffP :: Pattern Expr -> Pattern Expr -> Pattern Expr
+diffP a b = NonVariablePattern (BinOp Diff a b)
+
+intP :: Pattern Expr -> Pattern Expr -> Pattern Expr
+intP a b = NonVariablePattern (BinOp Integral a b)
+
+cosP :: Pattern Expr -> Pattern Expr
+cosP a = NonVariablePattern (UnOp Cos a)
+
+sinP :: Pattern Expr -> Pattern Expr
+sinP a = NonVariablePattern (UnOp Sin a)
+
+lnP :: Pattern Expr -> Pattern Expr
+lnP a = NonVariablePattern (UnOp Ln a)

@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-|
 
-Defines 'Language', which is the required constraint for most e-graph and
-equality saturation operations.
+Defines 'Language', which is the required constraint on /expressions/ that are
+to be represented in e-graph and on which equality saturation can be run.
 
 === Example
 @
@@ -32,8 +32,8 @@ import Data.Functor.Classes
 
 import Data.Equality.Analysis
 
--- | A 'Language' is the type of things that are to be represented in an
--- e-graph.
+-- | A 'Language' is the required constraint on /expressions/ that are to be
+-- represented in an e-graph.
 --
 -- Recursive data types must be expressed in its functor form to instance
 -- 'Language'. Additionally, for a datatype to be a 'Language' (used in

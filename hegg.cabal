@@ -6,7 +6,6 @@ synopsis: Fast equality saturation in Haskell
 
 description:        Fast equality saturation and equality graphs based on `egg:
                     Fast and Extensible Equality Saturation` and `Relational E-matching`
-homepage:           https://github.com/alt-romes/hegg 
 
 bug-reports:        https://github.com/alt-romes/hegg/issues
 license:            BSD-3-Clause
@@ -80,7 +79,7 @@ test-suite hegg-test
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          Test.hs
-    other-modules:    Invariants, Sym, Lambda
+    other-modules:    Invariants, Sym, Lambda, SimpleSym
     other-extensions: OverloadedStrings
     build-depends:    base,
                       hegg,

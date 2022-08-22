@@ -5,12 +5,14 @@ import Test.Tasty
 import Invariants
 import Sym
 import Lambda
+import SimpleSym
 
 tests :: TestTree
 tests = testGroup "Tests"
   [ symTests
   , lambdaTests
   , invariants
+  , simpleSymTests
   ]
 
 main :: IO ()

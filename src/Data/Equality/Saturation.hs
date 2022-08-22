@@ -8,28 +8,37 @@
 {-|
   Given an input program 𝑝, equality saturation constructs an e-graph 𝐸 that
   represents a large set of programs equivalent to 𝑝, and then extracts the
-  “best” program from 𝐸. The e-graph is grown by repeatedly applying
-  pattern-based rewrites.  Critically, these rewrites only add information to
-  the e-graph, eliminating the need for careful ordering. Upon reaching a
-  fixed point (saturation), 𝐸 will represent all equivalent ways to express 𝑝
-  with respect to the given rewrites. After saturation (or timeout), a final
-  extraction procedure analyzes 𝐸 and selects the optimal program according
-  to a user-provided cost function.
+  “best” program from 𝐸.
+
+  The e-graph is grown by repeatedly applying pattern-based rewrites.
+  Critically, these rewrites only add information to the e-graph, eliminating
+  the need for careful ordering.
+
+  Upon reaching a fixed point (saturation), 𝐸 will represent all equivalent
+  ways to express 𝑝 with respect to the given rewrites.
+
+  After saturation (or timeout), a final extraction procedure analyzes 𝐸 and
+  selects the optimal program according to a user-provided cost function.
  -}
 module Data.Equality.Saturation
     (
       -- * Equality saturation
       equalitySaturation, equalitySaturation'
 
+      -- * Re-exports for equality saturation
+
       -- ** Writing rewrite rules
     , Rewrite(..), RewriteCondition
 
-      -- ** Cost
+      -- ** Writing cost functions
       --
-      -- | Cost functions re-exported from 'Data.Equality.Extraction' since they are required to do equality saturation
-    , CostFunction--, Cost, depthCost
+      -- | 'CostFunction' re-exported from 'Data.Equality.Extraction' since they are required to do equality saturation
+    , CostFunction --, Cost, depthCost
 
-      -- ** Fix
+      -- ** Writing expressions
+      -- 
+      -- | Expressions must be written in their fixed-point form, since the
+      -- 'Language' must be given in its base functor form
     , Fix(..), cata
 
     ) where

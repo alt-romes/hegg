@@ -11,8 +11,8 @@ tests :: TestTree
 tests = testGroup "Tests"
   [ symTests
   , lambdaTests
-  , invariants
   , simpleSymTests
+  , invariants
   ]
 
 main :: IO ()

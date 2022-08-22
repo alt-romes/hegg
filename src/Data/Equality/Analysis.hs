@@ -4,13 +4,18 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-|
 
-E-class analysis, which allows the concise expression of a program analysis
-over the e-graph. An e-class analysis resembles abstract interpretation lifted
-to the e-graph level, attaching analysis data from a semilattice to each
-e-class . The e-graph maintains and propagates this data as e-classes get
-merged and new e-nodes are added. Analysis data can be used directly to modify
-the e-graph , to inform how or if rewrites apply their right-hand sides, or to
-determine the cost of terms during the extraction process.
+E-class analysis, which allows the concise expression of a program analysis over
+the e-graph.
+
+An e-class analysis resembles abstract interpretation lifted to the e-graph
+level, attaching analysis data from a semilattice to each e-class.
+
+The e-graph maintains and propagates this data as e-classes get merged and new
+e-nodes are added.
+
+Analysis data can be used directly to modify the e-graph, to inform how or if
+rewrites apply their right-hand sides, or to determine the cost of terms during
+the extraction process.
 
 References: https://arxiv.org/pdf/2004.03082.pdf
 

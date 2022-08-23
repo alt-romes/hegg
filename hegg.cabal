@@ -90,8 +90,8 @@ library
     default-language: Haskell2010
 
 test-suite hegg-test
-    ghc-options:      -Wall
-                      -finfo-table-map -fdistinct-constructor-tables
+    ghc-options:      -threaded -Wall
+                      -- -finfo-table-map -fdistinct-constructor-tables
                       -- -threaded
     default-language: Haskell2010
     type:             exitcode-stdio-1.0

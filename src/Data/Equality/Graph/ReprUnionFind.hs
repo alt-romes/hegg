@@ -81,10 +81,10 @@ makeNewSet (RUF im si) = (si, RUF (IIM.insert si 0 im) (si + 1))
 --
 -- Given two leader ids, unions the two eclasses making @a@ the leader, that
 -- is, @b@ is now represented by @a@
-unionSets :: ClassId -- ^ @a@
-          -> ClassId -- ^ @b@
-          -> ReprUnionFind -- ^ Union-find containing @a@ and @b@
-          -> (ClassId, ReprUnionFind) -- ^ The new leader and the updated union-find
+unionSets :: ClassId                  -- ^ E-class id @a@
+          -> ClassId                  -- ^ E-class id @b@
+          -> ReprUnionFind            -- ^ Union-find containing @a@ and @b@
+          -> (ClassId, ReprUnionFind) -- ^ The new leader (always @a@) and the updated union-find
 #if __GLASGOW_HASKELL__ >= 902
 unionSets a@(I# a#) (I# b#) (RUF im si) = (a, RUF (IIM.insert b# a# im) si)
 #else

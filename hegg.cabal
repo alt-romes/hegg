@@ -82,8 +82,9 @@ library
     -- other-modules:
 
     -- LANGUAGE extensions used by modules in this package.
-    build-depends:    base >= 4.4 && < 5,
-                      transformers, containers
+    build-depends:    base         >= 4.4 && < 5,
+                      transformers >= 0.4 && < 0.7,
+                      containers   >= 0.4 && < 0.7
     if flag(vizdot)
         build-depends: graphviz
     hs-source-dirs:   src

@@ -2,18 +2,35 @@ cabal-version:      2.4
 name:               hegg
 version:            0.1.0.0
 Tested-With:        GHC ==9.4.1 || ==9.2.2 || ==9.0.2 || ==8.10.7
-synopsis: Fast equality saturation in Haskell
+synopsis:           Fast equality saturation in Haskell
 
-description:        Fast equality saturation and equality graphs based on `egg:
-                    Fast and Extensible Equality Saturation` and `Relational E-matching`
+description:        Fast equality saturation and equality graphs based on "egg:
+                    Fast and Extensible Equality Saturation" and "Relational E-matching".
+                    .
+                    This package provides e-graphs (see 'Data.Equality.Graph'),
+                    a data structure which efficiently represents a congruence
+                    relation over many expressions
+                    .
+                    Secondly, it provides functions for doing equality
+                    saturation (see 'Data.Equality.Saturation'), an
+                    optimization/term-rewriting technique that applies rewrite
+                    rules non-destructively to an expression represented in an
+                    e-graph until saturation, and then extracts the best
+                    representation.
+                    .
+                    Equality matching (see 'Data.Equality.Matching') is done as
+                    described in "Relational E-Matching"
+                    .
+                    For a walkthrough of writing a simple symbolic
+                    simplification program see the [hegg symbolic
+                    tutorial](https://github.com/alt-romes/hegg#equality-saturation-in-haskell).
 
+homepage:           https://github.com/alt-romes/hegg
 bug-reports:        https://github.com/alt-romes/hegg/issues
 license:            BSD-3-Clause
 author:             romes
 maintainer:         rodrigo.m.mesquita@gmail.com
-
--- A copyright notice.
--- copyright:
+copyright:          
 category:           Data
 extra-source-files: CHANGELOG.md
 
@@ -54,8 +71,9 @@ library
                       Data.Equality.Analysis,
                       Data.Equality.Saturation.Scheduler,
                       Data.Equality.Saturation.Rewrites,
-                      Data.Equality.Utils,
-                      Data.Equality.Utils.IntToIntMap
+                      Data.Equality.Utils
+    if impl(ghc >= 9.2)
+        exposed-modules: Data.Equality.Utils.IntToIntMap
 
     if flag(vizdot)
         exposed-modules: Data.Equality.Graph.Dot

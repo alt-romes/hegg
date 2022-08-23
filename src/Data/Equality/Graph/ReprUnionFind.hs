@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE BangPatterns #-}
 {-|
@@ -15,21 +16,36 @@ module Data.Equality.Graph.ReprUnionFind
   ) where
 
 import Data.Equality.Graph.Classes.Id
-import qualified Data.Equality.Utils.IntToIntMap as IIM
 
+#if __GLASGOW_HASKELL__ >= 902
+
+import qualified Data.Equality.Utils.IntToIntMap as IIM
 import GHC.Exts ((+#), Int(..), Int#)
+
+type RUFSize = Int#
 
 -- | A union find for equivalence classes of e-class ids.
 data ReprUnionFind = RUF IIM.IntToIntMap -- ^ Map every id to either 0# (meaning its the representative) or to another int# (meaning its represented by some other id)
-                         RUFSize -- ^ Counter for new ids
+                         RUFSize         -- ^ Counter for new ids
+
                          -- !(IM.IntMap [ClassId]) -- ^ Mapping from an id to all its children: This is used for "rebuilding" (compress all paths) when merging. Its a hashcons?
                          -- [ClassId] -- ^ Ids that can be safely deleted after the e-graph is rebuilt
--- Particularly, there's no value associated with identifier, so this union find serves only to find the representative of an e-class id
+#else
+
+import qualified Data.IntMap.Internal as IIM (IntMap(..))
+import qualified Data.IntMap.Strict as IIM
+
+-- | A union find for equivalence classes of e-class ids.
+data ReprUnionFind = RUF (IIM.IntMap Int)    -- ^ Map every id to either 0# (meaning its the representative) or to another int# (meaning its represented by some other id)
+                         {-# UNPACK #-} !Int -- ^ Counter for new ids
+
+#endif
+
+-- Note that there's no value associated with identifier, so this union find
+-- serves only to find the representative of an e-class id
 
 instance Show ReprUnionFind where
-  show (RUF _ s) = "Warning: Incomplete! ReprUnionFind with size " <> show (I# s)
-
-type RUFSize = Int#
+  show (RUF _ _) = "Warning: Incomplete show: ReprUnionFind"
 
 -- | An @id@ can be represented by another @id@ or be canonical, meaning it
 -- represents itself.
@@ -45,14 +61,20 @@ newtype Repr
 emptyUF :: ReprUnionFind
 -- TODO: If I can make an instance of 'ReprUnionFind' for Monoid(?), this is 'mempty'
 emptyUF = RUF IIM.Nil
+#if __GLASGOW_HASKELL__ >= 902
               1# -- Must start with 1# since 0# means "Canonical"
-              -- mempty
-              -- mempty
+#else
+              1
+#endif
 
 -- | Create a new e-class id in the given 'ReprUnionFind'.
 makeNewSet :: ReprUnionFind
            -> (ClassId, ReprUnionFind) -- ^ Newly created e-class id and updated 'ReprUnionFind'
+#if __GLASGOW_HASKELL__ >= 902
 makeNewSet (RUF im si) = ((I# si), RUF (IIM.insert si 0# im) ((si +# 1#)))
+#else
+makeNewSet (RUF im si) = (si, RUF (IIM.insert si 0 im) (si + 1))
+#endif
 {-# SCC makeNewSet #-}
 
 -- | Union operation of the union find.
@@ -63,7 +85,11 @@ unionSets :: ClassId -- ^ @a@
           -> ClassId -- ^ @b@
           -> ReprUnionFind -- ^ Union-find containing @a@ and @b@
           -> (ClassId, ReprUnionFind) -- ^ The new leader and the updated union-find
+#if __GLASGOW_HASKELL__ >= 902
 unionSets a@(I# a#) (I# b#) (RUF im si) = (a, RUF (IIM.insert b# a# im) si)
+#else
+unionSets a b (RUF im si) = (a, RUF (IIM.insert b a im) si)
+#endif
   -- where
     -- represented_by_b = hc IM.! b
     -- -- Overwrite previous id of b (which should be 0#) with new representative (a)
@@ -75,10 +101,18 @@ unionSets a@(I# a#) (I# b#) (RUF im si) = (a, RUF (IIM.insert b# a# im) si)
 -- | Find the canonical representation of an e-class id
 findRepr :: ClassId -> ReprUnionFind
          -> ClassId -- ^ The found canonical representation
+#if __GLASGOW_HASKELL__ >= 902
 findRepr v@(I# v#) (RUF m s) =
   case {-# SCC "findRepr_TAKE" #-} m IIM.! v# of
     0# -> v
     x  -> findRepr (I# x) (RUF m s)
+#else
+findRepr v (RUF m s) =
+  case {-# SCC "findRepr_TAKE" #-} m IIM.! v of
+    0 -> v
+    x -> findRepr x (RUF m s)
+#endif
+
 -- ROMES:TODO: Path compression in immutable data structure? Is it worth
 -- the copy + threading?
 --

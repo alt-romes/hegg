@@ -127,7 +127,7 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
 
      [] -> map mempty atoms
 
-     !x:xs -> 
+     (!x):xs -> 
        -- IS.foldl' (\acc x_in_D -> genericJoin' (substitute x x_in_D atoms') (map (IM.insert x x_in_D) substs) xs <> acc)
        --           mempty
        --           (domainX x atoms')

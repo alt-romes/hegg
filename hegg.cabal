@@ -86,7 +86,7 @@ library
                       transformers >= 0.4 && < 0.7,
                       containers   >= 0.4 && < 0.7
     if flag(vizdot)
-        build-depends: graphviz
+        build-depends: graphviz >= 2999.6 && < 2999.7
     hs-source-dirs:   src
     default-language: Haskell2010
 
@@ -100,13 +100,13 @@ test-suite hegg-test
     main-is:          Test.hs
     other-modules:    Invariants, Sym, Lambda, SimpleSym
     other-extensions: OverloadedStrings
-    build-depends:    base,
-                      hegg,
-                      containers,
-                      tasty,
-                      tasty-quickcheck,
-                      tasty-hunit,
-                      deriving-compat
+    build-depends:    base >= 4.4 && < 5,
+                      hegg >= 0.1 && < 0.2,
+                      containers >= 0.4 && < 0.7,
+                      deriving-compat  >= 0.6 && < 0.7,
+                      tasty            >= 1.4 && < 1.5,
+                      tasty-hunit      >= 0.10 && < 0.11,
+                      tasty-quickcheck >= 0.10 && < 0.11
 
 Flag vizdot
     Description: Compile 'Data.Equality.Graph.Dot' module to visualize e-graphs

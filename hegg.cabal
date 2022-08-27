@@ -1,24 +1,24 @@
 cabal-version:      2.4
 name:               hegg
-version:            0.1.0.0
+version:            0.2.0.0
 Tested-With:        GHC ==9.4.1 || ==9.2.2 || ==9.0.2 || ==8.10.7
 synopsis:           Fast equality saturation in Haskell
 
 description:        Fast equality saturation and equality graphs based on "egg:
                     Fast and Extensible Equality Saturation" and "Relational E-matching".
                     .
-                    This package provides e-graphs (see 'Data.Equality.Graph'),
+                    This package provides e-graphs (see "Data.Equality.Graph"),
                     a data structure which efficiently represents a congruence
                     relation over many expressions
                     .
                     Secondly, it provides functions for doing equality
-                    saturation (see 'Data.Equality.Saturation'), an
+                    saturation (see "Data.Equality.Saturation"), an
                     optimization/term-rewriting technique that applies rewrite
                     rules non-destructively to an expression represented in an
                     e-graph until saturation, and then extracts the best
                     representation.
                     .
-                    Equality matching (see 'Data.Equality.Matching') is done as
+                    Equality matching (see "Data.Equality.Matching") is done as
                     described in "Relational E-Matching"
                     .
                     For a walkthrough of writing a simple symbolic
@@ -35,6 +35,7 @@ maintainer:         Rodrigo Mesquita <rodrigo.m.mesquita@gmail.com>
 copyright:          Copyright (C) 2022 Rodrigo Mesquita
 category:           Data
 extra-source-files: CHANGELOG.md
+                    README.md
 
 source-repository head
     type: git
@@ -103,7 +104,7 @@ test-suite hegg-test
     other-modules:    Invariants, Sym, Lambda, SimpleSym
     other-extensions: OverloadedStrings
     build-depends:    base >= 4.4 && < 5,
-                      hegg >= 0.1 && < 0.2,
+                      hegg,
                       containers >= 0.4 && < 0.7,
                       deriving-compat  >= 0.6 && < 0.7,
                       tasty            >= 1.4 && < 1.5,

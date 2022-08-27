@@ -22,13 +22,15 @@ References: https://arxiv.org/pdf/2004.03082.pdf
 -}
 module Data.Equality.Analysis where
 
+import Data.Kind (Type)
+
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 
 import {-# SOURCE #-} Data.Equality.Graph (EGraph)
 
 -- | The e-class analysis defined for a language @l@.
-class Eq (Domain l) => Analysis l where
+class Eq (Domain l) => Analysis (l :: Type -> Type) where
 
     -- | Domain of data stored in e-class according to e-class analysis
     type Domain l

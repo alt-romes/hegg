@@ -1,8 +1,10 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE Rank2Types #-}
 {-|
-  Hand-rolled lenses on e-graphs and e-classes which come in quite handy and
-  are heavily used in 'Data.Equality.Graph'.
+  Hand-rolled lenses on e-graphs and e-classes which come in quite handy, are
+  heavily used in 'Data.Equality.Graph', and are the only exported way of
+  editing the structure of the e-graph. If you want to write some complex
+  'Analysis' you'll probably need these.
  -}
 module Data.Equality.Graph.Lens where
 
@@ -12,11 +14,12 @@ import qualified Data.Set as S
 import Data.Functor.Identity
 import Data.Functor.Const
 
+import Data.Equality.Graph.Internal
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 import Data.Equality.Graph.Classes
+import Data.Equality.Graph.ReprUnionFind
 import Data.Equality.Analysis
-import {-# SOURCE #-} Data.Equality.Graph (EGraph(..), Memo, find)
 
 -- | A 'Lens'' as defined in other lenses libraries
 type Lens' s a = forall f. Functor f => (a -> f a) -> (s -> f s)
@@ -37,12 +40,13 @@ type Lens' s a = forall f. Functor f => (a -> f a) -> (s -> f s)
 -- Calls 'error' when the e-class doesn't exist
 _class :: ClassId -> Lens' (EGraph l) (EClass l)
 _class i afa s =
-    let canon_id = find i s
+    let canon_id = findRepr i (unionFind s)
      in (\c' -> s { classes = IM.insert canon_id c' (classes s) }) <$> afa (classes s IM.! canon_id)
 {-# INLINE _class #-}
 
--- | Lens for the 'Memo' of e-nodes in an e-graph
-_memo :: Lens' (EGraph l) (Memo l)
+-- | Lens for the memo of e-nodes in an e-graph, that is, a mapping from
+-- e-nodes to the e-class they're represented in
+_memo :: Lens' (EGraph l) (NodeMap l ClassId)
 _memo afa egr = (\m1 -> egr {memo = m1}) <$> afa (memo egr)
 {-# INLINE _memo #-}
 

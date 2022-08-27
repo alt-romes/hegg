@@ -59,6 +59,7 @@ library
                       -- -dsuppress-var-kinds
 
     exposed-modules:  Data.Equality.Graph,
+                      Data.Equality.Graph.Internal,
                       Data.Equality.Graph.ReprUnionFind,
                       Data.Equality.Graph.Classes,
                       Data.Equality.Graph.Classes.Id,

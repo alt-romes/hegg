@@ -27,7 +27,7 @@ import Data.Kind (Type)
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 
-import {-# SOURCE #-} Data.Equality.Graph (EGraph)
+import {-# SOURCE #-} Data.Equality.Graph.Internal (EGraph)
 
 -- | The e-class analysis defined for a language @l@.
 class Eq (Domain l) => Analysis (l :: Type -> Type) where

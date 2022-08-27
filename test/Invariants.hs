@@ -25,6 +25,7 @@ import qualified Data.Set    as S
 import qualified Data.IntMap.Strict as IM
 
 import Data.Equality.Graph.Monad as GM
+import Data.Equality.Graph.Lens
 import Data.Equality.Graph
 import Data.Equality.Analysis
 import Data.Equality.Extraction
@@ -52,7 +53,7 @@ instance Analysis SimpleExpr where
 patFoldAllClasses :: forall l. (Language l, Num (Pattern l))
                   => Fix l -> Integer -> Bool
 patFoldAllClasses expr i =
-    case IM.toList $ classes eg of
+    case IM.toList $ (eg^._classes) of
         [_] -> True
         _   -> False
     where
@@ -97,7 +98,7 @@ ematchSingletonVar v eg =
     let
         db = eGraphToDatabase eg
         matches = S.fromList $ map matchClassId $ ematch db (VariablePattern v)
-        eclasses = S.fromList $ map fst $ IM.toList $ classes eg
+        eclasses = S.fromList $ map fst $ IM.toList (eg^._classes)
     in
         matches == eclasses 
 
@@ -122,13 +123,13 @@ ematchSingletonVar v eg =
 -- ROMES:TODO Should I rebuild it here? Then the property test is that after rebuilding ...HashConsInvariant
 hashConsInvariant :: forall l. Language l
                   => EGraph l -> Bool
-hashConsInvariant eg@EGraph{..} =
-    all f (IM.toList classes)
+hashConsInvariant eg =
+    all f (IM.toList (eg^._classes))
     where
       -- e-node 𝑛 ∈ 𝑀 [𝑎] ⇐⇒ 𝐻 [canonicalize(𝑛)] = find(𝑎)
       f (i, EClass _ nodes _ _) = all g nodes
         where
-          g en = case lookupNM (canonicalize en eg) memo of
+          g en = case lookupNM (canonicalize en eg) (eg^._memo) of
             Nothing -> error "how can we not find canonical thing in map? :)" -- False
             Just i' -> i' == find i eg 
 

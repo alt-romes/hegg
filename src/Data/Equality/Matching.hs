@@ -28,6 +28,7 @@ import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
 
 import Data.Equality.Graph
+import Data.Equality.Graph.Lens
 import Data.Equality.Matching.Database
 import Data.Equality.Matching.Pattern
 
@@ -69,7 +70,7 @@ ematch db patr =
 
 -- | Convert an e-graph into a database
 eGraphToDatabase :: Language l => EGraph l -> Database l
-eGraphToDatabase EGraph{..} = foldrWithKeyNM' addENodeToDB (DB mempty) memo
+eGraphToDatabase egr = foldrWithKeyNM' addENodeToDB (DB mempty) (egr^._memo)
   where
 
     -- Add an enode in an e-graph, given its class, to a database

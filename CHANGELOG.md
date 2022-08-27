@@ -1,5 +1,10 @@
-# Revision history for hsym
+# Revision history for hegg
 
-## 0.1.0.0 -- YYYY-mm-dd
+## Unreleased
+
+* Make e-graph abstract. The internal structure can still be modified to some
+    extent using Data.Equality.Graph.Lens
+
+## 0.1.0.0 -- 2022-08-25
 
 * First version. Released on an unsuspecting world.

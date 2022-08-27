@@ -30,6 +30,7 @@ import qualified Data.IntMap.Strict as IM
 
 import Data.Equality.Utils
 import Data.Equality.Graph
+import Data.Equality.Graph.Lens
 
 -- vvvv and necessarily all the best sub-expressions from children equilalence classes
 
@@ -50,13 +51,13 @@ extractBest :: forall lang. Language lang
             -> CostFunction lang -- ^ The cost function to define /best/
             -> ClassId           -- ^ The e-class from which we'll extract the expression
             -> Fix lang          -- ^ The resulting /best/ expression, in its fixed point form.
-extractBest g@EGraph{classes = eclasses'} cost (flip find g -> i) = 
+extractBest egr cost (flip find egr -> i) = 
 
     -- Use `egg`s strategy of find costs for all possible classes and then just
     -- picking up the best from the target e-class.  In practice this shouldn't
     -- find the cost of unused nodes because the "topmost" e-class will be the
     -- target, and all sub-classes must be calculated?
-    let allCosts = findCosts eclasses' mempty
+    let allCosts = findCosts (egr^._classes) mempty
 
      in case findBest i allCosts of
         Just (CostWithExpr (_,n)) -> n
@@ -106,7 +107,7 @@ extractBest g@EGraph{classes = eclasses'} cost (flip find g -> i) =
     -- with its cost
     nodeTotalCost :: Traversable lang => ClassIdMap (CostWithExpr lang) -> ENode lang -> Maybe (CostWithExpr lang)
     nodeTotalCost m (Node n) = do
-        expr <- traverse ((`IM.lookup` m) . flip find g) n
+        expr <- traverse ((`IM.lookup` m) . flip find egr) n
         return $ CostWithExpr (cost ((fst . unCWE) <$> expr), (Fix $ (snd . unCWE) <$> expr))
     {-# INLINE nodeTotalCost #-}
 

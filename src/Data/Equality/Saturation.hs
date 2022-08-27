@@ -51,6 +51,8 @@ import Control.Monad
 import Data.Proxy
 
 import Data.Equality.Utils
+import Data.Equality.Graph.Nodes
+import Data.Equality.Graph.Lens
 import qualified Data.Equality.Graph as G
 import Data.Equality.Graph.Monad
 import Data.Equality.Language
@@ -102,9 +104,10 @@ equalitySaturation' _ expr rewrites cost = egraph $ do
         equalitySaturation'' 30 _ = return () -- Stop after X iterations
         equalitySaturation'' i stats = do
 
-            egr@G.EGraph{ G.memo = beforeMemo, G.classes = beforeClasses } <- get
+            egr <- get
 
-            let db = eGraphToDatabase egr
+            let (beforeMemo, beforeClasses) = (egr^._memo, egr^._classes)
+                db = eGraphToDatabase egr
 
             -- Read-only phase, invariants are preserved
             -- With backoff scheduler
@@ -117,7 +120,7 @@ equalitySaturation' _ expr rewrites cost = egraph $ do
             -- Restore the invariants once per iteration
             rebuild
             
-            G.EGraph { G.memo = afterMemo, G.classes = afterClasses } <- get
+            (afterMemo, afterClasses) <- gets (\g -> (g^._memo, g^._classes))
 
             -- ROMES:TODO: Node limit...
             -- ROMES:TODO: Actual Timeout... not just iteration timeout
@@ -177,7 +180,7 @@ equalitySaturation' _ expr rewrites cost = egraph $ do
 
         -- | Represent a pattern in the e-graph a pattern given substitions
         reprPat :: Subst -> l (Pattern l) -> EGraphM l ClassId
-        reprPat subst = add . G.Node <=< traverse \case
+        reprPat subst = add . Node <=< traverse \case
             VariablePattern v ->
                 case IM.lookup v subst of
                     Nothing -> error "impossible: couldn't find v in subst?"

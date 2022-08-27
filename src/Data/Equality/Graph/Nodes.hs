@@ -75,20 +75,14 @@ instance Show1 l => (Show (Operator l)) where
 -- * Node Map
 
 -- | A mapping from e-nodes of @l@ to @a@
-data NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: !(M.Map (ENode l) a), sizeNodeMap :: {-# UNPACK #-} !Int }
+newtype NodeMap (l :: Type -> Type) a = NodeMap { unNodeMap :: M.Map (ENode l) a }
 -- TODO: Investigate whether it would be worth it requiring a trie-map for the
 -- e-node definition. Probably it isn't better since e-nodes aren't recursive.
-  deriving (Show, Functor, Foldable, Traversable)
-
-instance (Eq1 l, Ord1 l) => Semigroup (NodeMap l a) where
-  NodeMap m1 s1 <> NodeMap m2 s2 = NodeMap (m1 <> m2) (s1 + s2)
-
-instance (Eq1 l, Ord1 l) => Monoid (NodeMap l a) where
-  mempty = NodeMap mempty 0
+  deriving (Show, Functor, Foldable, Traversable, Semigroup, Monoid)
 
 -- | Insert a value given an e-node in a 'NodeMap'
 insertNM :: Ord1 l => ENode l -> a -> NodeMap l a -> NodeMap l a
-insertNM e v (NodeMap m s) = NodeMap (M.insert e v m) (s+1)
+insertNM e v (NodeMap m) = NodeMap (M.insert e v m)
 {-# INLINE insertNM #-}
 
 -- | Lookup an e-node in a 'NodeMap'
@@ -98,12 +92,12 @@ lookupNM e = M.lookup e . unNodeMap
 
 -- | Delete an e-node in a 'NodeMap'
 deleteNM :: Ord1 l => ENode l -> NodeMap l a -> NodeMap l a
-deleteNM e (NodeMap m s) = NodeMap (M.delete e m) (s-1)
+deleteNM e (NodeMap m) = NodeMap (M.delete e m)
 {-# INLINE deleteNM #-}
 
 -- | Insert a value and lookup by e-node in a 'NodeMap'
 insertLookupNM :: Ord1 l => ENode l -> a -> NodeMap l a -> (Maybe a, NodeMap l a)
-insertLookupNM e v (NodeMap m s) = second (flip NodeMap (s+1)) $ M.insertLookupWithKey (\_ a _ -> a) e v m
+insertLookupNM e v (NodeMap m) = second NodeMap $ M.insertLookupWithKey (\_ a _ -> a) e v m
 {-# INLINE insertLookupNM #-}
 
 -- | As 'Data.Map.foldlWithKeyNM'' but in a 'NodeMap'
@@ -120,12 +114,12 @@ foldrWithKeyNM' f b = M.foldrWithKey' f b . unNodeMap
 --
 -- This operation takes constant time (__O(1)__)
 sizeNM :: NodeMap l a -> Int
-sizeNM = sizeNodeMap
+sizeNM = M.size . unNodeMap
 {-# INLINE sizeNM #-}
 
 -- | As 'Data.Map.traverseWithKeyNM' but in a 'NodeMap'
 traverseWithKeyNM :: Applicative t => (ENode l -> a -> t b) -> NodeMap l a -> t (NodeMap l b) 
-traverseWithKeyNM f (NodeMap m s) = (`NodeMap` s) <$> M.traverseWithKey f m
+traverseWithKeyNM f (NodeMap m) = NodeMap <$> M.traverseWithKey f m
 {-# INLINE traverseWithKeyNM #-}
 
 -- Node Set

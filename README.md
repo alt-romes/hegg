@@ -44,20 +44,16 @@ Our second step is to instance `Language` for our `SymExpr`
 ### Language
 
 `Language` is the required constraint on *expressions* that are to be
-represented in e-graph and on which equality saturation can be run.
+represented in e-graph and on which equality saturation can be run:
 
 ```hs
 class (Analysis l, Traversable l, Ord1 l) => Language l
 ```
 
-To form a `Language`, we must define our `SymExpr` in its functor form, then
-instance `Traversable`, `Ord1`, and define an `Analysis` on it.
+To declare a `Language` we must write the "base functor" of `SymExpr` 
+(i.e. use a type parameter where the recursion points used to be in the original `SymExpr`),
+then instance `Traversable`, `Ord1`, and write an `Analysis` instance for it (see next section).
 
-Suggested reading on defining recursive data types in their parametrized
-version: [Introduction To Recursion
-Schemes](https://blog.sumtypeofway.com/posts/introduction-to-recursion-schemes.html)
-
-By adding a type parameter to our `SymExpr` we get
 ```hs
 data SymExpr a = Const Double
                | Symbol String
@@ -69,8 +65,13 @@ infix 6 :+:
 infix 7 :*:, :/:
 ```
 
-And if we now wanted to represent an expression, we'd write it in its
+Suggested reading on defining recursive data types in their parametrized
+version: [Introduction To Recursion
+Schemes](https://blog.sumtypeofway.com/posts/introduction-to-recursion-schemes.html)
+
+If we now wanted to represent an expression, we'd write it in its
 fixed-point form
+
 ```hs
 e1 :: Fix SymExpr
 e1 = Fix (Fix (Fix (Symbol "x") :*: Fix (Const 2)) :/: (Fix (Const 2))) -- (x*2)/2

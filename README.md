@@ -137,15 +137,18 @@ We already have a starting expression, so we're missing a list of rewrite rules
 
 Picking up the easy one first:
 ```hs
-type CostFunction l = l Cost -> Cost
+type CostFunction l cost = l cost -> cost
 ```
 
 A cost function is used to attribute a cost to representations in the e-graph and to extract the best one.
+The first type parameter `l` is the language we're going to attribute a cost to, and
+the second type parameter `cost` is the type with which we will model cost. For
+the cost function to be valid, `cost` must instance `Ord`.
 
 We'll say `Const`s and `Symbol`s are the cheapest and then in increasing cost we
-have `:+:`, `:*:` and `:/:`
+have `:+:`, `:*:` and `:/:`, and model cost with the `Int` type.
 ```hs
-cost :: CostFunction SymExpr
+cost :: CostFunction SymExpr Int
 cost = \case
   Const  x -> 1
   Symbol x -> 1

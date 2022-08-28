@@ -38,7 +38,7 @@ instance Analysis SymExpr where
 
 instance Language SymExpr
 
-cost :: CostFunction SymExpr
+cost :: CostFunction SymExpr Int
 cost = \case
   Const  _ -> 1
   Symbol _ -> 1

@@ -58,7 +58,7 @@ patFoldAllClasses expr i =
         _   -> False
     where
         eg :: EGraph l
-        eg = snd $ equalitySaturation expr [VariablePattern 1:=fromInteger i] (error "Cost function shouldn't be used")
+        eg = snd $ equalitySaturation expr [VariablePattern 1:=fromInteger i] (error "Cost function shouldn't be used" :: CostFunction l Int)
 
 -- | Test 'compileToQuery'.
 --
@@ -134,7 +134,7 @@ hashConsInvariant eg =
             Just i' -> i' == find i eg 
 
 benchSaturate :: forall l. Language l
-              => [Rewrite l] -> (l Cost -> Cost) -> Fix l -> Bool
+              => [Rewrite l] -> (l Int -> Int) -> Fix l -> Bool
 benchSaturate rws cost expr =
     equalitySaturation expr rws cost `seq` True
 

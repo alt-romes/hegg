@@ -20,6 +20,8 @@ import Data.Eq.Deriving
 import Data.Ord.Deriving
 import Text.Show.Deriving
 
+import qualified Data.Foldable as F
+
 import Control.Applicative (liftA2)
 import Control.Monad (unless)
 
@@ -76,7 +78,7 @@ instance Fractional (Fix Expr) where
     (/) a b = Fix (BinOp Div a b)
     fromRational = Fix . Const . fromRational
 
-symCost :: Expr Cost -> Cost
+symCost :: CostFunction Expr Int
 symCost = \case
     BinOp Pow e1 e2 -> e1 + e2 + 6
     BinOp Div e1 e2 -> e1 + e2 + 5
@@ -135,7 +137,7 @@ instance Analysis Expr where
             _     <- GM.merge i new_c
 
             -- Prune all except leaf e-nodes
-            modify (_class i._nodes %~ S.filter (null . children))
+            modify (_class i._nodes %~ S.filter (F.null . unNode))
 
 
 

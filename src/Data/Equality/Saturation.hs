@@ -33,7 +33,7 @@ module Data.Equality.Saturation
       -- ** Writing cost functions
       --
       -- | 'CostFunction' re-exported from 'Data.Equality.Extraction' since they are required to do equality saturation
-    , CostFunction --, Cost, depthCost
+    , CostFunction --, depthCost
 
       -- ** Writing expressions
       -- 
@@ -65,11 +65,12 @@ import Data.Equality.Saturation.Rewrites
 import Data.Equality.Saturation.Scheduler
 
 -- | Equality saturation with defaults
-equalitySaturation :: forall l. Language l
-                   => Fix l             -- ^ Expression to run equality saturation on
-                   -> [Rewrite l]       -- ^ List of rewrite rules
-                   -> CostFunction l    -- ^ Cost function to extract the best equivalent representation
-                   -> (Fix l, EGraph l) -- ^ Best equivalent expression and resulting e-graph
+equalitySaturation :: forall l cost
+                    . (Language l, Ord cost)
+                   => Fix l               -- ^ Expression to run equality saturation on
+                   -> [Rewrite l]         -- ^ List of rewrite rules
+                   -> CostFunction l cost -- ^ Cost function to extract the best equivalent representation
+                   -> (Fix l, EGraph l)   -- ^ Best equivalent expression and resulting e-graph
 equalitySaturation = equalitySaturation' (Proxy @BackoffScheduler)
 
 
@@ -77,13 +78,13 @@ equalitySaturation = equalitySaturation' (Proxy @BackoffScheduler)
 -- extract the best equivalent expression according to the given cost function
 --
 -- This variant takes all arguments instead of using defaults
-equalitySaturation' :: forall l schd
-                    . (Language l, Scheduler schd)
-                    => Proxy schd        -- ^ Proxy for the scheduler to use
-                    -> Fix l             -- ^ Expression to run equality saturation on
-                    -> [Rewrite l]       -- ^ List of rewrite rules
-                    -> CostFunction l    -- ^ Cost function to extract the best equivalent representation
-                    -> (Fix l, EGraph l) -- ^ Best equivalent expression and resulting e-graph
+equalitySaturation' :: forall l schd cost
+                    . (Language l, Scheduler schd, Ord cost)
+                    => Proxy schd          -- ^ Proxy for the scheduler to use
+                    -> Fix l               -- ^ Expression to run equality saturation on
+                    -> [Rewrite l]         -- ^ List of rewrite rules
+                    -> CostFunction l cost -- ^ Cost function to extract the best equivalent representation
+                    -> (Fix l, EGraph l)   -- ^ Best equivalent expression and resulting e-graph
 equalitySaturation' _ expr rewrites cost = egraph $ do
 
     -- Represent expression as an e-graph

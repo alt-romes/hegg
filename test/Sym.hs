@@ -345,10 +345,16 @@ symTests = testGroup "Symbolic"
     , testCase "i6" $
         rewrite (_i (_ln "x") "x") @?= "x"*(_ln "x" + fromInteger(-1))
 
+    -- TODO: Require ability to fine tune parameters
+    -- , testCase "diff_power_harder" $
+    --     rewrite (_d "x" ((_pow "x" 3) - 7*(_pow "x" 2))) @?= "x"*(3*"x"-14)
+
     ]
 
-_i :: Fix Expr -> Fix Expr -> Fix Expr
+_i, _d, _pow :: Fix Expr -> Fix Expr -> Fix Expr
 _i a b = Fix (BinOp Integral a b)
+_d a b = Fix (BinOp Diff a b)
+_pow a b = Fix (BinOp Pow a b)
 _ln, _cos, _sin :: Fix Expr -> Fix Expr
 _ln a = Fix (UnOp Ln a)
 _cos a = Fix (UnOp Cos a)

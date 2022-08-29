@@ -127,7 +127,7 @@ hashConsInvariant eg =
     all f (IM.toList (eg^._classes))
     where
       -- e-node 𝑛 ∈ 𝑀 [𝑎] ⇐⇒ 𝐻 [canonicalize(𝑛)] = find(𝑎)
-      f (i, EClass _ nodes _ _) = all g nodes
+      f (i, EClass{eClassNodes=nodes}) = all g nodes
         where
           g en = case lookupNM (canonicalize en eg) (eg^._memo) of
             Nothing -> error "how can we not find canonical thing in map? :)" -- False

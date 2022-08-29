@@ -30,7 +30,7 @@ data EGraph l = EGraph
 type Memo l = NodeMap l ClassId
 
 -- | Maintained worklist of e-class ids that need to be “upward merged”
-type Worklist l = NodeMap l ClassId
+type Worklist l = [(ClassId, ENode l)]
 
 instance (Show (Domain l), Show1 l) => Show (EGraph l) where
     show (EGraph a b c d e) =

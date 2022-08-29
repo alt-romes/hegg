@@ -15,6 +15,8 @@ import Data.Functor.Classes
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 
+import Data.Equality.Utils.SizedList
+
 import Data.Equality.Analysis
 
 -- | An e-class (an equivalence class of terms) of a language @l@.
@@ -27,9 +29,9 @@ data EClass l = EClass
     { eClassId      :: {-# UNPACK #-} !ClassId -- ^ E-class identifier
     , eClassNodes   :: !(S.Set (ENode l))      -- ^ E-nodes in this class
     , eClassData    :: Domain l                -- ^ The analysis data associated with this eclass.
-    , eClassParents :: !(NodeMap l ClassId)    -- ^ E-nodes which are parents of this e-class and their corresponding e-class ids. We found a mapping from nodes to e-class ids a better representation than @[(ENode l, ClassId)]@, and we get de-duplication built-in.
+    , eClassParents :: !(SList (ClassId, ENode l))   -- ^ E-nodes which are parents of this e-class and their corresponding e-class ids.
     }
 
 instance (Show (Domain l), Show1 l) => Show (EClass l) where
-    show (EClass a b d c) = "Id: " <> show a <> "\nNodes: " <> show b <> "\nParents: " <> show c <> "\nData: " <> show d
+    show (EClass a b d (SList c _)) = "Id: " <> show a <> "\nNodes: " <> show b <> "\nParents: " <> show c <> "\nData: " <> show d
 

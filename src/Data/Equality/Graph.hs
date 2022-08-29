@@ -35,9 +35,13 @@ module Data.Equality.Graph
 -- import GHC.Conc
 
 import Data.Function
+import Data.Bifunctor
+import Data.Containers.ListUtils
 
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
+
+import Data.Equality.Utils.SizedList
 
 import Data.Equality.Graph.Internal
 import Data.Equality.Graph.ReprUnionFind
@@ -80,9 +84,9 @@ add uncanon_e egr =
             -- to the e-class parents the new e-node and its e-class id
             --
             -- And add new e-class to existing e-classes
-            new_parents      = insertNM new_en new_eclass_id
+            new_parents      = ((new_eclass_id, new_en) |:)
             new_classes      = {-# SCC "2" #-} IM.insert new_eclass_id new_eclass $
-                                    foldr  (IM.adjust (_parents %~ new_parents))
+                                    foldr  (IM.adjust ((_parents %~ new_parents)))
                                            (classes egr)
                                            (unNode new_en)
 
@@ -111,7 +115,7 @@ add uncanon_e egr =
             -- something else?
             --
             -- So in the end, we do need to addToWorklist to get correct results
-            new_worklist     = {-# SCC "4" #-} insertNM new_en new_eclass_id (worklist egr)
+            new_worklist     = {-# SCC "4" #-} (new_eclass_id, new_en):(worklist egr)
 
             -- Add the e-node's e-class id at the e-node's id
             new_memo         = {-# SCC "5" #-} insertNM new_en new_eclass_id (memo egr)
@@ -121,7 +125,7 @@ add uncanon_e egr =
             , egr { unionFind = new_uf
                   , classes   = new_classes
                   , worklist  = new_worklist
-                  , memo     = new_memo
+                  , memo      = new_memo
                   }
 
                   -- Modify created node according to analysis
@@ -149,7 +153,7 @@ merge a b egr0 =
 
            -- Leader is the class with more parents
            (leader, leader_class, sub, sub_class) =
-               if (sizeNM (class_a^._parents)) < (sizeNM (class_b^._parents))
+               if sizeSL (class_a^._parents) < sizeSL (class_b^._parents)
                   then (b', class_b, a', class_a) -- b is leader
                   else (a', class_a, b', class_b) -- a is leader
 
@@ -158,8 +162,8 @@ merge a b egr0 =
 
            -- Update leader class with all e-nodes and parents from the
            -- subsumed class
-           updatedLeader = leader_class & _parents %~ (<> sub_class^._parents)
-                                        & _nodes   %~ (<> sub_class^._nodes)
+           updatedLeader = leader_class & _parents %~ (sub_class^._parents <>)
+                                        & _nodes   %~ (sub_class^._nodes <>)
                                         & _data    .~ new_data
            new_data = joinA @l (leader_class^._data) (sub_class^._data)
 
@@ -170,18 +174,18 @@ merge a b egr0 =
            -- Add all subsumed parents to worklist We can do this instead of
            -- adding the new e-class itself to the worklist because it would end
            -- up adding its parents anyway
-           new_worklist = sub_class^._parents <> (worklist egr0)
+           new_worklist = toListSL (sub_class^._parents) <> (worklist egr0)
 
            -- If the new_data is different from the classes, the parents of the
            -- class whose data is different from the merged must be put on the
            -- analysisWorklist
            new_analysis_worklist =
-             (if new_data /= (leader_class^._data)
-                then leader_class^._parents
-                else mempty) <>
              (if new_data /= (sub_class^._data)
-                 then sub_class^._parents
+                 then toListSL (sub_class^._parents)
                  else mempty) <>
+             (if new_data /= (leader_class^._data)
+                then toListSL (leader_class^._parents)
+                else mempty) <>
              (analysisWorklist egr0)
 
            -- ROMES:TODO: The code that makes the -1 * cos test pass when some other things are tweaked
@@ -213,23 +217,28 @@ rebuild (EGraph uf cls mm wl awl) =
   -- empty worklists
   -- repair deduplicated e-classes
   let
-    egr'  = foldrWithKeyNM' repair (EGraph uf cls mm mempty mempty) wl
-    egr'' = foldrWithKeyNM' repairAnal egr' awl
+    emptiedEgr = (EGraph uf cls mm mempty mempty)
+    wl'   = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> wl
+    awl'  = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> awl
+    egr'  = foldr repair emptiedEgr wl'
+    egr'' = foldr repairAnal egr'   awl'
   in
   -- Loop until worklist is completely empty
   if null (worklist egr'') && null (analysisWorklist egr'')
      then egr''
-     else rebuild egr''
+     else rebuild egr'' -- ROMES:TODO: Doesn't seem to be needed at all in the testsuite.
 
 {-# SCC rebuild #-}
 
 -- ROMES:TODO: find repair_id could be shared between repair and repairAnal?
 
 -- | Repair a single worklist entry.
-repair :: forall l. Language l => ENode l -> ClassId -> EGraph l -> EGraph l
-repair node repair_id egr =
+repair :: forall l. Language l => (ClassId, ENode l) -> EGraph l -> EGraph l
+repair (repair_id, node) egr =
 
-   case insertLookupNM (node `canonicalize` egr) (find repair_id egr) (deleteNM node $ memo egr) of-- TODO: I seem to really need it. Is find needed? (they don't use it)
+   -- TODO We're no longer deleting the uncanonicalized node, how much does it matter that the structure keeps growing?
+
+   case insertLookupNM node repair_id (memo egr) of
 
       (Nothing, memo2) -> egr { memo = memo2 } -- Return new memo but delete uncanonicalized node
 
@@ -237,21 +246,20 @@ repair node repair_id egr =
 {-# SCC repair #-}
 
 -- | Repair a single analysis-worklist entry.
-repairAnal :: forall l. Language l => ENode l -> ClassId -> EGraph l -> EGraph l
-repairAnal node repair_id egr =
+repairAnal :: forall l. Language l => (ClassId, ENode l) -> EGraph l -> EGraph l
+repairAnal (repair_id, node) egr =
     let
-        canon_id = find repair_id egr
-        c        = egr^._class canon_id
+        c        = egr^._class repair_id
         new_data = joinA @l (c^._data) (makeA node egr)
     in
     -- Take action if the new_data is different from the existing data
     if c^._data /= new_data
         -- Merge result is different from original class data, update class
         -- with new_data
-       then egr { analysisWorklist = c^._parents <> analysisWorklist egr
+       then egr { analysisWorklist = toListSL (c^._parents) <> analysisWorklist egr
                 }
-                & _class canon_id._data .~ new_data
-                & modifyA canon_id
+                & _class repair_id._data .~ new_data
+                & modifyA repair_id
        else egr
 {-# SCC repairAnal #-}
 

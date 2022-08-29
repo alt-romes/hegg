@@ -14,6 +14,7 @@ import qualified Data.Set as S
 import Data.Functor.Identity
 import Data.Functor.Const
 
+import Data.Equality.Utils.SizedList
 import Data.Equality.Graph.Internal
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
@@ -61,8 +62,8 @@ _data afa EClass{..} = (\d1 -> EClass eClassId eClassNodes d1 eClassParents) <$>
 {-# INLINE _data #-}
 
 -- | Lens for the parent e-classes of an e-class
-_parents :: Lens' (EClass l) (NodeMap l ClassId)
-_parents afa EClass{..} = EClass eClassId eClassNodes eClassData <$> afa eClassParents
+_parents :: Lens' (EClass l) (SList (ClassId, ENode l))
+_parents afa EClass{..} = (\ps -> EClass eClassId eClassNodes eClassData ps) <$> afa eClassParents
 {-# INLINE _parents #-}
 
 -- | Lens for the e-nodes in an e-class

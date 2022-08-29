@@ -73,8 +73,7 @@ extractBest egr cost (flip find egr -> i) =
 
           {-# INLINE f #-}
           f :: (Bool, ClassIdMap (CostWithExpr lang cost)) -> Int -> EClass lang -> (Bool, ClassIdMap (CostWithExpr lang cost))
-          f = \acc@(_, beingUpdated) i' (EClass _ nodes _ _) ->
-
+          f = \acc@(_, beingUpdated) i' EClass{eClassNodes = nodes} ->
                 let
                     currentCost = IM.lookup i' beingUpdated
 

@@ -38,9 +38,10 @@ import Data.Function
 import Data.Bifunctor
 import Data.Containers.ListUtils
 
-import qualified Data.Foldable as F
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
+
+import Data.Equality.Utils.SizedList
 
 import Data.Equality.Graph.Internal
 import Data.Equality.Graph.ReprUnionFind
@@ -83,7 +84,7 @@ add uncanon_e egr =
             -- to the e-class parents the new e-node and its e-class id
             --
             -- And add new e-class to existing e-classes
-            new_parents      = (S.insert (new_eclass_id, new_en))
+            new_parents      = ((new_eclass_id, new_en) |:)
             new_classes      = IM.insert new_eclass_id new_eclass $
                                     foldr  (IM.adjust ((_parents %~ new_parents)))
                                            (classes egr)
@@ -152,7 +153,7 @@ merge a b egr0 =
 
            -- Leader is the class with more parents
            (leader, leader_class, sub, sub_class) =
-               if S.size (class_a^._parents) < S.size (class_b^._parents)
+               if sizeSL (class_a^._parents) < sizeSL (class_b^._parents)
                   then (b', class_b, a', class_a) -- b is leader
                   else (a', class_a, b', class_b) -- a is leader
 
@@ -173,20 +174,18 @@ merge a b egr0 =
            -- Add all subsumed parents to worklist We can do this instead of
            -- adding the new e-class itself to the worklist because it would end
            -- up adding its parents anyway
-           new_worklist = F.toList (sub_class^._parents) <> worklist egr0
+           new_worklist = toListSL (sub_class^._parents) <> (worklist egr0)
 
            -- If the new_data is different from the classes, the parents of the
            -- class whose data is different from the merged must be put on the
            -- analysisWorklist
            new_analysis_worklist =
-             (
-               (if new_data /= (sub_class^._data)
-                   then sub_class^._parents
-                   else mempty) <>
-               (if new_data /= (leader_class^._data)
-                  then leader_class^._parents
-                  else mempty)
-             ) <>
+             (if new_data /= (sub_class^._data)
+                then toListSL (sub_class^._parents)
+                else mempty) <>
+             (if new_data /= (leader_class^._data)
+                then toListSL (leader_class^._parents)
+                else mempty) <>
              (analysisWorklist egr0)
 
            -- ROMES:TODO: The code that makes the -1 * cos test pass when some other things are tweaked
@@ -218,9 +217,9 @@ rebuild (EGraph uf cls mm wl awl) =
   -- empty worklists
   -- repair deduplicated e-classes
   let
-    emptiedEgr = EGraph uf cls mm mempty mempty
+    emptiedEgr = (EGraph uf cls mm mempty mempty)
     wl'   = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> wl
-    awl'  = S.map (bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr)) awl
+    awl'  = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> awl
     egr'  = foldr repair emptiedEgr wl'
     egr'' = foldr repairAnal egr'   awl'
   in
@@ -256,7 +255,7 @@ repairAnal (repair_id, node) egr =
     if c^._data /= new_data
         -- Merge result is different from original class data, update class
         -- with new_data
-       then egr { analysisWorklist = (c^._parents) <> analysisWorklist egr
+       then egr { analysisWorklist = toListSL (c^._parents) <> analysisWorklist egr
                 }
                 & _class repair_id._data .~ new_data
                 & modifyA repair_id

@@ -109,8 +109,7 @@ extractBest egr cost (flip find egr -> i) =
         expr <- traverse ((`IM.lookup` m) . flip find egr) n
         return $ CostWithExpr (cost ((fst . unCWE) <$> expr), (Fix $ (snd . unCWE) <$> expr))
     {-# INLINE nodeTotalCost #-}
-
-{-# SCC extractBest #-}
+{-# INLINABLE extractBest #-}
 
 -- | A cost function is used to attribute a cost to representations in the
 -- e-graph and to extract the best one.

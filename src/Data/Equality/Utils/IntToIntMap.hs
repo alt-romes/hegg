@@ -78,7 +78,6 @@ find' k (Bin _p m l r)
   | otherwise = find' k r
 find' k (Tip kx x) | isTrue# (k `eqWord#` kx) = x
 find' _ _ = error ("IntMap.!: key ___ is not an element of the map")
-{-# SCC find' #-}
 
 -- * Other stuff taken from IntMap
 

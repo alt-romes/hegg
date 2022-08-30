@@ -126,7 +126,7 @@ benchmark hegg-bench
                   tasty-hunit,
                   tasty-quickcheck,
                   tasty-bench >= 0.2  && < 0.4
-  ghc-options:    -O2 -with-rtsopts=-A32m -threaded
+  ghc-options:    -with-rtsopts=-A32m -threaded
 
 Flag vizdot
     Description: Compile 'Data.Equality.Graph.Dot' module to visualize e-graphs

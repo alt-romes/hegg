@@ -112,11 +112,9 @@ instance Fractional (Pattern Expr) where
 instance Analysis Expr where
     type Domain Expr = Maybe Double
 
-    {-# SCC makeA #-}
     makeA (Node e) egr = evalConstant ((\c -> egr^._class c._data) <$> e)
 
     -- joinA = (<|>)
-    {-# SCC joinA #-}
     joinA ma mb = do
         a <- ma
         b <- mb
@@ -126,7 +124,6 @@ instance Analysis Expr where
         !_ <- unless (a == b || (a == 0 && b == (-0)) || (a == (-0) && b == 0)) (error "Merged non-equal constants!")
         return a
 
-    {-# SCC modifyA #-}
     modifyA i egr =
         case egr ^._class i._data of
           Nothing -> egr

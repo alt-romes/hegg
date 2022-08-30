@@ -37,7 +37,7 @@ newtype ENode l = Node { unNode :: l ClassId }
 -- | Get the children e-class ids of an e-node
 children :: Traversable l => ENode l -> [ClassId]
 children = toList . unNode
-{-# SCC children #-}
+{-# INLINE children #-}
 
 -- * Operator
 
@@ -48,7 +48,7 @@ newtype Operator l = Operator { unOperator :: l () }
 -- | Get the operator (function symbol) of an e-node
 operator :: Traversable l => ENode l -> Operator l
 operator = Operator . void . unNode
-{-# SCC operator #-}
+{-# INLINE operator #-}
 
 instance Eq1 l => (Eq (ENode l)) where
     (==) (Node a) (Node b) = liftEq (==) a b

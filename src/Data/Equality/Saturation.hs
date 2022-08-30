@@ -187,5 +187,5 @@ equalitySaturation' _ expr rewrites cost = egraph $ do
                     Nothing -> error "impossible: couldn't find v in subst?"
                     Just i  -> return i
             NonVariablePattern p -> reprPat subst p
-{-# SCC equalitySaturation' #-}
+{-# INLINABLE equalitySaturation' #-}
 

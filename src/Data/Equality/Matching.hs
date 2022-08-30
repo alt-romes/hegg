@@ -79,7 +79,6 @@ eGraphToDatabase egr = foldrWithKeyNM' addENodeToDB (DB mempty) (egr^._memo)
         -- ROMES:TODO map find
         -- Insert or create a relation R_f(i1,i2,...,in) for lang in which 
         DB $ M.alter (Just . populate (classid:children enode)) (operator enode) m
-    {-# SCC addENodeToDB #-}
 
     -- Populate or create a triemap given the population D_x (ClassIds)
     -- Insert remaining ids population doesn't exist, recursively merge tries with remaining ids
@@ -90,8 +89,7 @@ eGraphToDatabase egr = foldrWithKeyNM' addENodeToDB (DB mempty) (egr^._memo)
     -- If trie map entry already exists, populate the existing map with the remaining ids
     populate []     (Just it)              = it
     populate (x:xs) (Just (MkIntTrie k m)) = MkIntTrie (x `IS.insert` k) $ IM.alter (Just . populate xs) x m
-    {-# SCC populate #-}
-{-# SCC eGraphToDatabase #-}
+{-# INLINABLE eGraphToDatabase #-}
 
 
 -- * Database related internals
@@ -135,4 +133,4 @@ compileToQuery pa@(NonVariablePattern _) =
         vars :: Foldable lang => Pattern lang -> [Var]
         vars (VariablePattern x) = [x]
         vars (NonVariablePattern p) = nubInt $ join $ map vars $ toList p
-{-# SCC compileToQuery #-}
+{-# INLINABLE compileToQuery #-}

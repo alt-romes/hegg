@@ -64,10 +64,10 @@ import Data.Equality.Graph.Lens
 -- class it's already represented in will be returned.
 add :: forall l. Language l => ENode l -> EGraph l -> (ClassId, EGraph l)
 add uncanon_e egr =
-    let !new_en = {-# SCC "-2" #-} canonicalize uncanon_e egr
+    let !new_en = canonicalize uncanon_e egr
 
-     in case {-# SCC "-1" #-} lookupNM new_en (memo egr) of
-      Just canon_enode_id -> {-# SCC "0" #-} (find canon_enode_id egr, egr)
+     in case lookupNM new_en (memo egr) of
+      Just canon_enode_id -> (find canon_enode_id egr, egr)
       Nothing ->
 
         let
@@ -85,7 +85,7 @@ add uncanon_e egr =
             --
             -- And add new e-class to existing e-classes
             new_parents      = ((new_eclass_id, new_en) |:)
-            new_classes      = {-# SCC "2" #-} IM.insert new_eclass_id new_eclass $
+            new_classes      = IM.insert new_eclass_id new_eclass $
                                     foldr  (IM.adjust ((_parents %~ new_parents)))
                                            (classes egr)
                                            (unNode new_en)
@@ -115,10 +115,10 @@ add uncanon_e egr =
             -- something else?
             --
             -- So in the end, we do need to addToWorklist to get correct results
-            new_worklist     = {-# SCC "4" #-} (new_eclass_id, new_en):(worklist egr)
+            new_worklist     = (new_eclass_id, new_en):(worklist egr)
 
             -- Add the e-node's e-class id at the e-node's id
-            new_memo         = {-# SCC "5" #-} insertNM new_en new_eclass_id (memo egr)
+            new_memo         = insertNM new_en new_eclass_id (memo egr)
 
          in ( new_eclass_id
 
@@ -129,10 +129,10 @@ add uncanon_e egr =
                   }
 
                   -- Modify created node according to analysis
-                  & {-# SCC "6" #-} modifyA new_eclass_id
+                  & modifyA new_eclass_id
 
             )
-{-# SCC add #-}
+{-# INLINABLE add #-}
 
 -- | Merge 2 e-classes by id
 merge :: forall l. Language l => ClassId -> ClassId -> EGraph l -> (ClassId, EGraph l)
@@ -204,7 +204,7 @@ merge a b egr0 =
              & modifyA new_id
 
         in (new_id, new_egr)
-{-# SCC merge #-}
+{-# INLINEABLE merge #-}
             
 
 -- | The rebuild operation processes the e-graph's current worklist,
@@ -227,8 +227,7 @@ rebuild (EGraph uf cls mm wl awl) =
   if null (worklist egr'') && null (analysisWorklist egr'')
      then egr''
      else rebuild egr'' -- ROMES:TODO: Doesn't seem to be needed at all in the testsuite.
-
-{-# SCC rebuild #-}
+{-# INLINEABLE rebuild #-}
 
 -- ROMES:TODO: find repair_id could be shared between repair and repairAnal?
 
@@ -243,7 +242,7 @@ repair (repair_id, node) egr =
       (Nothing, memo2) -> egr { memo = memo2 } -- Return new memo but delete uncanonicalized node
 
       (Just existing_class, memo2) -> snd (merge existing_class repair_id egr{memo = memo2})
-{-# SCC repair #-}
+{-# INLINE repair #-}
 
 -- | Repair a single analysis-worklist entry.
 repairAnal :: forall l. Language l => (ClassId, ENode l) -> EGraph l -> EGraph l
@@ -261,7 +260,7 @@ repairAnal (repair_id, node) egr =
                 & _class repair_id._data .~ new_data
                 & modifyA repair_id
        else egr
-{-# SCC repairAnal #-}
+{-# INLINE repairAnal #-}
 
 -- | Canonicalize an e-node
 --
@@ -273,7 +272,7 @@ repairAnal (repair_id, node) egr =
 -- canonicalize(𝑓(𝑎,𝑏,𝑐,...)) = 𝑓((find 𝑎), (find 𝑏), (find 𝑐),...)
 canonicalize :: Functor l => ENode l -> EGraph l -> ENode l
 canonicalize (Node enode) eg = Node $ fmap (`find` eg) enode
-{-# SCC canonicalize #-}
+{-# INLINE canonicalize #-}
 
 -- | Find the canonical representation of an e-class id in the e-graph
 -- Invariant: The e-class id always exists.

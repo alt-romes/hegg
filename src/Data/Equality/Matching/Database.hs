@@ -139,7 +139,6 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
                <> acc)
          mempty
          (domainX x atoms')
-   {-# SCC genericJoin' #-}
 
    atomsWithX :: Var -> [Atom l] -> [Atom l]
    atomsWithX x = filter (x `elemOfAtom`)
@@ -148,10 +147,7 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
    domainX :: Var -> [Atom l] -> IS.IntSet
    domainX x = intersectAtoms x d . atomsWithX x
    {-# INLINE domainX #-}
-
 {-# INLINABLE genericJoin #-}
-{-# SCC genericJoin #-}
-
 
 -- ROMES:TODO: Batching? How? https://arxiv.org/pdf/2108.02290.pdf
 
@@ -182,7 +178,7 @@ orderedVarsInQuery (Query _ atoms) = IS.toList . IS.fromAscList $ sortBy (compar
         -- | Get the size of an atom
         atomLength :: Foldable lang => Atom lang -> Int
         atomLength (Atom _ l) = 1 + F.length l
-        {-# SCC atomLength #-}
+        {-# INLINE atomLength #-}
 
         -- | Extract 'Var' from 'ClassIdOrVar'
         toVar :: ClassIdOrVar -> Maybe Var
@@ -190,21 +186,17 @@ orderedVarsInQuery (Query _ atoms) = IS.toList . IS.fromAscList $ sortBy (compar
         toVar (CClassId _) = Nothing
         {-# INLINE toVar #-}
 
-{-# SCC orderedVarsInQuery #-} 
-
 
 -- | Substitute all occurrences of 'Var' with given 'ClassId' in all given atoms.
 substitute :: Functor lang => Var -> ClassId -> [Atom lang] -> [Atom lang]
 substitute !r !i = map $ \case
    Atom x l -> Atom (if CVar r == x then CClassId i else x) $ fmap (\v -> if CVar r == v then CClassId i else v) l
-{-# SCC substitute #-}
 
 -- | Returns True if 'Var' occurs in given 'Atom'
 elemOfAtom :: (Functor lang, Foldable lang) => Var -> Atom lang -> Bool
 elemOfAtom !x (Atom v l) = case v of
   CVar v' -> x == v'
   _ -> or $ fmap (\v' -> CVar x == v') l
-{-# SCC elemOfAtom #-}
 
 
 -- ROMES:TODO Terrible name 'intersectAtoms'
@@ -231,8 +223,6 @@ intersectAtoms !var (DB db) (a:atoms) = foldr (\x xs -> (f x) `IS.intersection` 
                      Just xs -> xs
 
 intersectAtoms _ _ [] = error "can't intersect empty list of atoms?"
-{-# INLINABLE intersectAtoms #-}
-{-# SCC intersectAtoms #-}
 
 -- | Find the matching ids that a variable can take given a list of variables
 -- and ids that must match the structure
@@ -306,7 +296,7 @@ intersectInTrie !var !substs (MkIntTrie trieKeys m) = \case
                    Just _  -> k `IS.insert` acc
                          ) mempty m
           -- (3)
-          -- else {-# SCC "intersect_new_OTHER_var" #-} IS.unions $ IM.elems $ IM.mapMaybeWithKey (\k ls -> intersectInTrie var ({-# SCC "putSubst" #-} IM.insert x k substs) ls xs) m
+          -- else IS.unions $ IM.elems $ IM.mapMaybeWithKey (\k ls -> intersectInTrie var (IM.insert x k substs) ls xs) m
           else IM.foldrWithKey (\k ls (!acc) ->
             case intersectInTrie var (IM.insert x k substs) ls xs of
                 Nothing -> acc
@@ -318,6 +308,3 @@ intersectInTrie !var !substs (MkIntTrie trieKeys m) = \case
       isVarDifferentFrom _ (CClassId _) = False
       isVarDifferentFrom x (CVar     y) = x /= y
       {-# INLINE isVarDifferentFrom #-}
-
-{-# INLINABLE intersectInTrie #-}
-{-# SCC intersectInTrie #-}

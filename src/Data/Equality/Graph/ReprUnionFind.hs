@@ -75,7 +75,6 @@ makeNewSet (RUF im si) = ((I# si), RUF (IIM.insert si 0# im) ((si +# 1#)))
 #else
 makeNewSet (RUF im si) = (si, RUF (IIM.insert si 0 im) (si + 1))
 #endif
-{-# SCC makeNewSet #-}
 
 -- | Union operation of the union find.
 --
@@ -94,21 +93,20 @@ unionSets a b (RUF im si) = (a, RUF (IIM.insert b a im) si)
     -- represented_by_b = hc IM.! b
     -- -- Overwrite previous id of b (which should be 0#) with new representative (a)
     -- -- AND "rebuild" all nodes represented by b by making them represented directly by a
-    -- new_im = {-# SCC "rebuild_im" #-} IIM.unliftedFoldr (\(I# x) -> IIM.insert x a#) (IIM.insert b# a# im) represented_by_b
-    -- new_hc = {-# SCC "adjust_hc" #-} IM.adjust ((b:) . (represented_by_b <>)) a (IM.delete b hc)
-{-# SCC unionSets #-}
+    -- new_im = IIM.unliftedFoldr (\(I# x) -> IIM.insert x a#) (IIM.insert b# a# im) represented_by_b
+    -- new_hc = IM.adjust ((b:) . (represented_by_b <>)) a (IM.delete b hc)
 
 -- | Find the canonical representation of an e-class id
 findRepr :: ClassId -> ReprUnionFind
          -> ClassId -- ^ The found canonical representation
 #if __GLASGOW_HASKELL__ >= 902
 findRepr v@(I# v#) (RUF m s) =
-  case {-# SCC "findRepr_TAKE" #-} m IIM.! v# of
+  case m IIM.! v# of
     0# -> v
     x  -> findRepr (I# x) (RUF m s)
 #else
 findRepr v (RUF m s) =
-  case {-# SCC "findRepr_TAKE" #-} m IIM.! v of
+  case m IIM.! v of
     0 -> v
     x -> findRepr x (RUF m s)
 #endif
@@ -121,7 +119,6 @@ findRepr v (RUF m s) =
 --
 -- When using the ad-hoc path compression in `unionSets`, the depth of
 -- recursion never even goes above 1!
-{-# SCC findRepr #-}
 
 
 -- {-# RULES

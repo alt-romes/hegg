@@ -8,14 +8,13 @@ module Data.Equality.Graph.Classes
     , module Data.Equality.Graph.Classes.Id
     ) where
 
+import qualified Data.Sequence  as Seq
 import qualified Data.Set as S
 
 import Data.Functor.Classes
 
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
-
-import Data.Equality.Utils.SizedList
 
 import Data.Equality.Analysis
 
@@ -29,9 +28,9 @@ data EClass l = EClass
     { eClassId      :: {-# UNPACK #-} !ClassId -- ^ E-class identifier
     , eClassNodes   :: !(S.Set (ENode l))      -- ^ E-nodes in this class
     , eClassData    :: Domain l                -- ^ The analysis data associated with this eclass.
-    , eClassParents :: !(SList (ClassId, ENode l))   -- ^ E-nodes which are parents of this e-class and their corresponding e-class ids.
+    , eClassParents :: !(Seq.Seq (ClassId, ENode l))   -- ^ E-nodes which are parents of this e-class and their corresponding e-class ids.
     }
 
 instance (Show (Domain l), Show1 l) => Show (EClass l) where
-    show (EClass a b d (SList c _)) = "Id: " <> show a <> "\nNodes: " <> show b <> "\nParents: " <> show c <> "\nData: " <> show d
+    show (EClass a b d c) = "Id: " <> show a <> "\nNodes: " <> show b <> "\nParents: " <> show c <> "\nData: " <> show d
 

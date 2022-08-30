@@ -7,6 +7,7 @@
 module Data.Equality.Graph.Internal where
 
 import Data.Functor.Classes
+import qualified Data.Set as S
 
 import Data.Equality.Graph.ReprUnionFind
 import Data.Equality.Graph.Classes
@@ -23,7 +24,7 @@ data EGraph l = EGraph
     , classes   :: !(ClassIdMap (EClass l)) -- ^ Map canonical e-class ids to their e-classes
     , memo      :: !(Memo l)                -- ^ Hashcons maps all canonical e-nodes to their e-class ids
     , worklist  :: !(Worklist l)            -- ^ Worklist of e-class ids that need to be upward merged
-    , analysisWorklist :: !(Worklist l)     -- ^ Like 'worklist' but for analysis repairing
+    , analysisWorklist :: !(S.Set (ClassId, ENode l))     -- ^ Like 'worklist' but for analysis repairing
     }
 
 -- | The hashcons 𝐻  is a map from e-nodes to e-class ids

@@ -38,8 +38,6 @@ import Data.Function
 import Data.Bifunctor
 import Data.Containers.ListUtils
 
-import Data.Sequence (Seq(..))
-import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
@@ -85,7 +83,7 @@ add uncanon_e egr =
             -- to the e-class parents the new e-node and its e-class id
             --
             -- And add new e-class to existing e-classes
-            new_parents      = ((new_eclass_id, new_en) :<|)
+            new_parents      = (S.insert (new_eclass_id, new_en))
             new_classes      = IM.insert new_eclass_id new_eclass $
                                     foldr  (IM.adjust ((_parents %~ new_parents)))
                                            (classes egr)
@@ -154,7 +152,7 @@ merge a b egr0 =
 
            -- Leader is the class with more parents
            (leader, leader_class, sub, sub_class) =
-               if Seq.length (class_a^._parents) < Seq.length (class_b^._parents)
+               if S.size (class_a^._parents) < S.size (class_b^._parents)
                   then (b', class_b, a', class_a) -- b is leader
                   else (a', class_a, b', class_b) -- a is leader
 
@@ -181,7 +179,7 @@ merge a b egr0 =
            -- class whose data is different from the merged must be put on the
            -- analysisWorklist
            new_analysis_worklist =
-             F.toList (
+             (
                (if new_data /= (sub_class^._data)
                    then sub_class^._parents
                    else mempty) <>
@@ -222,7 +220,7 @@ rebuild (EGraph uf cls mm wl awl) =
   let
     emptiedEgr = EGraph uf cls mm mempty mempty
     wl'   = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> wl
-    awl'  = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> awl
+    awl'  = S.map (bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr)) awl
     egr'  = foldr repair emptiedEgr wl'
     egr'' = foldr repairAnal egr'   awl'
   in
@@ -258,7 +256,7 @@ repairAnal (repair_id, node) egr =
     if c^._data /= new_data
         -- Merge result is different from original class data, update class
         -- with new_data
-       then egr { analysisWorklist = F.toList (c^._parents) <> analysisWorklist egr
+       then egr { analysisWorklist = (c^._parents) <> analysisWorklist egr
                 }
                 & _class repair_id._data .~ new_data
                 & modifyA repair_id

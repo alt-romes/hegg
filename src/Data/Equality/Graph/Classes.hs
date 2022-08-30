@@ -8,7 +8,6 @@ module Data.Equality.Graph.Classes
     , module Data.Equality.Graph.Classes.Id
     ) where
 
-import qualified Data.Sequence  as Seq
 import qualified Data.Set as S
 
 import Data.Functor.Classes
@@ -28,7 +27,7 @@ data EClass l = EClass
     { eClassId      :: {-# UNPACK #-} !ClassId -- ^ E-class identifier
     , eClassNodes   :: !(S.Set (ENode l))      -- ^ E-nodes in this class
     , eClassData    :: Domain l                -- ^ The analysis data associated with this eclass.
-    , eClassParents :: !(Seq.Seq (ClassId, ENode l))   -- ^ E-nodes which are parents of this e-class and their corresponding e-class ids.
+    , eClassParents :: !(S.Set (ClassId, ENode l))   -- ^ E-nodes which are parents of this e-class and their corresponding e-class ids.
     }
 
 instance (Show (Domain l), Show1 l) => Show (EClass l) where

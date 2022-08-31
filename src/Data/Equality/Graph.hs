@@ -218,10 +218,12 @@ rebuild (EGraph uf cls mm wl awl) =
   -- repair deduplicated e-classes
   let
     emptiedEgr = (EGraph uf cls mm mempty mempty)
+
     wl'   = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> wl
-    awl'  = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> awl
     egr'  = foldr repair emptiedEgr wl'
-    egr'' = foldr repairAnal egr'   awl'
+
+    awl'  = nubIntOn fst $ first (`find` egr') <$> awl
+    egr'' = foldr repairAnal egr' awl'
   in
   -- Loop until worklist is completely empty
   if null (worklist egr'') && null (analysisWorklist egr'')
@@ -239,16 +241,16 @@ repair (repair_id, node) egr =
 
    case insertLookupNM node repair_id (memo egr) of
 
-      (Nothing, memo2) -> egr { memo = memo2 } -- Return new memo but delete uncanonicalized node
+      (Nothing, memo') -> egr { memo = memo' } -- new memo with inserted node
 
-      (Just existing_class, memo2) -> snd (merge existing_class repair_id egr{memo = memo2})
+      (Just existing_class, memo') -> snd (merge existing_class repair_id egr{memo = memo'})
 {-# INLINE repair #-}
 
 -- | Repair a single analysis-worklist entry.
 repairAnal :: forall l. Language l => (ClassId, ENode l) -> EGraph l -> EGraph l
 repairAnal (repair_id, node) egr =
     let
-        c        = egr^._class repair_id
+        c        = (egr^._classes) IM.! repair_id
         new_data = joinA @l (c^._data) (makeA node egr)
     in
     -- Take action if the new_data is different from the existing data
@@ -257,7 +259,7 @@ repairAnal (repair_id, node) egr =
         -- with new_data
        then egr { analysisWorklist = toListSL (c^._parents) <> analysisWorklist egr
                 }
-                & _class repair_id._data .~ new_data
+                & _classes %~ (IM.adjust (_data .~ new_data) repair_id)
                 & modifyA repair_id
        else egr
 {-# INLINE repairAnal #-}

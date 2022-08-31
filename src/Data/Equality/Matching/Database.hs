@@ -123,31 +123,35 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
 
  where
    genericJoin' :: [Atom l] -> [Var] -> [Subst]
-   genericJoin' !atoms' = \case
+   genericJoin' atoms' = \case
 
-     [] -> map mempty atoms
+     [] -> mempty <$> atoms'
 
-     (!x):xs -> 
-       -- IS.foldl' (\acc x_in_D -> genericJoin' (substitute x x_in_D atoms') (map (IM.insert x x_in_D) substs) xs <> acc)
-       --           mempty
-       --           (domainX x atoms')
-       IS.foldl'
-         (\acc x_in_D ->
-           map (\y -> let !y' = IM.insert x x_in_D y in y') -- TODO: A bit contrieved, perhaps better to avoid map ?
-             -- Each valid sub-query assumed the x -> x_in_D substitution
-             (genericJoin' (substitute x x_in_D atoms') xs)
-               <> acc)
-         mempty
-         (domainX x atoms')
+     (!x):xs -> do
 
-   atomsWithX :: Var -> [Atom l] -> [Atom l]
-   atomsWithX x = filter (x `elemOfAtom`)
-   {-# INLINE atomsWithX #-}
+       x_in_D <- domainX x atoms'
 
-   domainX :: Var -> [Atom l] -> IS.IntSet
-   domainX x = intersectAtoms x d . atomsWithX x
+       -- Each valid sub-query assumes x -> x_in_D substitution
+       y <- genericJoin' (substitute x x_in_D atoms') xs
+
+       return $! IM.insert x x_in_D y -- TODO: A bit contrieved, perhaps better to avoid map ?
+
+   domainX :: Var -> [Atom l] -> [Int]
+   domainX x = IS.toList . intersectAtoms x d . filter (x `elemOfAtom`)
    {-# INLINE domainX #-}
+
+   -- | Substitute all occurrences of 'Var' with given 'ClassId' in all given atoms.
+   substitute :: Functor lang => Var -> ClassId -> [Atom lang] -> [Atom lang]
+   substitute r i = map $ \case
+      Atom x l -> Atom (if CVar r == x then CClassId i else x) $ fmap (\v -> if CVar r == v then CClassId i else v) l
+
 {-# INLINABLE genericJoin #-}
+
+-- | Returns True if 'Var' occurs in given 'Atom'
+elemOfAtom :: (Functor lang, Foldable lang) => Var -> Atom lang -> Bool
+elemOfAtom !x (Atom v l) = case v of
+ CVar v' -> x == v'
+ _ -> or $ fmap (\v' -> CVar x == v') l
 
 -- ROMES:TODO: Batching? How? https://arxiv.org/pdf/2108.02290.pdf
 
@@ -185,18 +189,6 @@ orderedVarsInQuery (Query _ atoms) = IS.toList . IS.fromAscList $ sortBy (compar
         toVar (CVar v) = Just v
         toVar (CClassId _) = Nothing
         {-# INLINE toVar #-}
-
-
--- | Substitute all occurrences of 'Var' with given 'ClassId' in all given atoms.
-substitute :: Functor lang => Var -> ClassId -> [Atom lang] -> [Atom lang]
-substitute !r !i = map $ \case
-   Atom x l -> Atom (if CVar r == x then CClassId i else x) $ fmap (\v -> if CVar r == v then CClassId i else v) l
-
--- | Returns True if 'Var' occurs in given 'Atom'
-elemOfAtom :: (Functor lang, Foldable lang) => Var -> Atom lang -> Bool
-elemOfAtom !x (Atom v l) = case v of
-  CVar v' -> x == v'
-  _ -> or $ fmap (\v' -> CVar x == v') l
 
 
 -- ROMES:TODO Terrible name 'intersectAtoms'

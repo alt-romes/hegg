@@ -9,7 +9,11 @@ description:        Fast equality saturation and equality graphs based on "egg:
                     .
                     This package provides e-graphs (see "Data.Equality.Graph"),
                     a data structure which efficiently represents a congruence
-                    relation over many expressions
+                    relation over many expressions.
+                    .
+                    For a monadic interface to e-graphs check out
+                    "Data.Equality.Graph.Monad" (home to the convenient
+                    function 'represent').
                     .
                     Secondly, it provides functions for doing equality
                     saturation (see "Data.Equality.Saturation"), an

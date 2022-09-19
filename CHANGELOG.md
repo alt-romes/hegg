@@ -1,6 +1,6 @@
 # Revision history for hegg
 
-## Unreleased
+## 0.2.0.0 -- 2022-09-19
 
 * Expose `runEqualitySaturation` to run equality saturation on existing e-graphs
     whole instead of focusing on individual expressions

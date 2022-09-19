@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* Expose `runEqualitySaturation` to run equality saturation on existing e-graphs
+    whole instead of focusing on individual expressions
+* (Very) significant performance improvements!
 * Make `CostFunction` polymorphic over the `Cost` type, requiring that type
     to instance `Ord`
 * Make e-graph abstract. The internal structure can still be modified through

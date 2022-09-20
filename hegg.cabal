@@ -79,6 +79,7 @@ library
                       Data.Equality.Analysis,
                       Data.Equality.Saturation.Scheduler,
                       Data.Equality.Saturation.Rewrites,
+                      Data.Equality.Saturation.Debug,
                       Data.Equality.Utils,
                       Data.Equality.Utils.SizedList
     if impl(ghc >= 9.2)

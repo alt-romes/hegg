@@ -18,12 +18,12 @@ import Data.Equality.Analysis
 -- Intuitively, an e-graph is a set of equivalence classes (e-classes). Each e-class is a
 -- set of e-nodes representing equivalent terms from a given language, and an e-node is a function
 -- symbol paired with a list of children e-classes.
-data EGraph l = EGraph
-    { unionFind :: !ReprUnionFind           -- ^ Union find like structure to find canonical representation of an e-class id
-    , classes   :: !(ClassIdMap (EClass l)) -- ^ Map canonical e-class ids to their e-classes
-    , memo      :: !(Memo l)                -- ^ Hashcons maps all canonical e-nodes to their e-class ids
-    , worklist  :: !(Worklist l)            -- ^ Worklist of e-class ids that need to be upward merged
-    , analysisWorklist :: !(Worklist l)     -- ^ Like 'worklist' but for analysis repairing
+data EGraph analysis language = EGraph
+    { unionFind :: !ReprUnionFind              -- ^ Union find like structure to find canonical representation of an e-class id
+    , classes   :: !(ClassIdMap (EClass analysis language)) -- ^ Map canonical e-class ids to their e-classes
+    , memo      :: !(Memo language)            -- ^ Hashcons maps all canonical e-nodes to their e-class ids
+    , worklist  :: !(Worklist language)        -- ^ Worklist of e-class ids that need to be upward merged
+    , analysisWorklist :: !(Worklist language) -- ^ Like 'worklist' but for analysis repairing
     }
 
 -- | The hashcons 𝐻  is a map from e-nodes to e-class ids
@@ -32,7 +32,7 @@ type Memo l = NodeMap l ClassId
 -- | Maintained worklist of e-class ids that need to be “upward merged”
 type Worklist l = [(ClassId, ENode l)]
 
-instance (Show (Domain l), Show1 l) => Show (EGraph l) where
+instance (Show (Domain a l), Show1 l) => Show (EGraph a l) where
     show (EGraph a b c d e) =
         "UnionFind: " <> show a <>
             "\n\nE-Classes: " <> show b <>

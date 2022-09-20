@@ -28,11 +28,12 @@ import Control.Monad.Trans.State.Strict
 
 import Data.Equality.Utils (Fix, cata)
 
+import Data.Equality.Analysis
 import Data.Equality.Graph (EGraph, ClassId, Language, ENode(..))
 import qualified Data.Equality.Graph as EG
 
 -- | E-graph stateful computation
-type EGraphM s = State (EGraph s)
+type EGraphM a l = State (EGraph a l)
 
 -- | Run EGraph computation on an empty e-graph
 --
@@ -43,18 +44,18 @@ type EGraphM s = State (EGraph s)
 --  id2 <- represent t2
 --  merge id1 id2
 -- @
-egraph :: Language l => EGraphM l a -> (a, EGraph l)
+egraph :: Language l => EGraphM anl l a -> (a, EGraph anl l)
 egraph = runEGraphM EG.emptyEGraph
 {-# INLINE egraph #-}
 
 -- | Represent an expression (@Fix l@) in an e-graph by recursively
 -- representing sub expressions
-represent :: Language l => Fix l -> EGraphM l ClassId
+represent :: (Analysis anl l, Language l) => Fix l -> EGraphM anl l ClassId
 represent = cata $ sequence >=> add . Node
 {-# INLINE represent #-}
 
 -- | Add an e-node to the e-graph
-add :: Language l => ENode l -> EGraphM l ClassId
+add :: (Analysis anl l, Language l) => ENode l -> EGraphM anl l ClassId
 add = StateT . fmap pure . EG.add
 {-# INLINE add #-}
 
@@ -62,7 +63,7 @@ add = StateT . fmap pure . EG.add
 --
 -- E-graph invariants may be broken by merging, and 'rebuild' should be used
 -- /eventually/ to restore them
-merge :: Language l => ClassId -> ClassId -> EGraphM l ClassId
+merge :: (Analysis anl l, Language l) => ClassId -> ClassId -> EGraphM anl l ClassId
 merge a b = StateT (pure <$> EG.merge a b)
 {-# INLINE merge #-}
 
@@ -73,11 +74,11 @@ merge a b = StateT (pure <$> EG.merge a b)
 -- 'rebuild')
 --
 -- The paper describing rebuilding in detail is https://arxiv.org/abs/2004.03082
-rebuild :: Language l => EGraphM l ()
+rebuild :: (Analysis anl l, Language l) => EGraphM anl l ()
 rebuild = StateT (pure . ((),). EG.rebuild)
 {-# INLINE rebuild #-}
 
 -- | Run 'EGraphM' computation on a given e-graph
-runEGraphM :: EGraph l -> EGraphM l a -> (a, EGraph l)
+runEGraphM :: EGraph anl l -> EGraphM anl l a -> (a, EGraph anl l)
 runEGraphM = flip runState
 {-# INLINE runEGraphM #-}

@@ -1,4 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-|
@@ -69,7 +68,7 @@ ematch db patr =
      in mapMaybe f (genericJoin db q)
 
 -- | Convert an e-graph into a database
-eGraphToDatabase :: Language l => EGraph l -> Database l
+eGraphToDatabase :: Language l => EGraph a l -> Database l
 eGraphToDatabase egr = foldrWithKeyNM' addENodeToDB (DB mempty) (egr^._memo)
   where
 

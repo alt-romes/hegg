@@ -33,8 +33,8 @@ import Data.Equality.Matching.Database
 --
 -- See the definition of @is_not_zero@ in the documentation for
 -- 'RewriteCondition'
-data Rewrite lang = !(Pattern lang) := !(Pattern lang)          -- ^ Trivial Rewrite
-                  | !(Rewrite lang) :| !(RewriteCondition lang) -- ^ Conditional Rewrite
+data Rewrite anl lang = !(Pattern lang) := !(Pattern lang)          -- ^ Trivial Rewrite
+                      | !(Rewrite anl lang) :| !(RewriteCondition anl lang) -- ^ Conditional Rewrite
 infix 3 :=
 infixl 2 :|
 
@@ -50,9 +50,9 @@ infixl 2 :|
 --      Just class_id ->
 --          egr^._class class_id._data /= Just 0
 -- @
-type RewriteCondition lang = Subst -> EGraph lang -> Bool
+type RewriteCondition anl lang = Subst -> EGraph anl lang -> Bool
 
 
-instance Show1 lang => Show (Rewrite lang) where
+instance Show1 lang => Show (Rewrite anl lang) where
   show (rw :| _) = show rw <> " :| <cond>"
   show (lhs := rhs) = show lhs <> " := " <> show rhs

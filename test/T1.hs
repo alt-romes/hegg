@@ -16,7 +16,6 @@ import Data.Equality.Graph
 import Data.Equality.Matching
 import Data.Equality.Saturation
 import Data.Equality.Saturation.Scheduler
-import Data.Equality.Analysis
 
 data TreeF a = VarF Int
              | ConstF Double
@@ -101,11 +100,6 @@ instance Floating (Pattern TreeF) where
   l ** r      = undefined
   logBase l r = undefined
 
-instance Analysis TreeF where
-    type Domain TreeF = ()
-    makeA _ _ = ()
-    joinA _ _ = ()
-
 instance Language TreeF
 
 cost :: CostFunction TreeF Int
@@ -118,7 +112,7 @@ cost = \case
   DivF c1 c2 -> c1 + c2 + 5
   LogF c -> c + 2
 
-tmpRewrites :: [Rewrite TreeF]
+tmpRewrites :: [Rewrite () TreeF]
 tmpRewrites = [
         "x" + "y" := "y" + "x"
       , "x" * "y" := "y" * "x"
@@ -137,7 +131,7 @@ tmpRewrites = [
       , log 1 := 0
     ]
 
-rewriteTree :: Fix TreeF -> (Fix TreeF, EGraph TreeF)
+rewriteTree :: Fix TreeF -> (Fix TreeF, EGraph () TreeF)
 rewriteTree t = equalitySaturation' (BackoffScheduler 1000 15) t tmpRewrites cost
 
 x, y :: Fix TreeF

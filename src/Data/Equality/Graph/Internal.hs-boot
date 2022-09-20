@@ -4,6 +4,6 @@ module Data.Equality.Graph.Internal where
 
 import Data.Kind
 
-type EGraph :: (Type -> Type) -> Type
-type role EGraph nominal
-data EGraph l
+type role EGraph nominal nominal
+type EGraph :: Type -> (Type -> Type) -> Type
+data EGraph a l

@@ -14,10 +14,9 @@ import Data.Functor.Classes
 
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
+import Data.Equality.Analysis
 
 import Data.Equality.Utils.SizedList
-
-import Data.Equality.Analysis
 
 -- | An e-class (an equivalence class of terms) of a language @l@.
 --
@@ -25,13 +24,13 @@ import Data.Equality.Analysis
 -- e-class is a set of e-nodes representing equivalent terms from a given
 -- language, and an e-node is a function symbol paired with a list of children
 -- e-classes.
-data EClass l = EClass
+data EClass analysis language = EClass
     { eClassId      :: {-# UNPACK #-} !ClassId -- ^ E-class identifier
-    , eClassNodes   :: !(S.Set (ENode l))      -- ^ E-nodes in this class
-    , eClassData    :: Domain l                -- ^ The analysis data associated with this eclass.
-    , eClassParents :: !(SList (ClassId, ENode l))   -- ^ E-nodes which are parents of this e-class and their corresponding e-class ids.
+    , eClassNodes   :: !(S.Set (ENode language))      -- ^ E-nodes in this class
+    , eClassData    :: Domain analysis language              -- ^ The analysis data associated with this eclass.
+    , eClassParents :: !(SList (ClassId, ENode language)) -- ^ E-nodes which are parents of this e-class and their corresponding e-class ids.
     }
 
-instance (Show (Domain l), Show1 l) => Show (EClass l) where
+instance (Show (Domain a l), Show1 l) => Show (EClass a l) where
     show (EClass a b d (SList c _)) = "Id: " <> show a <> "\nNodes: " <> show b <> "\nParents: " <> show c <> "\nData: " <> show d
 

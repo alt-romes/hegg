@@ -9,7 +9,6 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards #-}
 module Invariants where
 
 import Test.Tasty
@@ -27,7 +26,6 @@ import qualified Data.IntMap.Strict as IM
 import Data.Equality.Graph.Monad as GM
 import Data.Equality.Graph.Lens
 import Data.Equality.Graph
-import Data.Equality.Analysis
 import Data.Equality.Extraction
 import Data.Equality.Saturation
 import Data.Equality.Matching
@@ -40,12 +38,6 @@ type role SimpleExpr nominal
 newtype SimpleExpr l = SE (Expr l)
     deriving (Functor, Foldable, Traversable, Show1, Eq1, Ord1, Language)
 
-instance Analysis SimpleExpr where
-    type Domain SimpleExpr = ()
-    makeA _ _ = ()
-    joinA = (<>)
-    modifyA _ = id
-
 -- | When a rewrite of type "x":=c where x is a pattern variable and c is a
 -- constant is used in equality saturation of any expression, all e-classes
 -- should be merged into a single one, since all classes are equal to c and
@@ -53,11 +45,11 @@ instance Analysis SimpleExpr where
 patFoldAllClasses :: forall l. (Language l, Num (Pattern l))
                   => Fix l -> Integer -> Bool
 patFoldAllClasses expr i =
-    case IM.toList $ (eg^._classes) of
+    case IM.toList (eg^._classes) of
         [_] -> True
         _   -> False
     where
-        eg :: EGraph l
+        eg :: EGraph () l
         eg = snd $ equalitySaturation expr [VariablePattern 1:=fromInteger i] (error "Cost function shouldn't be used" :: CostFunction l Int)
 
 -- | Test 'compileToQuery'.
@@ -93,7 +85,7 @@ testCompileToQuery p = case fst $ compileToQuery p of
 
 -- | If we match a singleton variable pattern against an e-graph, we should get
 -- a match on all e-classes in the e-graph
-ematchSingletonVar :: Language lang => Var -> EGraph lang -> Bool
+ematchSingletonVar :: Language lang => Var -> EGraph () lang -> Bool
 ematchSingletonVar v eg =
     let
         db = eGraphToDatabase eg
@@ -122,7 +114,7 @@ ematchSingletonVar v eg =
 --
 -- ROMES:TODO Should I rebuild it here? Then the property test is that after rebuilding ...HashConsInvariant
 hashConsInvariant :: forall l. Language l
-                  => EGraph l -> Bool
+                  => EGraph () l -> Bool
 hashConsInvariant eg =
     all f (IM.toList (eg^._classes))
     where
@@ -134,7 +126,7 @@ hashConsInvariant eg =
             Just i' -> i' == find i eg 
 
 benchSaturate :: forall l. Language l
-              => [Rewrite l] -> (l Int -> Int) -> Fix l -> Bool
+              => [Rewrite () l] -> (l Int -> Int) -> Fix l -> Bool
 benchSaturate rws cost expr =
     equalitySaturation expr rws cost `seq` True
 
@@ -142,12 +134,12 @@ benchSaturate rws cost expr =
 -- ROMES:TODO: Property: Extract expression after equality saturation is always better or equal to the original expression
 
 -- ROMES:TODO: Use action trick https://jaspervdj.be/posts/2015-03-13-practical-testing-in-haskell.html
-instance Arbitrary (EGraph SimpleExpr) where
+instance Arbitrary (EGraph () SimpleExpr) where
     arbitrary = sized $ \n -> do
         exps <- forM [0..n] $ const arbitrary
         -- rws :: [Rewrite Expr] <- forM [0..n] $ const arbitrary
         (ids, eg) <- return $ egraph $
-            mapM represent exps
+            mapM GM.represent exps
         ids1 <- sublistOf ids
         ids2 <- sublistOf ids
         return $ snd $ runEGraphM eg $ do

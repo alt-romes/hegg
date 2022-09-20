@@ -54,6 +54,7 @@ import Data.Equality.Graph.Lens
 import qualified Data.Equality.Graph as G
 import Data.Equality.Graph.Monad
 import Data.Equality.Language
+import Data.Equality.Analysis
 import Data.Equality.Graph.Classes
 import Data.Equality.Matching
 import Data.Equality.Matching.Database
@@ -63,12 +64,12 @@ import Data.Equality.Saturation.Rewrites
 import Data.Equality.Saturation.Scheduler
 
 -- | Equality saturation with defaults
-equalitySaturation :: forall l cost
-                    . (Language l, Ord cost)
+equalitySaturation :: forall a l cost
+                    . (Analysis a l, Language l, Ord cost)
                    => Fix l               -- ^ Expression to run equality saturation on
-                   -> [Rewrite l]         -- ^ List of rewrite rules
+                   -> [Rewrite a l]         -- ^ List of rewrite rules
                    -> CostFunction l cost -- ^ Cost function to extract the best equivalent representation
-                   -> (Fix l, EGraph l)   -- ^ Best equivalent expression and resulting e-graph
+                   -> (Fix l, EGraph a l)   -- ^ Best equivalent expression and resulting e-graph
 equalitySaturation = equalitySaturation' defaultBackoffScheduler
 
 
@@ -76,13 +77,13 @@ equalitySaturation = equalitySaturation' defaultBackoffScheduler
 -- extract the best equivalent expression according to the given cost function
 --
 -- This variant takes all arguments instead of using defaults
-equalitySaturation' :: forall l schd cost
-                    . (Language l, Scheduler schd, Ord cost)
+equalitySaturation' :: forall a l schd cost
+                    . (Analysis a l, Language l, Scheduler schd, Ord cost)
                     => schd                -- ^ Scheduler to use
                     -> Fix l               -- ^ Expression to run equality saturation on
-                    -> [Rewrite l]         -- ^ List of rewrite rules
+                    -> [Rewrite a l]       -- ^ List of rewrite rules
                     -> CostFunction l cost -- ^ Cost function to extract the best equivalent representation
-                    -> (Fix l, EGraph l)   -- ^ Best equivalent expression and resulting e-graph
+                    -> (Fix l, EGraph a l)   -- ^ Best equivalent expression and resulting e-graph
 equalitySaturation' schd expr rewrites cost = egraph $ do
 
     -- Represent expression as an e-graph
@@ -98,17 +99,17 @@ equalitySaturation' schd expr rewrites cost = egraph $ do
 
 -- | Run equality saturation on an e-graph by non-destructively applying all
 -- given rewrite rules until saturation (using the given 'Scheduler')
-runEqualitySaturation :: forall l schd
-                       . (Language l, Scheduler schd)
+runEqualitySaturation :: forall a l schd
+                       . (Analysis a l, Language l, Scheduler schd)
                       => schd                -- ^ Scheduler to use
-                      -> [Rewrite l]         -- ^ List of rewrite rules
-                      -> EGraphM l ()
+                      -> [Rewrite a l]       -- ^ List of rewrite rules
+                      -> EGraphM a l ()
 runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- Start at iteration 0
 
   -- Take map each rewrite rule to stats on its usage so we can do
   -- backoff scheduling. Each rewrite rule is assigned an integer
   -- (corresponding to its position in the list of rewrite rules)
-  runEqualitySaturation' :: Int -> IM.IntMap (Stat schd) -> EGraphM l ()
+  runEqualitySaturation' :: Int -> IM.IntMap (Stat schd) -> EGraphM a l ()
   runEqualitySaturation' 30 _ = return () -- Stop after X iterations
   runEqualitySaturation' i stats = do
 
@@ -138,7 +139,7 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
                 && IM.size afterClasses == IM.size beforeClasses)
           (runEqualitySaturation' (i+1) newStats)
 
-  matchWithScheduler :: Database l -> Int -> IM.IntMap (Stat schd) -> (Int, Rewrite l) -> ([(Rewrite l, Match)], IM.IntMap (Stat schd))
+  matchWithScheduler :: Database l -> Int -> IM.IntMap (Stat schd) -> (Int, Rewrite a l) -> ([(Rewrite a l, Match)], IM.IntMap (Stat schd))
   matchWithScheduler db i stats = \case
       (rw_id, rw :| cnd) -> first (map (first (:| cnd))) $ matchWithScheduler db i stats (rw_id, rw)
       (rw_id, lhs := rhs) -> do
@@ -158,7 +159,7 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
 
                 (map (lhs := rhs,) matches', newStats)
 
-  applyMatchesRhs :: (Rewrite l, Match) -> EGraphM l ()
+  applyMatchesRhs :: (Rewrite a l, Match) -> EGraphM a l ()
   applyMatchesRhs =
       \case
           (rw :| cond, m@(Match subst _)) -> do
@@ -187,12 +188,12 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
               return ()
 
   -- | Represent a pattern in the e-graph a pattern given substitions
-  reprPat :: Subst -> l (Pattern l) -> EGraphM l ClassId
+  reprPat :: Subst -> l (Pattern l) -> EGraphM a l ClassId
   reprPat subst = add . Node <=< traverse \case
       VariablePattern v ->
           case IM.lookup v subst of
               Nothing -> error "impossible: couldn't find v in subst?"
               Just i  -> return i
       NonVariablePattern p -> reprPat subst p
-
 {-# INLINEABLE runEqualitySaturation #-}
+

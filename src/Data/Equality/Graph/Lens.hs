@@ -39,7 +39,7 @@ type Lens' s a = forall f. Functor f => (a -> f a) -> (s -> f s)
 -- | Lens for the e-class with the given id in an e-graph
 --
 -- Calls 'error' when the e-class doesn't exist
-_class :: ClassId -> Lens' (EGraph l) (EClass l)
+_class :: ClassId -> Lens' (EGraph a l) (EClass a l)
 _class i afa s =
     let canon_id = findRepr i (unionFind s)
      in (\c' -> s { classes = IM.insert canon_id c' (classes s) }) <$> afa (classes s IM.! canon_id)
@@ -47,27 +47,27 @@ _class i afa s =
 
 -- | Lens for the memo of e-nodes in an e-graph, that is, a mapping from
 -- e-nodes to the e-class they're represented in
-_memo :: Lens' (EGraph l) (NodeMap l ClassId)
+_memo :: Lens' (EGraph a l) (NodeMap l ClassId)
 _memo afa egr = (\m1 -> egr {memo = m1}) <$> afa (memo egr)
 {-# INLINE _memo #-}
 
 -- | Lens for the map of existing classes by id in an e-graph
-_classes :: Lens' (EGraph l) (ClassIdMap (EClass l))
+_classes :: Lens' (EGraph a l) (ClassIdMap (EClass a l))
 _classes afa egr = (\m1 -> egr {classes = m1}) <$> afa (classes egr)
 {-# INLINE _classes #-}
 
 -- | Lens for the 'Domain' of an e-class
-_data :: Lens' (EClass l) (Domain l)
+_data :: Lens' (EClass a l) (Domain a l)
 _data afa EClass{..} = (\d1 -> EClass eClassId eClassNodes d1 eClassParents) <$> afa eClassData
 {-# INLINE _data #-}
 
 -- | Lens for the parent e-classes of an e-class
-_parents :: Lens' (EClass l) (SList (ClassId, ENode l))
-_parents afa EClass{..} = (\ps -> EClass eClassId eClassNodes eClassData ps) <$> afa eClassParents
+_parents :: Lens' (EClass a l) (SList (ClassId, ENode l))
+_parents afa EClass{..} = EClass eClassId eClassNodes eClassData <$> afa eClassParents
 {-# INLINE _parents #-}
 
 -- | Lens for the e-nodes in an e-class
-_nodes :: Lens' (EClass l) (S.Set (ENode l))
+_nodes :: Lens' (EClass a l) (S.Set (ENode l))
 _nodes afa EClass{..} = (\ns -> EClass eClassId ns eClassData eClassParents) <$> afa eClassNodes
 {-# INLINE _nodes #-}
 

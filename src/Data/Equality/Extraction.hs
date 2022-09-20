@@ -1,10 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ViewPatterns #-}
 {-|
    Given an e-graph representing expressions of our language, we might want to
@@ -45,9 +39,9 @@ import Data.Equality.Graph.Lens
 -- @
 --
 -- For a real example you might want to check out the source code of 'Data.Equality.Saturation.equalitySaturation''
-extractBest :: forall lang cost
+extractBest :: forall anl lang cost
              . (Language lang, Ord cost)
-            => EGraph lang            -- ^ The e-graph out of which we are extracting an expression
+            => EGraph anl lang        -- ^ The e-graph out of which we are extracting an expression
             -> CostFunction lang cost -- ^ The cost function to define /best/
             -> ClassId                -- ^ The e-class from which we'll extract the expression
             -> Fix lang               -- ^ The resulting /best/ expression, in its fixed point form.
@@ -66,14 +60,14 @@ extractBest egr cost (flip find egr -> i) =
   where
 
     -- | Find the lowest cost of all e-classes in an e-graph in an extraction
-    findCosts :: ClassIdMap (EClass lang) -> ClassIdMap (CostWithExpr lang cost) -> ClassIdMap (CostWithExpr lang cost)
+    findCosts :: ClassIdMap (EClass anl lang) -> ClassIdMap (CostWithExpr lang cost) -> ClassIdMap (CostWithExpr lang cost)
     findCosts eclasses current =
 
       let (modified, updated) = IM.foldlWithKey f (False, current) eclasses
 
           {-# INLINE f #-}
-          f :: (Bool, ClassIdMap (CostWithExpr lang cost)) -> Int -> EClass lang -> (Bool, ClassIdMap (CostWithExpr lang cost))
-          f = \acc@(_, beingUpdated) i' EClass{eClassNodes = nodes} ->
+          f :: (Bool, ClassIdMap (CostWithExpr lang cost)) -> Int -> EClass anl lang -> (Bool, ClassIdMap (CostWithExpr lang cost))
+          f acc@(_, beingUpdated) i' EClass{eClassNodes = nodes} =
                 let
                     currentCost = IM.lookup i' beingUpdated
 
@@ -107,7 +101,7 @@ extractBest egr cost (flip find egr -> i) =
     nodeTotalCost :: Traversable lang => ClassIdMap (CostWithExpr lang cost) -> ENode lang -> Maybe (CostWithExpr lang cost)
     nodeTotalCost m (Node n) = do
         expr <- traverse ((`IM.lookup` m) . flip find egr) n
-        return $ CostWithExpr (cost ((fst . unCWE) <$> expr), (Fix $ (snd . unCWE) <$> expr))
+        return $ CostWithExpr (cost (fst . unCWE <$> expr), Fix $ snd . unCWE <$> expr)
     {-# INLINE nodeTotalCost #-}
 {-# INLINABLE extractBest #-}
 
@@ -140,7 +134,7 @@ depthCost = (+1) . sum
 -- | Find the current best node and its cost in an equivalence class given only the class and the current extraction
 -- This is not necessarily the best node in the e-graph, only the best in the current extraction state
 findBest :: ClassId -> ClassIdMap (CostWithExpr lang a) -> Maybe (CostWithExpr lang a)
-findBest i = IM.lookup i
+findBest = IM.lookup
 {-# INLINE findBest #-}
 
 newtype CostWithExpr lang a = CostWithExpr { unCWE :: (a, Fix lang) }

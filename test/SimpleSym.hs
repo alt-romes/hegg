@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -31,9 +32,10 @@ deriveEq1   ''SymExpr
 deriveOrd1  ''SymExpr
 deriveShow1 ''SymExpr
 
-instance Analysis SymExpr where
-  type Domain SymExpr = ()
-  makeA _ _ = ()
+data SE
+instance Analysis SE SymExpr where
+  type Domain SE SymExpr = ()
+  makeA _ = ()
   joinA _ _ = ()
 
 instance Language SymExpr
@@ -46,18 +48,18 @@ cost = \case
   c1 :*: c2 -> c1 + c2 + 3
   c1 :/: c2 -> c1 + c2 + 4
 
-rewrites :: [Rewrite SymExpr]
+rewrites :: [Rewrite SE SymExpr]
 rewrites =
   [ pat (pat ("a" :*: "b") :/: "c") := pat ("a" :*: pat ("b" :/: "c"))
   , pat ("x" :/: "x")               := pat (Const 1)
-  , pat ("x" :*: (pat (Const 1)))   := "x"
+  , pat ("x" :*: pat (Const 1))   := "x"
   ]
 
 rewrite :: Fix SymExpr -> Fix SymExpr
 rewrite e = fst (equalitySaturation e rewrites cost)
 
 e1 :: Fix SymExpr
-e1 = Fix (Fix (Fix (Symbol "x") :*: Fix (Const 2)) :/: (Fix (Const 2))) -- (x*2)/2
+e1 = Fix (Fix (Fix (Symbol "x") :*: Fix (Const 2)) :/: Fix (Const 2)) -- (x*2)/2
 
 simpleSymTests :: TestTree
 simpleSymTests = testGroup "Simple Sym"

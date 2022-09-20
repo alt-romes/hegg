@@ -30,8 +30,6 @@ module Data.Equality.Language where
 
 import Data.Functor.Classes
 
-import Data.Equality.Analysis
-
 -- | A 'Language' is the required constraint on /expressions/ that are to be
 -- represented in an e-graph.
 --
@@ -40,5 +38,5 @@ import Data.Equality.Analysis
 -- e-graphs), note that it must satisfy the other class constraints. In
 -- particular an 'Data.Equality.Analysis.Analysis' must be defined for the
 -- language.
-class (Analysis l, Traversable l, Ord1 l) => Language l where
+class (Traversable l, Ord1 l) => Language l where
 

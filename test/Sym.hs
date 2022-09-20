@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -25,7 +26,6 @@ import qualified Data.Foldable as F
 import Control.Applicative (liftA2)
 import Control.Monad (unless)
 
-import Data.Equality.Graph.Monad as GM
 import Data.Equality.Graph.Lens
 import Data.Equality.Graph
 import Data.Equality.Extraction
@@ -109,10 +109,11 @@ instance Fractional (Pattern Expr) where
 
 -- | Define analysis for the @Expr@ language over domain @Maybe Double@ for
 -- constant folding
-instance Analysis Expr where
-    type Domain Expr = Maybe Double
+data EA
+instance Analysis EA Expr where
+    type Domain EA Expr = Maybe Double
 
-    makeA (Node e) egr = evalConstant ((\c -> egr^._class c._data) <$> e)
+    makeA = evalConstant
 
     -- joinA = (<|>)
     joinA ma mb = do
@@ -124,17 +125,23 @@ instance Analysis Expr where
         !_ <- unless (a == b || (a == 0 && b == (-0)) || (a == (-0) && b == 0)) (error "Merged non-equal constants!")
         return a
 
-    modifyA i egr =
-        case egr ^._class i._data of
-          Nothing -> egr
-          Just d  -> snd $ runEGraphM egr $ do
+    modifyA cl = case cl^._data of
+                 Nothing -> (cl, [])
+                 Just d -> ((_nodes %~ S.filter (F.null .unNode)) cl, [Fix (Const d)])
+    -- modifyA cl = case cl^._data of
+    --                Nothing -> []
+    --                Just d -> AddExpr (Fix $ Const d):map DeleteENode (S.toList $ S.filter (F.null . unNode) (cl^._nodes))
+    -- modifyA i egr =
+    --     case egr ^._class i._data of
+    --       Nothing -> egr
+    --       Just d  -> snd $ runEGraphM egr $ do
 
-            -- Add constant as e-node
-            new_c <- represent (Fix $ Const d)
-            _     <- GM.merge i new_c
+    --         -- Add constant as e-node
+    --         new_c <- represent (Fix $ Const d)
+    --         _     <- GM.merge i new_c
 
-            -- Prune all except leaf e-nodes
-            modify (_class i._nodes %~ S.filter (F.null . unNode))
+    --         -- Prune all except leaf e-nodes
+    --         modify (_class i._nodes %~ S.filter (F.null . unNode))
 
 
 
@@ -161,19 +168,19 @@ unsafeGetSubst (VariablePattern v) subst = case IM.lookup v subst of
       Nothing -> error "Searching for non existent bound var in conditional"
       Just class_id -> class_id
 
-is_not_zero :: Pattern Expr -> RewriteCondition Expr
+is_not_zero :: Pattern Expr -> RewriteCondition EA Expr
 is_not_zero v subst egr =
     egr^._class (unsafeGetSubst v subst)._data /= Just 0
 
-is_sym :: Pattern Expr -> RewriteCondition Expr
+is_sym :: Pattern Expr -> RewriteCondition EA Expr
 is_sym v subst egr =
     any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class (unsafeGetSubst v subst)._nodes)
 
-is_const :: Pattern Expr -> RewriteCondition Expr
+is_const :: Pattern Expr -> RewriteCondition EA Expr
 is_const v subst egr =
     isJust (egr^._class (unsafeGetSubst v subst)._data)
 
-is_const_or_distinct_var :: Pattern Expr -> Pattern Expr -> RewriteCondition Expr
+is_const_or_distinct_var :: Pattern Expr -> Pattern Expr -> RewriteCondition EA Expr
 is_const_or_distinct_var v w subst egr =
     let v' = unsafeGetSubst v subst
         w' = unsafeGetSubst w subst
@@ -181,7 +188,7 @@ is_const_or_distinct_var v w subst egr =
         && (isJust (egr^._class v'._data)
             || any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class v'._nodes))
 
-rewrites :: [Rewrite Expr]
+rewrites :: [Rewrite EA Expr]
 rewrites =
     [ "a"+"b" := "b"+"a" -- comm add
     , "a"*"b" := "b"*"a" -- comm mul
@@ -252,12 +259,12 @@ rewrites =
     ]
 
 rewrite :: Fix Expr -> Fix Expr
-rewrite e = fst $ equalitySaturation e rewrites symCost
+rewrite e = fst $ equalitySaturation @EA e rewrites symCost
 
 symTests :: TestTree
 symTests = testGroup "Symbolic"
     [ testCase "(a*2)/2 = a (custom rules)" $
-        fst (equalitySaturation (("a"*2)/2) [ ("x"*"y")/"z" := "x"*("y"/"z")
+        fst (equalitySaturation @EA (("a"*2)/2) [ ("x"*"y")/"z" := "x"*("y"/"z")
                                             , "y"/"y" := 1
                                             , "x"*1 := "x"] symCost) @?= "a"
 
@@ -269,7 +276,7 @@ symTests = testGroup "Symbolic"
 
     , testCase "x/y (custom rules)" $
         -- without backoff scheduler this will loop forever
-        fst (equalitySaturation
+        fst (equalitySaturation @EA
                 ("x"/"y")
 
                 [ "x"/"y" := "x"*(1/"y")
@@ -282,13 +289,13 @@ symTests = testGroup "Symbolic"
         fst (equalitySaturation (0+1) rewrites symCost)   @?= 1
 
     , testCase "b*(1/b) = 1 (custom rules)" $
-        fst (equalitySaturation ("b"*(1/"b")) [ "a"*(1/"a") := 1 ] symCost) @?= 1
+        fst (equalitySaturation @EA ("b"*(1/"b")) [ "a"*(1/"a") := 1 ] symCost) @?= 1
 
     , testCase "1+1=2 (constant folding)" $
-        fst (equalitySaturation (1+1) [] symCost) @?= 2
+        fst (equalitySaturation @EA (1+1) [] symCost) @?= 2
 
     , testCase "a*(2-1) (1 rule + constant folding)" $
-        fst (equalitySaturation ("a" * (2-1)) ["x"*1:="x"] symCost) @?= "a"
+        fst (equalitySaturation @EA ("a" * (2-1)) ["x"*1:="x"] symCost) @?= "a"
 
     , testCase "1+a*(2-1) = 1+a (all + constant folding)" $
         rewrite (1+("a"*(2-1))) @?= (1+"a")

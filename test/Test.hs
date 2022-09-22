@@ -1,5 +1,9 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 import Test.Tasty
+import Test.Tasty.HUnit
+
+import Control.Exception
 
 -- import Data.Equality.Utils
 import Invariants
@@ -7,12 +11,15 @@ import Sym
 import Lambda
 import SimpleSym
 
+import qualified T1
+
 tests :: TestTree
 tests = testGroup "Tests"
   [ symTests
   , lambdaTests
   , simpleSymTests
   , invariants
+  , testCase "T1" (T1.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
   ]
 
 main :: IO ()

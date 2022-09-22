@@ -8,6 +8,8 @@ iteration of equality saturation.
 -}
 module Data.Equality.Saturation.Rewrites where
 
+import Data.Functor.Classes
+
 import Data.Equality.Graph
 import Data.Equality.Matching
 import Data.Equality.Matching.Database
@@ -50,3 +52,7 @@ infixl 2 :|
 -- @
 type RewriteCondition lang = Subst -> EGraph lang -> Bool
 
+
+instance Show1 lang => Show (Rewrite lang) where
+  show (rw :| _) = show rw <> " :| <cond>"
+  show (lhs := rhs) = show lhs <> " := " <> show rhs

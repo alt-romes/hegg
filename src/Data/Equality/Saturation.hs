@@ -48,8 +48,6 @@ import qualified Data.IntMap.Strict as IM
 import Data.Bifunctor
 import Control.Monad
 
-import Data.Proxy
-
 import Data.Equality.Utils
 import Data.Equality.Graph.Nodes
 import Data.Equality.Graph.Lens
@@ -71,7 +69,7 @@ equalitySaturation :: forall l cost
                    -> [Rewrite l]         -- ^ List of rewrite rules
                    -> CostFunction l cost -- ^ Cost function to extract the best equivalent representation
                    -> (Fix l, EGraph l)   -- ^ Best equivalent expression and resulting e-graph
-equalitySaturation = equalitySaturation' (Proxy @BackoffScheduler)
+equalitySaturation = equalitySaturation' defaultBackoffScheduler
 
 
 -- | Run equality saturation on an expression given a list of rewrites, and
@@ -80,18 +78,18 @@ equalitySaturation = equalitySaturation' (Proxy @BackoffScheduler)
 -- This variant takes all arguments instead of using defaults
 equalitySaturation' :: forall l schd cost
                     . (Language l, Scheduler schd, Ord cost)
-                    => Proxy schd          -- ^ Proxy for the scheduler to use
+                    => schd                -- ^ Scheduler to use
                     -> Fix l               -- ^ Expression to run equality saturation on
                     -> [Rewrite l]         -- ^ List of rewrite rules
                     -> CostFunction l cost -- ^ Cost function to extract the best equivalent representation
                     -> (Fix l, EGraph l)   -- ^ Best equivalent expression and resulting e-graph
-equalitySaturation' proxy expr rewrites cost = egraph $ do
+equalitySaturation' schd expr rewrites cost = egraph $ do
 
     -- Represent expression as an e-graph
     origClass <- represent expr
 
     -- Run equality saturation (by applying non-destructively all rewrites)
-    runEqualitySaturation proxy rewrites
+    runEqualitySaturation schd rewrites
 
     -- Extract best solution from the e-class of the original expression
     gets $ \g -> extractBest g cost origClass
@@ -102,10 +100,10 @@ equalitySaturation' proxy expr rewrites cost = egraph $ do
 -- given rewrite rules until saturation (using the given 'Scheduler')
 runEqualitySaturation :: forall l schd
                        . (Language l, Scheduler schd)
-                      => Proxy schd          -- ^ Proxy for the scheduler to use
+                      => schd                -- ^ Scheduler to use
                       -> [Rewrite l]         -- ^ List of rewrite rules
                       -> EGraphM l ()
-runEqualitySaturation _ rewrites = runEqualitySaturation' 0 mempty where -- Start at iteration 0
+runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- Start at iteration 0
 
   -- Take map each rewrite rule to stats on its usage so we can do
   -- backoff scheduling. Each rewrite rule is assigned an integer
@@ -156,7 +154,7 @@ runEqualitySaturation _ rewrites = runEqualitySaturation' 0 mempty where -- Star
                 let matches' = ematch db lhs -- Add rewrite to the e-match substitutions
 
                 -- Backoff scheduler: update stats
-                let newStats = updateStats @schd i rw_id x stats matches'
+                let newStats = updateStats schd i rw_id x stats matches'
 
                 (map (lhs := rhs,) matches', newStats)
 

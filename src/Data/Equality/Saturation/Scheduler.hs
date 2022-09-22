@@ -11,7 +11,7 @@ and is used by default in 'Data.Equality.Saturation.equalitySaturation'
 
 -}
 module Data.Equality.Saturation.Scheduler
-    ( Scheduler(..), BackoffScheduler
+    ( Scheduler(..), BackoffScheduler(..), defaultBackoffScheduler
     ) where
 
 import qualified Data.IntMap.Strict as IM
@@ -21,10 +21,11 @@ import Data.Equality.Matching
 -- being used based on statistics it defines and collects on applied rewrite
 -- rules.
 class Scheduler s where
-    type Stat s
+    data Stat s
 
     -- | Scheduler: update stats
-    updateStats :: Int                -- ^ Iteration we're in
+    updateStats :: s                  -- ^ The scheduler itself
+                -> Int                -- ^ Iteration we're in
                 -> Int                -- ^ Index of rewrite rule we're updating
                 -> Maybe (Stat s)     -- ^ Current stat for this rewrite rule (we already got it so no point in doing a lookup again)
                 -> IM.IntMap (Stat s) -- ^ The current stats map
@@ -46,11 +47,23 @@ class Scheduler s where
 -- taking an unfair amount of resources.
 --
 -- Originaly in [egg](https://docs.rs/egg/0.6.0/egg/struct.BackoffScheduler.html)
-data BackoffScheduler
-instance Scheduler BackoffScheduler where
-    type Stat BackoffScheduler = BoSchStat
+data BackoffScheduler = BackoffScheduler
+  { matchLimit :: {-# UNPACK #-} !Int
+  , banLength  :: {-# UNPACK #-} !Int }
 
-    updateStats i rw currentStat stats matches =
+-- | The default 'BackoffScheduler'.
+-- 
+-- The match limit is set to @1000@ and the ban length is set to @10@.
+defaultBackoffScheduler :: BackoffScheduler
+defaultBackoffScheduler = BackoffScheduler 1000 10
+
+instance Scheduler BackoffScheduler where
+    data Stat BackoffScheduler =
+      BSS { bannedUntil :: {-# UNPACK #-} !Int
+          , timesBanned :: {-# UNPACK #-} !Int
+          } deriving Show
+
+    updateStats bos i rw currentStat stats matches =
 
         if total_len > threshold
 
@@ -65,16 +78,13 @@ instance Scheduler BackoffScheduler where
           -- TODO: Overall difficult, and buggy at the moment.
           total_len = sum (map (length . matchSubst) matches)
 
-          defaultMatchLimit = 1000
-          defaultBanLength  = 10
-
           bannedN = case currentStat of
                       Nothing -> 0;
                       Just (timesBanned -> n) -> n
 
-          threshold = defaultMatchLimit * (2^bannedN)
+          threshold = matchLimit bos * (2^bannedN)
 
-          ban_length = defaultBanLength * (2^bannedN)
+          ban_length = banLength bos * (2^bannedN)
 
           updateBans = \case
             Nothing -> Just (BSS (i + ban_length) 1)
@@ -82,7 +92,3 @@ instance Scheduler BackoffScheduler where
 
     isBanned i s = i < bannedUntil s
 
-
-data BoSchStat = BSS { bannedUntil :: {-# UNPACK #-} !Int
-                     , timesBanned :: {-# UNPACK #-} !Int
-                     } deriving Show

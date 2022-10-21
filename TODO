@@ -1,5 +1,5 @@
 Hide  modules unnecessary for user like IntToIntMap
-Use user-defined TrieMap as the NodeMap
+Use user-defined TrieMap as the NodeMap?
 Should try to delete items from findRepr because it only ever gets bigger. Deleting items could speed things up
 FindRepr is almost always at depth0, meaning the issue is with 1time in lookup times, the number of times findRepr is called, and the constant factors
 Memoization for Database

@@ -51,7 +51,7 @@ extractBest :: forall lang cost
             -> CostFunction lang cost -- ^ The cost function to define /best/
             -> ClassId                -- ^ The e-class from which we'll extract the expression
             -> Fix lang               -- ^ The resulting /best/ expression, in its fixed point form.
-extractBest egr cost (flip find egr -> i) = 
+extractBest (rebuild -> egr) cost (flip unsafeFind egr -> i) = 
 
     -- Use `egg`s strategy of find costs for all possible classes and then just
     -- picking up the best from the target e-class.  In practice this shouldn't
@@ -106,7 +106,7 @@ extractBest egr cost (flip find egr -> i) =
     -- with its cost
     nodeTotalCost :: Traversable lang => ClassIdMap (CostWithExpr lang cost) -> ENode lang -> Maybe (CostWithExpr lang cost)
     nodeTotalCost m (Node n) = do
-        expr <- traverse ((`IM.lookup` m) . flip find egr) n
+        expr <- traverse ((`IM.lookup` m) . flip unsafeFind egr) n
         return $ CostWithExpr (cost ((fst . unCWE) <$> expr), (Fix $ (snd . unCWE) <$> expr))
     {-# INLINE nodeTotalCost #-}
 {-# INLINABLE extractBest #-}

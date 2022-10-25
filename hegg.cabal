@@ -77,7 +77,6 @@ library
                       Data.Equality.Extraction,
                       Data.Equality.Language,
                       Data.Equality.Analysis,
-                      Data.Equality.Analysis.Instances,
                       Data.Equality.Saturation.Scheduler,
                       Data.Equality.Saturation.Rewrites,
                       Data.Equality.Utils,

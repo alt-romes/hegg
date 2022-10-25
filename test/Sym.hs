@@ -109,9 +109,7 @@ instance Fractional (Pattern Expr) where
 
 -- | Define analysis for the @Expr@ language over domain @Maybe Double@ for
 -- constant folding
-data EA
-instance Analysis EA Expr where
-    type Domain EA Expr = Maybe Double
+instance Analysis (Maybe Double) Expr where
 
     makeA = evalConstant
 
@@ -168,19 +166,19 @@ unsafeGetSubst (VariablePattern v) subst = case IM.lookup v subst of
       Nothing -> error "Searching for non existent bound var in conditional"
       Just class_id -> class_id
 
-is_not_zero :: Pattern Expr -> RewriteCondition EA Expr
+is_not_zero :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
 is_not_zero v subst egr =
     egr^._class (unsafeGetSubst v subst)._data /= Just 0
 
-is_sym :: Pattern Expr -> RewriteCondition EA Expr
+is_sym :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
 is_sym v subst egr =
     any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class (unsafeGetSubst v subst)._nodes)
 
-is_const :: Pattern Expr -> RewriteCondition EA Expr
+is_const :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
 is_const v subst egr =
     isJust (egr^._class (unsafeGetSubst v subst)._data)
 
-is_const_or_distinct_var :: Pattern Expr -> Pattern Expr -> RewriteCondition EA Expr
+is_const_or_distinct_var :: Pattern Expr -> Pattern Expr -> RewriteCondition (Maybe Double) Expr
 is_const_or_distinct_var v w subst egr =
     let v' = unsafeGetSubst v subst
         w' = unsafeGetSubst w subst
@@ -188,7 +186,7 @@ is_const_or_distinct_var v w subst egr =
         && (isJust (egr^._class v'._data)
             || any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class v'._nodes))
 
-rewrites :: [Rewrite EA Expr]
+rewrites :: [Rewrite (Maybe Double) Expr]
 rewrites =
     [ "a"+"b" := "b"+"a" -- comm add
     , "a"*"b" := "b"*"a" -- comm mul
@@ -259,14 +257,14 @@ rewrites =
     ]
 
 rewrite :: Fix Expr -> Fix Expr
-rewrite e = fst $ equalitySaturation @EA e rewrites symCost
+rewrite e = fst $ equalitySaturation e rewrites symCost
 
 symTests :: TestTree
 symTests = testGroup "Symbolic"
     [ testCase "(a*2)/2 = a (custom rules)" $
-        fst (equalitySaturation @EA (("a"*2)/2) [ ("x"*"y")/"z" := "x"*("y"/"z")
-                                            , "y"/"y" := 1
-                                            , "x"*1 := "x"] symCost) @?= "a"
+        fst (equalitySaturation @(Maybe Double) (("a"*2)/2) [ ("x"*"y")/"z" := "x"*("y"/"z")
+                                                            , "y"/"y" := 1
+                                                            , "x"*1 := "x"] symCost) @?= "a"
 
     , testCase "(a/2)*2 = a (all rules)" $
         rewrite (("a"/2)*2) @?= "a"
@@ -276,7 +274,7 @@ symTests = testGroup "Symbolic"
 
     , testCase "x/y (custom rules)" $
         -- without backoff scheduler this will loop forever
-        fst (equalitySaturation @EA
+        fst (equalitySaturation @(Maybe Double)
                 ("x"/"y")
 
                 [ "x"/"y" := "x"*(1/"y")
@@ -289,13 +287,13 @@ symTests = testGroup "Symbolic"
         fst (equalitySaturation (0+1) rewrites symCost)   @?= 1
 
     , testCase "b*(1/b) = 1 (custom rules)" $
-        fst (equalitySaturation @EA ("b"*(1/"b")) [ "a"*(1/"a") := 1 ] symCost) @?= 1
+        fst (equalitySaturation @(Maybe Double) ("b"*(1/"b")) [ "a"*(1/"a") := 1 ] symCost) @?= 1
 
     , testCase "1+1=2 (constant folding)" $
-        fst (equalitySaturation @EA (1+1) [] symCost) @?= 2
+        fst (equalitySaturation @(Maybe Double) (1+1) [] symCost) @?= 2
 
     , testCase "a*(2-1) (1 rule + constant folding)" $
-        fst (equalitySaturation @EA ("a" * (2-1)) ["x"*1:="x"] symCost) @?= "a"
+        fst (equalitySaturation @(Maybe Double) ("a" * (2-1)) ["x"*1:="x"] symCost) @?= "a"
 
     , testCase "1+a*(2-1) = 1+a (all + constant folding)" $
         rewrite (1+("a"*(2-1))) @?= (1+"a")

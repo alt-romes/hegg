@@ -20,7 +20,6 @@ import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 import Data.Equality.Graph.Classes
 import Data.Equality.Graph.ReprUnionFind
-import Data.Equality.Analysis
 
 -- | A 'Lens'' as defined in other lenses libraries
 type Lens' s a = forall f. Functor f => (a -> f a) -> (s -> f s)
@@ -57,7 +56,7 @@ _classes afa egr = (\m1 -> egr {classes = m1}) <$> afa (classes egr)
 {-# INLINE _classes #-}
 
 -- | Lens for the 'Domain' of an e-class
-_data :: Lens' (EClass a l) (Domain a l)
+_data :: Lens' (EClass domain l) domain
 _data afa EClass{..} = (\d1 -> EClass eClassId eClassNodes d1 eClassParents) <$> afa eClassData
 {-# INLINE _data #-}
 

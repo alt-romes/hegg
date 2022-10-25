@@ -11,7 +11,6 @@ import Data.Functor.Classes
 import Data.Equality.Graph.ReprUnionFind
 import Data.Equality.Graph.Classes
 import Data.Equality.Graph.Nodes
-import Data.Equality.Analysis
 
 -- | E-graph representing terms of language @l@.
 --
@@ -32,7 +31,7 @@ type Memo l = NodeMap l ClassId
 -- | Maintained worklist of e-class ids that need to be “upward merged”
 type Worklist l = [(ClassId, ENode l)]
 
-instance (Show (Domain a l), Show1 l) => Show (EGraph a l) where
+instance (Show a, Show1 l) => Show (EGraph a l) where
     show (EGraph a b c d e) =
         "UnionFind: " <> show a <>
             "\n\nE-Classes: " <> show b <>

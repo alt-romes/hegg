@@ -17,7 +17,6 @@ import Data.Equality.Utils
 import Data.Equality.Matching
 import Data.Equality.Saturation
 import Data.Equality.Language
-import Data.Equality.Analysis
 
 data SymExpr a = Const Double
                | Symbol String
@@ -32,12 +31,6 @@ deriveEq1   ''SymExpr
 deriveOrd1  ''SymExpr
 deriveShow1 ''SymExpr
 
-data SE
-instance Analysis SE SymExpr where
-  type Domain SE SymExpr = ()
-  makeA _ = ()
-  joinA _ _ = ()
-
 instance Language SymExpr
 
 cost :: CostFunction SymExpr Int
@@ -48,7 +41,7 @@ cost = \case
   c1 :*: c2 -> c1 + c2 + 3
   c1 :/: c2 -> c1 + c2 + 4
 
-rewrites :: [Rewrite SE SymExpr]
+rewrites :: [Rewrite () SymExpr]
 rewrites =
   [ pat (pat ("a" :*: "b") :/: "c") := pat ("a" :*: pat ("b" :/: "c"))
   , pat ("x" :/: "x")               := pat (Const 1)

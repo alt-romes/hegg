@@ -65,12 +65,6 @@ import Data.Equality.Utils
 represent :: forall a l. (Analysis a l, Language l) => Fix l -> EGraph a l -> (ClassId, EGraph a l)
 represent = cata (flip $ \e -> uncurry add . first Node . (`runState` e) . traverse (gets >=> \(x,e') -> x <$ put e'))
 
--- f :: l (EGraph a l -> (ClassId, EGraph a l)) -> EGraph a l -> (ClassId, EGraph a l)
--- f l e = uncurry add $ first Node $ (`runState` e) $ traverse g l
-
--- g :: (EGraph a l -> (ClassId, EGraph a l)) -> State (EGraph a l) ClassId
--- g h = gets h >>= \(x,e) -> x <$ put e
-
 -- | Add an e-node to the e-graph
 --
 -- If the e-node is already represented in this e-graph, the class-id of the

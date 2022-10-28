@@ -126,13 +126,6 @@ instance Analysis (Maybe Double) Expr where
     modifyA cl = case cl^._data of
                  Nothing -> (cl, [])
                  Just d -> ((_nodes %~ S.filter (F.null .unNode)) cl, [Fix (Const d)])
-    -- modifyA cl = case cl^._data of
-    --                Nothing -> []
-    --                Just d -> AddExpr (Fix $ Const d):map DeleteENode (S.toList $ S.filter (F.null . unNode) (cl^._nodes))
-    -- modifyA i egr =
-    --     case egr ^._class i._data of
-    --       Nothing -> egr
-    --       Just d  -> snd $ runEGraphM egr $ do
 
     --         -- Add constant as e-node
     --         new_c <- represent (Fix $ Const d)

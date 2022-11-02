@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* A better `Analysis` tutorial in the README.
+
 * Complete `Analysis` redesign.
     * The `Analysis` class now has two type parameters: a `domain` and a
         `language`, and no longer has an associated type family

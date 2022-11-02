@@ -40,8 +40,8 @@ import Data.Equality.Graph.Classes
 class Eq domain => Analysis domain (l :: Type -> Type) where
 
     -- | When a new e-node is added into a new, singleton e-class, construct a
-    -- new value of the domain to be associated with the new e-class, typically
-    -- (always?) by accessing the associated data of n's children
+    -- new value of the domain to be associated with the new e-class, by
+    -- accessing the associated data of the node's children
     --
     -- The argument is the e-node term populated with its children data
     --
@@ -104,18 +104,26 @@ instance forall l. Analysis () l where
   joinA = (<>)
 
 
--- This instance is only well behaved for any two analysis, where 'modifyA' is
--- called @m1@ and @m2@ respectively, if @m1@ and @m2@ commute.
+-- This instance is not necessarily well behaved for any two analysis, so care
+-- must be taken when using it.
 --
--- That is, @m1@ and @m2@ must satisfy the following law:
+-- A possible criterion is:
+--
+-- For any two analysis, where 'modifyA' is called @m1@ and @m2@ respectively,
+-- this instance is well behaved if @m1@ and @m2@ commute.
+--
+-- That is, if @m1@ and @m2@ satisfy the following law:
 -- @
 -- m1 . m2 = m2 . m1
 -- @
 --
--- Here is a simple criterion that should suffice though. If:
+-- A simple criterion that should suffice for commutativity. If:
 --  * The modify function only depends on the analysis value, and
 --  * The modify function doesn't change the analysis value
 -- Then any two such functions commute.
+--
+-- Note: there are weaker (or at least different) criteria for this instance to
+-- be well behaved.
 instance (Language l, Analysis a l, Analysis b l) => Analysis (a, b) l where
 
   makeA :: l (a, b) -> (a, b)

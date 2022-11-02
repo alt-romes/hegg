@@ -1,3 +1,6 @@
+quasi quoter or generic programming for writing fixed point expressions and patterns
+Rewrite rule quasi quoter
+Note: we could provide two analysis interfaces, keeping the very high level one and adding a possible low level one if necessary
 Hide  modules unnecessary for user like IntToIntMap
 Use user-defined TrieMap as the NodeMap?
 Should try to delete items from findRepr because it only ever gets bigger. Deleting items could speed things up

@@ -30,7 +30,6 @@ import Data.Equality.Graph
 import Data.Equality.Extraction
 import Data.Equality.Analysis
 import Data.Equality.Saturation
-import Data.Equality.Saturation.Rewrites
 import Data.Equality.Matching
 import Data.Equality.Matching.Database as D
 import Data.Equality.Graph.Lens

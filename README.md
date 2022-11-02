@@ -96,14 +96,94 @@ With it, we can attach *analysis data* from a semilattice to each e-class. More
 can be read about e-class analysis in the [`Data.Equality.Analsysis`]() module and
 in the paper.
 
-We could easily define constant folding (`2+2` being simplified to `4`) through
-an `Analysis` instance, but for the sake of simplicity we'll simply define the
-analysis data as `()` and always ignore it.
+We can easily define constant folding (`2+2` being simplified to `4`) through
+an `Analysis` instance.
+
+An `Analysis` is defined over a `domain` and a `language`. To define constant
+folding, we'll say the domain is `Maybe Double` to attach a value of that type to
+each e-class, where `Nothing` indicates the e-class does not currently have a
+constant value and `Just i` means the e-class has constant value `i`.
 
 ```hs
-instance Analysis SymExpr where
-  type Domain SymExpr = ()
-  makeA _ _ = ()
+instance Analysis (Maybe Double) SymExpr
+  makeA = ...
+  joinA = ...
+  modifyA = ...
+```
+
+Let's now understand and implement the three methods of the analysis instance we want.
+
+`makeA` is called when a new e-node is added to a new e-class, and constructs
+for the new e-class a new value of the domain to be associated with it, always
+by accessing the associated data of the node's children data.  Its type is `l
+domain -> domain`, so note that the e-node's children associated data is
+directly available in place of the actual children.
+
+We want to associate constant data to the e-class, so we must find if the
+e-node has a constant value or otherwise return `Nothing`:
+
+```hs
+makeA :: SymExpr (Maybe Double) -> Maybe Int
+makeA = \case
+  Const x -> Just x
+  Symbol _ -> Nothing
+  x :+: y -> (+) <$> x <*> y
+  x :*: y -> (*) <$> x <*> y
+  x :/: y -> (/) <$> x <*> y
+```
+ 
+`joinA` is called when e-classes c1 c2 are being merged into c. In this case, we
+must join the e-class data from both classes to form the e-class data to be
+associated with new e-class c. Its type is `domain -> domain -> domain`.  In our
+case, to merge `Just _` with `Nothing` we simply take the `Just`, and if we
+merge two e-classes with a constant value (that is, both are `Just`), then the
+constant value is the same (or something went very wrong) and we just keep it.
+
+```hs
+joinA :: Maybe Double -> Maybe Double -> Maybe Double
+joinA Nothing (Just x) = Just x
+joinA (Just x) Nothing = Just x
+joinA Nothing Nothing  = Nothing
+joinA (Just x) (Just y) = if x == y then Just x else error "ouch, that shouldn't have happened"
+```
+
+Finally, `modifyA` describes how an e-class should (optionally) be modified
+according to the e-class data and what new language expressions are to be added
+to the e-class also w.r.t. the e-class data.
+Its type is `EClass domain l -> (EClass domain l, [Fix l])`, where the argument
+is the class to modify, the first element of the return tuple is the
+(optionally) modified e-class and the second element is a list of the
+expressions to represent and merge with this e-class.
+For our example, if the e-class has a constant value associated to it, we want
+to create a new e-class with that constant value and merge it to this e-class.
+
+```hs
+-- import Data.Equality.Graph.Lens ((^.), _data)
+modifyA :: EClass (Maybe Double) SymExpr -> (EClass (Maybe Double) SymExpr, [Fix SymExpr])
+modifyA c = case c^._data of
+              Nothing -> (c, [])
+              Just i  -> (c, [Fix (Const i)])
+```
+
+Modify is a bit trickier than the other methods, but it allows our e-graph to
+change based on the e-class analysis data. Note that the method is optional and
+there's a default implementation for it which doesn't change the e-class or adds
+anything to it. Analysis data can be otherwise used, e.g., to inform rewrite
+conditions.
+
+By instancing this e-class analysis, all e-classes that have a constant value
+associated to them will also have an e-node with a constant value. This is great
+for our simple symbolic library because it means if we ever find e.g. an
+expression equal to `3+1`, we'll also know it to be equal to `4`, which is a
+better result than `3+1` (we've then successfully implemented constant folding).
+
+If, otherwise, we didn't want to use an analysis, we could specify the analysis
+domain as `()` which will make the analysis do nothing, because there's an
+instance polymorphic over `lang` for `()` that looks like this:
+
+```hs
+instance Analysis () lang where
+  makeA _ = ()
   joinA _ _ = ()
 ```
 
@@ -202,6 +282,10 @@ We can now run equality saturation on our expression!
 let expr = fst (equalitySaturation e1 rewrites cost)
 ```
 And upon printing we'd see `expr = Symbol "x"`!
+
+If we had instead `e2 = Fix (Fix (Fix (Symbol "x") :/: Fix (Symbol "x")) :+:
+(Fix (Const 3))) -- (x/x)+3`, we'd get `expr = Const 4` because of our rewrite
+rules put together with our constant folding!
 
 This was a first introduction which skipped over some details but that tried to
 walk through fundamental concepts for using e-graphs and equality saturation

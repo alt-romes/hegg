@@ -62,6 +62,8 @@ import Data.Equality.Utils
 -- instance Ord1 l => Monoid (EGraph l) where
 --     mempty = EGraph emptyUF mempty mempty mempty
 
+-- | Represent an expression (in it's fixed point form) in an e-graph.
+-- Returns the updated e-graph and the id from the e-class in which it was represented.
 represent :: forall a l. (Analysis a l, Language l) => Fix l -> EGraph a l -> (ClassId, EGraph a l)
 represent = cata (flip $ \e -> uncurry add . first Node . (`runState` e) . traverse (gets >=> \(x,e') -> x <$ put e'))
 

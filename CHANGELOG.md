@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.0.0 -- 2022-12-09
+
 * A better `Analysis` tutorial in the README.
 
 * Complete `Analysis` redesign.
@@ -25,6 +27,9 @@
         (a,b) l`.
     * An `EGraph` now also has two type parameters instead of one (the latter is
       the language is the former the domain of the analysis).
+
+* Allow customization of Schedulers through parameters (by accepting a scheduler
+    rather than a proxy for it)
 
 ## 0.2.0.0 -- 2022-09-19
 

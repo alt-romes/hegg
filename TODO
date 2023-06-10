@@ -1,3 +1,4 @@
+[ ] Point out that we have pure functional e-graphs!!
 quasi quoter or generic programming for writing fixed point expressions and patterns
 Rewrite rule quasi quoter
 Note: we could provide two analysis interfaces, keeping the very high level one and adding a possible low level one if necessary

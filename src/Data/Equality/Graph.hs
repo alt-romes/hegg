@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-|
    An e-graph efficiently represents a congruence relation over many expressions.
 
@@ -23,7 +24,7 @@ module Data.Equality.Graph
     -- , repair, repairAnal
 
       -- ** Querying
-    , find, canonicalize
+    , find, canonicalize, lookup
 
       -- * Re-exports
     , module Data.Equality.Graph.Classes
@@ -32,6 +33,7 @@ module Data.Equality.Graph
     ) where
 
 -- import GHC.Conc
+import Prelude hiding (lookup)
 
 import Data.Function
 import Data.Bifunctor
@@ -304,10 +306,19 @@ canonicalize (Node enode) eg = Node $ fmap (`find` eg) enode
 {-# INLINE canonicalize #-}
 
 -- | Find the canonical representation of an e-class id in the e-graph
+--
 -- Invariant: The e-class id always exists.
 find :: ClassId -> EGraph a l -> ClassId
 find cid = findRepr cid . unionFind
 {-# INLINE find #-}
+
+-- | Find the canonical representation of an e-class id in the e-graph,
+-- returning the e-class analysis data associated to the canonical e-class.
+--
+-- Invariant: The e-class id always exists.
+lookup :: ClassId -> EGraph a l -> a
+lookup cid EGraph{unionFind,classes} = eClassData (classes IM.! (findRepr cid unionFind))
+{-# INLINE lookup #-}
 
 -- | The empty e-graph. Nothing is represented in it yet.
 emptyEGraph :: Language l => EGraph a l

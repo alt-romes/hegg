@@ -11,6 +11,7 @@ module Data.Equality.Graph.Monad
   , EG.canonicalize
   , EG.find
   , EG.emptyEGraph
+  , EG.lookup
 
   -- * E-graph stateful computations
   , EGraphM
@@ -82,3 +83,4 @@ rebuild = StateT (pure . ((),). EG.rebuild)
 runEGraphM :: EGraph anl l -> EGraphM anl l a -> (a, EGraph anl l)
 runEGraphM = flip runState
 {-# INLINE runEGraphM #-}
+

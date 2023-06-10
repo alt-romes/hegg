@@ -1,3 +1,5 @@
+[ ] Freeze/Unfreeze implementation of Union Find with unboxed vectors
+[ ] Point out module should be imported qualified, and rename emptyEG to just `empty`
 [ ] Point out that we have pure functional e-graphs!!
 quasi quoter or generic programming for writing fixed point expressions and patterns
 Rewrite rule quasi quoter

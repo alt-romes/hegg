@@ -24,7 +24,7 @@ module Data.Equality.Graph
     -- , repair, repairAnal
 
       -- ** Querying
-    , find, canonicalize, lookup
+    , find, canonicalize, lookup, adjust
 
       -- * Re-exports
     , module Data.Equality.Graph.Classes
@@ -319,6 +319,14 @@ find cid = findRepr cid . unionFind
 lookup :: ClassId -> EGraph a l -> a
 lookup cid EGraph{unionFind,classes} = eClassData (classes IM.! (findRepr cid unionFind))
 {-# INLINE lookup #-}
+
+-- | Modify the e-class analysis data associated with the canonical
+-- representation of an e-class id in the e-graph
+--
+-- Invariant: The e-class id always exists.
+adjust :: (a -> a) -> ClassId -> EGraph a l -> EGraph a l
+adjust f cid eg@EGraph{unionFind,classes} = eg{classes = IM.adjust (\c@EClass{eClassData=data'} -> c{eClassData=f data'}) (findRepr cid unionFind) classes}
+{-# INLINE adjust #-}
 
 -- | The empty e-graph. Nothing is represented in it yet.
 emptyEGraph :: Language l => EGraph a l

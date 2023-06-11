@@ -25,13 +25,16 @@ module Data.Equality.Graph
     -- , repair, repairAnal
 
       -- ** Querying
-    , find, canonicalize, lookup, adjust, adjustF
+    , find, canonicalize
+    , lookup, adjust, adjustF, traverseAnalysisData
 
       -- * Re-exports
     , module Data.Equality.Graph.Classes
     , module Data.Equality.Graph.Nodes
     , module Data.Equality.Language
     ) where
+
+-- ROMES:TODO: Is the E-Graph a Monad if the analysis data were the type arg? i.e. Monad (EGraph language)?
 
 -- import GHC.Conc
 import Prelude hiding (lookup)
@@ -342,6 +345,14 @@ adjustF f cid eg@EGraph{unionFind,classes}
       g (Just c@EClass{eClassData})
         = Just . (\d' -> c{eClassData=d'}) <$> f eClassData
 {-# INLINE adjustF #-}
+
+traverseAnalysisData :: forall a b l f. Applicative f => (a -> f b) -> EGraph a l -> f (EGraph b l)
+traverseAnalysisData f eg
+  = (\cs' -> eg{classes =cs'}) <$> IM.traverseWithKey (const go) (classes eg)
+    where
+      go :: EClass a l -> f (EClass b l)
+      go c@EClass{eClassData} = (\d' -> c{eClassData=d'}) <$> f eClassData
+{-# INLINE traverseAnalysisData #-}
 
 -- | The empty e-graph. Nothing is represented in it yet.
 emptyEGraph :: Language l => EGraph a l

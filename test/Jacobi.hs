@@ -185,6 +185,12 @@ is_int v subst egr =
       Just x -> snd (properFraction x :: (Int, Double)) == 0
       Nothing -> False
 
+is_positive :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
+is_positive v subst egr =
+    case egr^._class (unsafeGetSubst v subst)._data of
+      Just x -> x > 0
+      Nothing -> False
+
 is_sym :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
 is_sym v subst egr =
     any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class (unsafeGetSubst v subst)._nodes)
@@ -236,10 +242,19 @@ rewrites =
 
     , "x"*(1/"x") := 1 :| is_not_zero "x"
 
+    -- In principle, this with distributivity should capture the
+    -- binomial theorem, but there is some trickiness.
+    , powP "a" "n" := "a" * powP "a" ("n" - 1) :| is_int "n" :| is_positive "n"
+    ]
+
+    -- How can the binomial theorem be represented?
+    -- Is it really only available for one integer at a time?
+    ++ [ powP ("a" + "b") (NonVariablePattern . Const $ fromIntegral n) := sum [(fromInteger $ n `choose` k) * powP "a" (fromInteger k) * powP "b" (fromInteger $ n - k) | k <- [0..n]] | n <- [2..1000]] ++
+
     -- It's a bit unclear to me how to determine that high powers
     -- can be reduced. Ideally something like:
     -- (cos x)^(2n) --> (1-sin^2 x)^n could happen.
-    , powP (cosP "x") 2 := 1 - powP (sinP "x") 2
+    [ powP (cosP "x") 2 := 1 - powP (sinP "x") 2
     , powP (coshP "x") 2 := 1 + powP (sinhP "x") 2
     , powP (cnP "x" "k") 2 := 1 -  powP (snP "x" "k") 2
     , powP (dnP "x" "k") 2 := (1 - powP (snP "x" "k") 2) / powP "k" 2
@@ -317,7 +332,13 @@ rewrites =
     -- Additional ad-hoc: because of negate representations?
     , "a"-(fromInteger (-1)*"b") := "a"+"b"
 
-    ]
+    ] where
+    n `choose` k
+      | k < 0 || k > n = 0
+      | k == 0 || k == n = 1
+      | k == 1 || k == n - 1 = n
+      | 2 * k > n = n `choose` (n - k)
+      | otherwise = (n - 1) `choose` (k - 1) * n `div` k
 
 rewrite :: Fix Expr -> Fix Expr
 rewrite e = fst $ equalitySaturation e rewrites symCost
@@ -410,9 +431,19 @@ symTests = testGroup "Jacobi"
     , testCase "i6" $
         rewrite (_i (_ln "x") "x") @?= "x"*(_ln "x" + fromInteger(-1))
 
+    -- Trig identities might be a stepping stone to the elliptic.
+    , testCase "trig add thm: sin(a+b) = sin a * cos b + cos a * sin b" $
+        rewrite (_sin("a" + "b")) @?= _sin "a" * _cos "b" + _cos "a" * _sin "b"
+
     -- TODO: More elliptic function identities may be worthwhile.
-    , testCase "i7" $
-        rewrite (_pow (_dn "x" "k") 11) @?= _pow (1 - _pow "k" 2 * _pow (_sn "x" "k") 2) 5 * _dn "x" "k"
+    , testCase "reduce (dn(x,k))^11 in terms of sn(x,k)" $
+        rewrite (_pow (_dn "x" "k") 11) @?= _pow ((1 - _pow (_sn "x" "k") 2) / _pow "k" 2) 5 * _dn "x" "k" -- this should actually not be equal
+
+    , testCase "reduce (dn(x,k))^1001 in terms of sn(x,k)" $
+        rewrite (_pow (_dn "x" "k") 1001) @?= _pow ((1 - _pow (_sn "x" "k") 2) / _pow "k" 2) 500 * _dn "x" "k"
+
+    , testCase "cubic binomial (a+b)^3 = a^3 + 3*a^2*b + 3*a*b^2 + b^3" $
+        rewrite (_pow ("a" + "b") 3) @?= _pow "a" 3 + fromInteger 3 * _pow "a" 2 * "b" + fromInteger 3 * "a" * _pow "b" 2 + _pow "b" 3
 
     -- TODO: Require ability to fine tune parameters
     -- , testCase "diff_power_harder" $

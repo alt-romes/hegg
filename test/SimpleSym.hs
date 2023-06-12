@@ -17,7 +17,6 @@ import Text.Show.Deriving
 import Data.Equality.Utils
 import Data.Equality.Matching
 import Data.Equality.Saturation
-import Data.Equality.Language
 import Data.Equality.Analysis
 import Data.Equality.Graph.Lens ((^.), _data)
 
@@ -33,8 +32,6 @@ infix 7 :*:, :/:
 deriveEq1   ''SymExpr
 deriveOrd1  ''SymExpr
 deriveShow1 ''SymExpr
-
-instance Language SymExpr
 
 instance Analysis (Maybe Double) SymExpr where
   makeA = \case

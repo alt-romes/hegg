@@ -1,3 +1,4 @@
+[ ] Newtype over ClassId and abstract implementation. Only way to get ClassIds is through representation and adding
 [ ] Freeze/Unfreeze implementation of Union Find with unboxed vectors
 [ ] Point out module should be imported qualified, and rename emptyEG to just `empty`
 [ ] Point out that we have pure functional e-graphs!!

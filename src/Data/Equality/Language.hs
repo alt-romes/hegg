@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-|
 
 Defines 'Language', which is the required constraint on /expressions/ that are
@@ -38,5 +39,5 @@ import Data.Functor.Classes
 -- e-graphs), note that it must satisfy the other class constraints. In
 -- particular an 'Data.Equality.Analysis.Analysis' must be defined for the
 -- language.
-class (Traversable l, Ord1 l) => Language l where
+type Language l = (Traversable l, Ord1 l)
 

@@ -37,7 +37,7 @@ import Sym
 -- TODO: Use type level symbol to define the analysis
 type role SimpleExpr nominal
 newtype SimpleExpr l = SE (Expr l)
-    deriving (Functor, Foldable, Traversable, Show1, Eq1, Ord1, Language)
+    deriving (Functor, Foldable, Traversable, Show1, Eq1, Ord1)
 
 -- | When a rewrite of type "x":=c where x is a pattern variable and c is a
 -- constant is used in equality saturation of any expression, all e-classes

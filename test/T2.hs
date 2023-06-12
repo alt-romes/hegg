@@ -11,7 +11,6 @@ import Prelude hiding (not)
 import Test.Tasty.HUnit
 import Data.Deriving
 import Data.Equality.Matching
-import Data.Equality.Language
 import Data.Equality.Extraction
 import Data.Equality.Saturation
 
@@ -25,8 +24,6 @@ data Lang a = And a a
 deriveEq1 ''Lang
 deriveOrd1 ''Lang
 deriveShow1 ''Lang
-
-instance Language Lang
 
 x, y :: Pattern Lang
 x = "x"

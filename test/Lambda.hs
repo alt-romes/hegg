@@ -112,9 +112,6 @@ instance Analysis FreeVars Lambda where
 
   joinA = (<>)
 
-
-instance Language Lambda
-
 instance Num (Fix Lambda) where
     fromInteger = Fix . Num . fromInteger
     (+) a b = Fix $ Add a b

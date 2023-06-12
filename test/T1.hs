@@ -100,8 +100,6 @@ instance Floating (Pattern TreeF) where
   l ** r      = undefined
   logBase l r = undefined
 
-instance Language TreeF
-
 cost :: CostFunction TreeF Int
 cost = \case
   ConstF _ -> 5

@@ -27,10 +27,11 @@ tests = testGroup "Tests"
   , testCase "T2" (T2.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
   , testCase "T3" (T3.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
   , testT32
+  , Jacobi.symTests
   ]
 
 main :: IO ()
-main = defaultMain tests >> defaultMain Jacobi.symTests
+main = defaultMain tests
 
 -- main :: IO ()
 -- main = do

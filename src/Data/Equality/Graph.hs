@@ -1,6 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE LambdaCase #-}
 -- {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -26,7 +25,6 @@ module Data.Equality.Graph
 
       -- ** Querying
     , find, canonicalize
-    , lookup, adjust, adjustF, traverseAnalysisData
 
       -- * Re-exports
     , module Data.Equality.Graph.Classes
@@ -278,7 +276,7 @@ repair (repair_id, node) egr =
 repairAnal :: forall a l. (Analysis a l, Language l) => (ClassId, ENode l) -> EGraph a l -> EGraph a l
 repairAnal (repair_id, node) egr =
     let
-        c1                = (egr^._classes) IM.! repair_id
+        c1                = egr^._class repair_id
         new_data          = joinA @a @l (c1^._data) (makeA @a ((\i -> egr^._class i^._data @a) <$> unNode node))
         (c2, added_nodes) = modifyA (c1 & _data .~ new_data)
     in
@@ -315,44 +313,6 @@ canonicalize (Node enode) eg = Node $ fmap (`find` eg) enode
 find :: ClassId -> EGraph a l -> ClassId
 find cid = findRepr cid . unionFind
 {-# INLINE find #-}
-
--- | Find the canonical representation of an e-class id in the e-graph,
--- returning the e-class analysis data associated to the canonical e-class.
---
--- Invariant: The e-class id always exists.
-lookup :: ClassId -> EGraph a l -> a
-lookup cid EGraph{unionFind,classes} = eClassData (classes IM.! (findRepr cid unionFind))
-{-# INLINE lookup #-}
-
--- | Modify the e-class analysis data associated with the canonical
--- representation of an e-class id in the e-graph
---
--- Invariant: The e-class id always exists.
-adjust :: (a -> a) -> ClassId -> EGraph a l -> EGraph a l
-adjust f cid eg@EGraph{unionFind,classes} = eg{classes = IM.adjust (\c@EClass{eClassData} -> c{eClassData=f eClassData}) (findRepr cid unionFind) classes}
-{-# INLINE adjust #-}
-
--- | Modify the e-class analysis data associated with the canonical
--- representation of an e-class id in the e-graph over a 'Functor'
---
--- Invariant: The e-class id always exists.
-adjustF :: forall f a l. Functor f => (a -> f a) -> ClassId -> EGraph a l -> f (EGraph a l)
-adjustF f cid eg@EGraph{unionFind,classes}
-  = (\cs' -> eg{classes =cs'}) <$> IM.alterF g (findRepr cid unionFind) classes
-    where
-      g :: Maybe (EClass a l) -> f (Maybe (EClass a l))
-      g Nothing = error "adjustF: e-class id does not exist";
-      g (Just c@EClass{eClassData})
-        = Just . (\d' -> c{eClassData=d'}) <$> f eClassData
-{-# INLINE adjustF #-}
-
-traverseAnalysisData :: forall a b l f. Applicative f => (a -> f b) -> EGraph a l -> f (EGraph b l)
-traverseAnalysisData f eg
-  = (\cs' -> eg{classes =cs'}) <$> IM.traverseWithKey (const go) (classes eg)
-    where
-      go :: EClass a l -> f (EClass b l)
-      go c@EClass{eClassData} = (\d' -> c{eClassData=d'}) <$> f eClassData
-{-# INLINE traverseAnalysisData #-}
 
 -- | The empty e-graph. Nothing is represented in it yet.
 emptyEGraph :: Language l => EGraph a l

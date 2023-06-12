@@ -20,11 +20,12 @@ import Control.Monad
 import qualified Data.Containers.ListUtils as LU
 import qualified Data.Foldable as F
 import qualified Data.List   as L
-import qualified Data.Set    as S
+import qualified Data.IntSet as IS
 import qualified Data.IntMap.Strict as IM
 
 import Data.Equality.Graph.Monad as GM
 import Data.Equality.Graph.Lens
+import Data.Equality.Graph.Internal (EGraph(classes))
 import Data.Equality.Graph
 import Data.Equality.Extraction
 import Data.Equality.Saturation
@@ -45,7 +46,7 @@ newtype SimpleExpr l = SE (Expr l)
 patFoldAllClasses :: forall l. (Language l, Num (Pattern l))
                   => Fix l -> Integer -> Bool
 patFoldAllClasses expr i =
-    case IM.toList (eg^._classes) of
+    case IM.toList (classes eg) of
         [_] -> True
         _   -> False
     where
@@ -89,8 +90,8 @@ ematchSingletonVar :: Language lang => Var -> EGraph () lang -> Bool
 ematchSingletonVar v eg =
     let
         db = eGraphToDatabase eg
-        matches = S.fromList $ map matchClassId $ ematch db (VariablePattern v)
-        eclasses = S.fromList $ map fst $ IM.toList (eg^._classes)
+        matches = IS.fromList $ map matchClassId $ ematch db (VariablePattern v)
+        eclasses = IM.keysSet (classes eg)
     in
         matches == eclasses 
 
@@ -116,7 +117,7 @@ ematchSingletonVar v eg =
 hashConsInvariant :: forall l. Language l
                   => EGraph () l -> Bool
 hashConsInvariant eg =
-    all f (IM.toList (eg^._classes))
+    allOf _iclasses f eg
     where
       -- e-node 𝑛 ∈ 𝑀 [𝑎] ⇐⇒ 𝐻 [canonicalize(𝑛)] = find(𝑎)
       f (i, EClass{eClassNodes=nodes}) = all g nodes

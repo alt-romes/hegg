@@ -13,6 +13,7 @@ import qualified Data.Set as S
 
 import Data.Functor.Identity
 import Data.Functor.Const
+import Data.Monoid
 
 import Data.Equality.Utils.SizedList
 import Data.Equality.Graph.Internal
@@ -23,7 +24,7 @@ import Data.Equality.Graph.ReprUnionFind
 
 -- | A 'Lens'' as defined in other lenses libraries
 type Lens' s a = forall f. Functor f => (a -> f a) -> (s -> f s)
-
+type Traversal s t a b = forall f. Applicative f => (a -> f b) -> s -> f t
 
 -- outdated comment for "getClass":
 --
@@ -50,10 +51,15 @@ _memo :: Lens' (EGraph a l) (NodeMap l ClassId)
 _memo afa egr = (\m1 -> egr {memo = m1}) <$> afa (memo egr)
 {-# INLINE _memo #-}
 
--- | Lens for the map of existing classes by id in an e-graph
-_classes :: Lens' (EGraph a l) (ClassIdMap (EClass a l))
-_classes afa egr = (\m1 -> egr {classes = m1}) <$> afa (classes egr)
+-- | Traversal for the existing classes in an e-graph
+_classes :: Traversal (EGraph a l) (EGraph b l) (EClass a l) (EClass b l)
+_classes afb egr = (\m1 -> egr {classes = m1}) <$> traverse afb (classes egr)
 {-# INLINE _classes #-}
+
+-- | Traversal for the existing classes in an e-graph
+_iclasses :: Traversal (EGraph a l) (EGraph b l) (ClassId, EClass a l) (EClass b l)
+_iclasses afb egr = (\m1 -> egr {classes = m1}) <$> IM.traverseWithKey (curry afb) (classes egr)
+{-# INLINE _iclasses #-}
 
 -- | Lens for the 'Domain' of an e-class
 _data :: Lens' (EClass domain l) domain
@@ -102,4 +108,10 @@ set ln x = over ln (const x)
 over :: Lens' s a -> (a -> a) -> (s -> s)
 over ln f = runIdentity . ln (Identity . f)
 {-# INLINE over #-}
+
+-- | Returns True if every target of a Traversable satisfies a predicate.
+allOf :: Traversal s t a b -> (a -> Bool) -> s -> Bool
+allOf trv f = getAll . getConst . trv (Const . All . f)
+{-# INLINE allOf #-}
+
 

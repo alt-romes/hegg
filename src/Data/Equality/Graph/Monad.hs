@@ -11,8 +11,6 @@ module Data.Equality.Graph.Monad
   , EG.canonicalize
   , EG.find
   , EG.emptyEGraph
-  , EG.lookup
-  , EG.adjust
 
   -- * E-graph stateful computations
   , EGraphM

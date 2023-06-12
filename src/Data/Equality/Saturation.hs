@@ -51,6 +51,7 @@ import Control.Monad
 import Data.Equality.Utils
 import Data.Equality.Graph.Nodes
 import Data.Equality.Graph.Lens
+import Data.Equality.Graph.Internal (EGraph(classes))
 import qualified Data.Equality.Graph as G
 import Data.Equality.Graph.Monad
 import Data.Equality.Language
@@ -115,7 +116,7 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
 
       egr <- get
 
-      let (beforeMemo, beforeClasses) = (egr^._memo, egr^._classes)
+      let (beforeMemo, beforeClasses) = (egr^._memo, classes egr)
           db = eGraphToDatabase egr
 
       -- Read-only phase, invariants are preserved
@@ -129,7 +130,7 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
       -- Restore the invariants once per iteration
       rebuild
       
-      (afterMemo, afterClasses) <- gets (\g -> (g^._memo, g^._classes))
+      (afterMemo, afterClasses) <- gets (\g -> (g^._memo, classes g))
 
       -- ROMES:TODO: Node limit...
       -- ROMES:TODO: Actual Timeout... not just iteration timeout

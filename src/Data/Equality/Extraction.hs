@@ -21,9 +21,9 @@ module Data.Equality.Extraction
 import qualified Data.Set as S
 import qualified Data.IntMap.Strict as IM
 
+import Data.Equality.Graph.Internal (EGraph(classes))
 import Data.Equality.Utils
 import Data.Equality.Graph
-import Data.Equality.Graph.Lens
 
 -- vvvv and necessarily all the best sub-expressions from children equilalence classes
 
@@ -51,7 +51,7 @@ extractBest egr cost (flip find egr -> i) =
     -- picking up the best from the target e-class.  In practice this shouldn't
     -- find the cost of unused nodes because the "topmost" e-class will be the
     -- target, and all sub-classes must be calculated?
-    let allCosts = findCosts (egr^._classes) mempty
+    let allCosts = findCosts (classes egr) mempty
 
      in case findBest i allCosts of
         Just (CostWithExpr (_,n)) -> n

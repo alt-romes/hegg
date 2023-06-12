@@ -154,7 +154,7 @@ evalConstant = \case
     BinOp Sub e1 e2 -> liftA2 (-) e1 e2
     BinOp Mul e1 e2 -> liftA2 (*) e1 e2
     BinOp Add e1 e2 -> liftA2 (+) e1 e2
-    BinOp Pow _ _ -> Nothing
+    BinOp Pow e1 e2 -> liftA2 (**) e1 e2
     BinOp Sn e1 e2 -> fmap (\(x,_,_) -> x) $ liftA2 elljac_e e1 e2 
     BinOp Cn e1 e2 -> fmap (\(_,x,_) -> x) $ liftA2 elljac_e e1 e2 
     BinOp Dn e1 e2 -> fmap (\(_,_,x) -> x) $ liftA2 elljac_e e1 e2 
@@ -323,7 +323,7 @@ rewrite :: Fix Expr -> Fix Expr
 rewrite e = fst $ equalitySaturation e rewrites symCost
 
 symTests :: TestTree
-symTests = testGroup "Symbolic"
+symTests = testGroup "Jacobi"
     [ testCase "(a*2)/2 = a (custom rules)" $
         fst (equalitySaturation @(Maybe Double) (("a"*2)/2) [ ("x"*"y")/"z" := "x"*("y"/"z")
                                                             , "y"/"y" := 1

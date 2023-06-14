@@ -66,8 +66,6 @@ deriveEq1 ''Expr
 deriveOrd1 ''Expr
 deriveShow1 ''Expr
 
-instance Language Expr
-
 instance IsString (Fix Expr) where
     fromString = Fix . Sym
 

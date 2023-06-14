@@ -114,7 +114,6 @@ test-suite hegg-test
     build-depends:    base,
                       hegg,
                       containers,
-                      deriving-compat  >= 0.6 && < 0.7,
                       tasty            >= 1.4 && < 1.5,
                       tasty-hunit      >= 0.10 && < 0.11,
                       tasty-quickcheck >= 0.10 && < 0.11
@@ -127,7 +126,6 @@ benchmark hegg-bench
   type:           exitcode-stdio-1.0
   build-depends:  base, hegg,
                   containers,
-                  deriving-compat,
                   tasty,
                   tasty-hunit,
                   tasty-quickcheck,

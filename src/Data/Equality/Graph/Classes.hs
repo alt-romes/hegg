@@ -10,8 +10,6 @@ module Data.Equality.Graph.Classes
 
 import qualified Data.Set as S
 
-import Data.Functor.Classes
-
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 
@@ -30,6 +28,6 @@ data EClass analysis_domain language = EClass
     , eClassParents :: !(SList (ClassId, ENode language)) -- ^ E-nodes which are parents of this e-class and their corresponding e-class ids.
     }
 
-instance (Show a, Show1 l) => Show (EClass a l) where
+instance (Show a, Show (l ClassId)) => Show (EClass a l) where
     show (EClass a b d (SList c _)) = "Id: " <> show a <> "\nNodes: " <> show b <> "\nParents: " <> show c <> "\nData: " <> show d
 

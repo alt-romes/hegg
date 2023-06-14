@@ -6,8 +6,6 @@
  -}
 module Data.Equality.Graph.Internal where
 
-import Data.Functor.Classes
-
 import Data.Equality.Graph.ReprUnionFind
 import Data.Equality.Graph.Classes
 import Data.Equality.Graph.Nodes
@@ -31,7 +29,7 @@ type Memo l = NodeMap l ClassId
 -- | Maintained worklist of e-class ids that need to be “upward merged”
 type Worklist l = [(ClassId, ENode l)]
 
-instance (Show a, Show1 l) => Show (EGraph a l) where
+instance (Show a, Show (l ClassId)) => Show (EGraph a l) where
     show (EGraph a b c d e) =
         "UnionFind: " <> show a <>
             "\n\nE-Classes: " <> show b <>

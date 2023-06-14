@@ -1,6 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -16,10 +15,6 @@ import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
 import Data.String
 import Data.Maybe (isJust)
-
-import Data.Eq.Deriving
-import Data.Ord.Deriving
-import Text.Show.Deriving
 
 import qualified Data.Foldable as F
 
@@ -38,8 +33,8 @@ data Expr a = Sym   !String
             | Const !Double
             | UnOp  !UOp !a
             | BinOp !BOp !a !a
-            deriving ( Eq, Ord, Functor
-                     , Foldable, Traversable
+            deriving ( Eq, Ord, Show
+                     , Functor, Foldable, Traversable
                      )
 data BOp = Add
          | Sub
@@ -55,10 +50,6 @@ data UOp = Sin
          | Sqrt
          | Ln
          deriving (Eq, Ord, Show)
-
-deriveEq1 ''Expr
-deriveOrd1 ''Expr
-deriveShow1 ''Expr
 
 instance IsString (Fix Expr) where
     fromString = Fix . Sym

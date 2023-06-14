@@ -47,12 +47,14 @@ Our second step is to instance `Language` for our `SymExpr`
 represented in e-graph and on which equality saturation can be run:
 
 ```hs
-class (Analysis l, Traversable l, Ord1 l) => Language l
+type Language l = (Traversable l, ∀ a. Ord a => Ord (l a))
 ```
 
-To declare a `Language` we must write the "base functor" of `SymExpr` 
-(i.e. use a type parameter where the recursion points used to be in the original `SymExpr`),
-then instance `Traversable`, `Ord1`, and write an `Analysis` instance for it (see next section).
+To declare a `Language` we must write the "base functor" of `SymExpr` (i.e. use
+a type parameter where the recursion points used to be in the original
+`SymExpr`), then instance `Traversable l`, `∀ a. Ord a => Ord (l a)` (we can do
+it automatically through deriving), and write an `Analysis` instance for it (see
+next section).
 
 ```hs
 data SymExpr a = Const Double
@@ -60,7 +62,7 @@ data SymExpr a = Const Double
                | a :+: a
                | a :*: a
                | a :/: a
-               deriving (Functor, Foldable, Traversable)
+               deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 infix 6 :+:
 infix 7 :*:, :/:
 ```
@@ -76,14 +78,6 @@ fixed-point form
 e1 :: Fix SymExpr
 e1 = Fix (Fix (Fix (Symbol "x") :*: Fix (Const 2)) :/: (Fix (Const 2))) -- (x*2)/2
 ```
-
-We've already automagically derived `Functor`, `Foldable` and `Traversable`
-instances, and can use the following template haskell functions from `derive-compat` to derive `Ord1`.
-```hs
-deriveEq1   ''SymExpr
-deriveOrd1  ''SymExpr
-```
-
 Then, we define an `Analysis` for our `SymExpr`.
 
 ### Analysis

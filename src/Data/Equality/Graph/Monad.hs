@@ -1,4 +1,5 @@
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-|
    Monadic interface to e-graph stateful computations
  -}

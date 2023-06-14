@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ImpredicativeTypes #-}
 {-|
 
 E-class analysis, which allows the concise expression of a program analysis over

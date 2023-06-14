@@ -1,5 +1,6 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-|
    Equality-matching, implemented using a relational database
    (defined in 'Data.Equality.Matching.Database') according to the paper

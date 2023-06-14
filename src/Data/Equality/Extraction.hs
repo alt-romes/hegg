@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-|
    Given an e-graph representing expressions of our language, we might want to
    extract, out of all expressions represented by some equivalence class, /the best/

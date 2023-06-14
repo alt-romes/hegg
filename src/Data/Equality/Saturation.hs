@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-|
   Given an input program 𝑝, equality saturation constructs an e-graph 𝐸 that
   represents a large set of programs equivalent to 𝑝, and then extracts the

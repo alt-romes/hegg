@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
 module T2 where
@@ -9,7 +8,6 @@ module T2 where
 import Prelude hiding (not)
 
 import Test.Tasty.HUnit
-import Data.Deriving
 import Data.Equality.Matching
 import Data.Equality.Extraction
 import Data.Equality.Saturation
@@ -19,11 +17,7 @@ data Lang a = And a a
             | Not a
             | ToElim a
             | Sym Int
-            deriving (Functor, Foldable, Traversable)
-
-deriveEq1 ''Lang
-deriveOrd1 ''Lang
-deriveShow1 ''Lang
+            deriving (Functor, Foldable, Traversable, Eq, Ord, Show)
 
 x, y :: Pattern Lang
 x = "x"

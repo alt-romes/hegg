@@ -1,6 +1,5 @@
 {-# language DeriveTraversable #-}
 {-# language LambdaCase #-}
-{-# language TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -8,9 +7,6 @@
 module T1 (main) where
 
 import Test.Tasty.HUnit
-import Data.Eq.Deriving
-import Data.Ord.Deriving
-import Text.Show.Deriving
 
 import Data.Equality.Graph
 import Data.Equality.Matching
@@ -24,11 +20,7 @@ data TreeF a = VarF Int
              | MulF a a
              | DivF a a
              | LogF a
-               deriving (Functor, Foldable, Traversable)
-
-deriveEq1 ''TreeF
-deriveOrd1 ''TreeF
-deriveShow1 ''TreeF
+               deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 instance Num (Fix TreeF) where
   l + r = Fix $ AddF l r

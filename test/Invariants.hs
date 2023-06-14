@@ -14,7 +14,6 @@ module Invariants where
 import Test.Tasty
 import Test.Tasty.QuickCheck as QC hiding (classes)
 
-import Data.Functor.Classes
 import Control.Monad
 
 import qualified Data.Containers.ListUtils as LU
@@ -37,7 +36,7 @@ import Sym
 -- TODO: Use type level symbol to define the analysis
 type role SimpleExpr nominal
 newtype SimpleExpr l = SE (Expr l)
-    deriving (Functor, Foldable, Traversable, Show1, Eq1, Ord1)
+    deriving (Functor, Foldable, Traversable, Show, Eq, Ord)
 
 -- | When a rewrite of type "x":=c where x is a pattern variable and c is a
 -- constant is used in equality saturation of any expression, all e-classes

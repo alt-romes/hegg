@@ -24,7 +24,7 @@ import Data.Equality.Graph.ReprUnionFind
 
 -- | A 'Lens'' as defined in other lenses libraries
 type Lens' s a = forall f. Functor f => (a -> f a) -> (s -> f s)
-type Traversal s t a b = forall f. Applicative f => (a -> f b) -> s -> f t
+type Traversal s t a b = forall f. Applicative f => (a -> f b) -> (s -> f t)
 
 -- outdated comment for "getClass":
 --

@@ -1,5 +1,11 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-|
 
 Defines 'Language', which is the required constraint on /expressions/ that are
@@ -29,7 +35,7 @@ instance Language Expr
 -}
 module Data.Equality.Language where
 
-import Data.Functor.Classes
+import Data.Kind
 
 -- | A 'Language' is the required constraint on /expressions/ that are to be
 -- represented in an e-graph.
@@ -39,5 +45,7 @@ import Data.Functor.Classes
 -- e-graphs), note that it must satisfy the other class constraints. In
 -- particular an 'Data.Equality.Analysis.Analysis' must be defined for the
 -- language.
-type Language l = (Traversable l, Ord1 l)
+type Language :: (Type -> Type) -> Constraint
+class (∀ a. Ord a => Ord (l a), Traversable l) => Language l
+instance (∀ a. Ord a => Ord (l a), Traversable l) => Language l
 

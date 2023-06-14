@@ -1,3 +1,4 @@
+{-# LANGUAGE QuantifiedConstraints, RankNTypes, UnicodeSyntax #-}
 {-|
 
 Definition of 'Rewrite' and 'RewriteCondition' used to define rewrite rules.
@@ -7,8 +8,6 @@ iteration of equality saturation.
 
 -}
 module Data.Equality.Saturation.Rewrites where
-
-import Data.Functor.Classes
 
 import Data.Equality.Graph
 import Data.Equality.Matching
@@ -53,6 +52,6 @@ infixl 2 :|
 type RewriteCondition anl lang = Subst -> EGraph anl lang -> Bool
 
 
-instance Show1 lang => Show (Rewrite anl lang) where
+instance (∀ a. Show a => Show (lang a)) => Show (Rewrite anl lang) where
   show (rw :| _) = show rw <> " :| <cond>"
   show (lhs := rhs) = show lhs <> " := " <> show rhs

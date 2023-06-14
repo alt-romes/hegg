@@ -1,9 +1,9 @@
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE TupleSections #-}
 {-|
    Custom database implemented with trie-maps specialized to run conjunctive
    queries using a (worst-case optimal) generic join algorithm.

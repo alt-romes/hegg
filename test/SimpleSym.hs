@@ -3,16 +3,11 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveTraversable #-}
 module SimpleSym where
 
 import Test.Tasty
 import Test.Tasty.HUnit
-
-import Data.Eq.Deriving
-import Data.Ord.Deriving
-import Text.Show.Deriving
 
 import Data.Equality.Utils
 import Data.Equality.Matching
@@ -25,13 +20,9 @@ data SymExpr a = Const Double
                | a :+: a
                | a :*: a
                | a :/: a
-               deriving (Functor, Foldable, Traversable)
+               deriving (Functor, Foldable, Traversable, Eq, Ord, Show)
 infix 6 :+:
 infix 7 :*:, :/:
-
-deriveEq1   ''SymExpr
-deriveOrd1  ''SymExpr
-deriveShow1 ''SymExpr
 
 instance Analysis (Maybe Double) SymExpr where
   makeA = \case

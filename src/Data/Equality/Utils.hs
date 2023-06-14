@@ -1,4 +1,4 @@
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE UnicodeSyntax, RankNTypes, QuantifiedConstraints, UndecidableInstances #-}
 {-|
  Misc utilities used accross modules
  -}
@@ -10,7 +10,6 @@ import Data.Bits
 
 -- import qualified Data.Set    as S
 -- import qualified Data.IntSet as IS
-import Data.Functor.Classes
 
 -- | Fixed point newtype.
 --
@@ -21,12 +20,12 @@ import Data.Functor.Classes
 -- just e-graphs, but until I revert the decision we use this type.
 newtype Fix f = Fix { unFix :: f (Fix f) }
 
-instance Eq1 f => Eq (Fix f) where
-    (==) (Fix a) (Fix b) = liftEq (==) a b
+instance (∀ a. Eq a => Eq (f a)) => Eq (Fix f) where
+    (==) (Fix a) (Fix b) = a == b
     {-# INLINE (==) #-}
 
-instance Show1 f => Show (Fix f) where
-    showsPrec d (Fix f) = liftShowsPrec showsPrec showList d f
+instance (∀ a. Show a => Show (f a)) => Show (Fix f) where
+    showsPrec d (Fix f) = showsPrec d f
     {-# INLINE showsPrec #-}
 
 -- | Catamorphism

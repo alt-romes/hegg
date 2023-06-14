@@ -1,12 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveTraversable #-}
 module Lambda where
 
@@ -21,10 +18,6 @@ import qualified Data.IntMap as IM
 import qualified Data.Set as S
 
 import Control.Applicative ((<|>))
-
-import Data.Eq.Deriving
-import Data.Ord.Deriving
-import Text.Show.Deriving
 
 import Data.Equality.Graph
 import Data.Equality.Extraction
@@ -49,13 +42,9 @@ data Lambda a
     | Lam a a
     | Let a a a
     | LFix a a
-    deriving ( Eq, Ord, Functor
-             , Foldable, Traversable
+    deriving ( Eq, Ord, Show
+             , Functor, Foldable, Traversable
              )
-
-deriveEq1 ''Lambda
-deriveOrd1 ''Lambda
-deriveShow1 ''Lambda
 
 evalL :: Lambda (Maybe (Lambda ())) -> Maybe (Lambda ())
 evalL = \case

@@ -1,10 +1,10 @@
+{-# LANGUAGE QuantifiedConstraints, RankNTypes, UnicodeSyntax, UndecidableInstances #-}
 {-|
    Definition of 'Pattern' for use in equality matching
    ('Data.Equality.Matching'), where patterns are matched against the e-graph
  -}
 module Data.Equality.Matching.Pattern where
 
-import Data.Functor.Classes
 import Data.String
 
 import Data.Equality.Utils
@@ -77,20 +77,20 @@ data Pattern lang
 pat :: lang (Pattern lang) -> Pattern lang
 pat = NonVariablePattern
 
-instance Eq1 l => (Eq (Pattern l)) where
-    (==) (NonVariablePattern a) (NonVariablePattern b) = liftEq (==) a b
+instance (∀ a. Eq a => Eq (l a)) => (Eq (Pattern l)) where
+    (==) (NonVariablePattern a) (NonVariablePattern b) = (==) a b
     (==) (VariablePattern a) (VariablePattern b) = a == b 
     (==) _ _ = False
 
-instance Ord1 l => (Ord (Pattern l)) where
+instance (∀ a. Eq a => Eq (l a), ∀ a. (Ord a) => Ord (l a)) => (Ord (Pattern l)) where
     compare (VariablePattern _) (NonVariablePattern _) = LT
     compare (NonVariablePattern _) (VariablePattern _) = GT
     compare (VariablePattern a) (VariablePattern b) = compare a b
-    compare (NonVariablePattern a) (NonVariablePattern b) = liftCompare compare a b
+    compare (NonVariablePattern a) (NonVariablePattern b) = compare a b
 
-instance Show1 lang => Show (Pattern lang) where
+instance (∀ a. Show a => Show (lang a)) => Show (Pattern lang) where
     showsPrec _ (VariablePattern s) = showString (show s) -- ROMES:TODO don't ignore prec?
-    showsPrec d (NonVariablePattern x) = liftShowsPrec showsPrec showList d x
+    showsPrec d (NonVariablePattern x) = showsPrec d x
 
 instance IsString (Pattern lang) where
     fromString = VariablePattern . hashString

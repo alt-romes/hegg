@@ -43,7 +43,7 @@ data Expr a = Sym   !String
             | Prod [a]
             | UnOp  !UOp !a
             | BinOp !BOp !a !a
-            deriving ( Eq, Ord, Functor
+            deriving ( Eq, Ord, Show, Functor
                      , Foldable, Traversable
                      )
 data BOp = Pow
@@ -198,9 +198,9 @@ evalConstant = \case
     Prod [] -> Just 1
     Prod es@(_:_) -> foldr1 (liftA2 (*)) es
     BinOp Pow e1 e2 -> liftA2 (**) e1 e2
-    BinOp Sn e1 e2 -> fmap (\(x,_,_) -> x) $ liftA2 elljac_e e1 e2 
-    BinOp Cn e1 e2 -> fmap (\(_,x,_) -> x) $ liftA2 elljac_e e1 e2 
-    BinOp Dn e1 e2 -> fmap (\(_,_,x) -> x) $ liftA2 elljac_e e1 e2 
+    BinOp Sn e1 e2 -> fmap (\(x,_,_) -> x) $ liftA2 elljac_e e1 e2
+    BinOp Cn e1 e2 -> fmap (\(_,x,_) -> x) $ liftA2 elljac_e e1 e2
+    BinOp Dn e1 e2 -> fmap (\(_,_,x) -> x) $ liftA2 elljac_e e1 e2
     BinOp Diff _ _ -> Nothing
     BinOp Integral _ _ -> Nothing
     UnOp Sin e1 -> sin <$> e1
@@ -211,7 +211,7 @@ evalConstant = \case
     UnOp Ln   _  -> Nothing
     Sym _ -> Nothing
     Const x -> Just x
-    
+
 unsafeGetSubst :: Pattern Expr -> Subst -> ClassId
 unsafeGetSubst (NonVariablePattern _) _ = error "unsafeGetSubst: NonVariablePattern; expecting VariablePattern"
 unsafeGetSubst (VariablePattern v) subst = case IM.lookup v subst of

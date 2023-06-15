@@ -15,6 +15,7 @@ import Test.Tasty.HUnit
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
 import Data.String
+import Data.List (sort)
 import Data.Maybe (isJust)
 
 import Data.Eq.Deriving
@@ -33,20 +34,19 @@ import Data.Equality.Analysis
 import Data.Equality.Matching
 import Data.Equality.Matching.Database
 import Data.Equality.Saturation
+import Data.Equality.Saturation.Scheduler
 import Numeric.GSL.Special(elljac_e)
 
 data Expr a = Sym   !String
             | Const !Double
+            | Sum [a]
+            | Prod [a]
             | UnOp  !UOp !a
             | BinOp !BOp !a !a
             deriving ( Eq, Ord, Functor
                      , Foldable, Traversable
                      )
-data BOp = Add
-         | Sub
-         | Mul
-         | Div
-         | Pow
+data BOp = Pow
          | Sn   -- ^ Glaisher notation for Jacobi's sine of the amplitude
          | Cn   -- ^ Glaisher notation for Jacobi's cosine of the amplitude
          | Dn   -- ^ Glaisher notation for Jacobi's derivative/delta of the amplitude
@@ -69,29 +69,72 @@ deriveShow1 ''Expr
 instance IsString (Fix Expr) where
     fromString = Fix . Sym
 
+-- TODO: There should be a way to do this with TH.
+-- This Ord instance doesn't seem to get derived.
+instance Ord (Fix Expr) where
+    Fix (Sym v) `compare` e = case e of
+      Fix (Sym v') -> v `compare` v'
+      _ -> LT
+    Fix (Const x) `compare` e = case e of
+      Fix (Sym _) -> GT
+      Fix (Const y) -> x `compare` y
+      _ -> LT
+    Fix (Sum es) `compare` e = case e of
+      Fix (Sym _) -> GT
+      Fix (Const _) -> GT
+      Fix (Sum es') -> es `compare` es'
+      _ -> LT
+    Fix (Prod es) `compare` e = case e of
+      Fix (Sym _) -> GT
+      Fix (Const _) -> GT
+      Fix (Sum _) -> GT
+      Fix (Prod es') -> es `compare` es'
+      _ -> LT
+    Fix (UnOp o x) `compare` e = case e of
+      Fix (Sym _) -> GT
+      Fix (Const _) -> GT
+      Fix (Sum _) -> GT
+      Fix (Prod _) -> GT
+      Fix (UnOp o' y) -> (o, x) `compare` (o', y)
+      _ -> LT
+    Fix (BinOp o x y) `compare` e = case e of
+      Fix (Sym _) -> GT
+      Fix (Const _) -> GT
+      Fix (Sum _) -> GT
+      Fix (Prod _) -> GT
+      Fix (UnOp _ _) -> GT
+      Fix (BinOp o' x' y') -> (o, x, y) `compare` (o', x', y')
+
 instance Num (Fix Expr) where
-    (+) a b = Fix (BinOp Add a b)
-    (-) a b = Fix (BinOp Sub a b)
-    (*) a b = Fix (BinOp Mul a b)
+    (+) a b = case (a, b) of
+      (Fix (Sum as), Fix (Sum bs)) -> Fix . Sum . sort $ as ++ bs
+      (Fix (Sum as), _) -> Fix . Sum . sort $ b : as
+      (_, Fix (Sum bs)) -> Fix . Sum . sort $ a : bs
+      _ -> Fix . Sum . sort $ [a,b]
+    (-) a b = a + negate b
+    (*) a b = case (a, b) of
+      (Fix (Prod as), Fix (Prod bs)) -> Fix . Prod . sort $ as ++ bs
+      (Fix (Prod as), _) -> Fix . Prod . sort $ b : as
+      (_, Fix (Prod bs)) -> Fix . Prod . sort $ a : bs
+      _ -> Fix . Prod . sort $ [a,b]
     fromInteger = Fix . Const . fromInteger
-    negate = error "DONT USE"
+    negate = (*) . fromInteger $ -1
     abs    = error "abs"
     signum = error "signum"
 
 instance Fractional (Fix Expr) where
-    (/) a b = Fix (BinOp Div a b)
+    (/) a b = a * Fix (BinOp Pow b . fromInteger $ -1)
     fromRational = Fix . Const . fromRational
 
+-- Sum-of-products preference might want a different recursion scheme.
 symCost :: CostFunction Expr Int
 symCost = \case
     BinOp Sn e1 e2 -> e1 + e2 + 50
     BinOp Cn e1 e2 -> e1 + e2 + 50
     BinOp Dn e1 e2 -> e1 + e2 + 50
-    BinOp Pow e1 e2 -> e1 + e2 + 6
-    BinOp Div e1 e2 -> e1 + e2 + 5
-    BinOp Sub e1 e2 -> e1 + e2 + 4
-    BinOp Mul e1 e2 -> e1 + e2 + 4
-    BinOp Add e1 e2 -> e1 + e2 + 2
+    BinOp Pow e1 e2 -> e1 + e2 + 1
+    Sum es -> sum es + length es + 5
+    Prod es -> sum es + length es + 10
     BinOp Diff e1 e2 -> e1 + e2 + 500
     BinOp Integral e1 e2 -> e1 + e2 + 20000
     UnOp Sin e1 -> e1 + 20
@@ -103,17 +146,19 @@ symCost = \case
     Sym _ -> 1
     Const _ -> 1
 
+-- This Num instance for Pattern Expr may not reflect very well what's
+-- needed to successfully describe desired structure.
 instance Num (Pattern Expr) where
-    (+) a b = NonVariablePattern $ BinOp Add a b
-    (-) a b = NonVariablePattern $ BinOp Sub a b
-    (*) a b = NonVariablePattern $ BinOp Mul a b
+    (+) a b = NonVariablePattern $ Sum [a,b]
+    (-) a b = NonVariablePattern $ Sum [a, NonVariablePattern $ Prod [fromInteger (-1), b]]
+    (*) a b = NonVariablePattern $ Prod [a,b]
     fromInteger = NonVariablePattern . Const . fromInteger
     negate = error "DONT USE" -- NonVariablePattern. BinOp Mul (fromInteger $ -1)
     abs = error "abs"
     signum = error "signum"
 
 instance Fractional (Pattern Expr) where
-    (/) a b = NonVariablePattern $ BinOp Div a b
+    (/) a b = NonVariablePattern $ Prod [a, NonVariablePattern $ BinOp Pow b (fromInteger (-1))]
     fromRational = NonVariablePattern . Const . fromRational
 
 -- | Define analysis for the @Expr@ language over domain @Maybe Double@ for
@@ -148,10 +193,10 @@ instance Analysis (Maybe Double) Expr where
 evalConstant :: Expr (Maybe Double) -> Maybe Double
 evalConstant = \case
     -- Exception: Negative exponent: BinOp Pow e1 e2 -> liftA2 (^) e1 (round <$> e2 :: Maybe Integer)
-    BinOp Div e1 e2 -> liftA2 (/) e1 e2
-    BinOp Sub e1 e2 -> liftA2 (-) e1 e2
-    BinOp Mul e1 e2 -> liftA2 (*) e1 e2
-    BinOp Add e1 e2 -> liftA2 (+) e1 e2
+    Sum [] -> Just 0
+    Sum es@(_:_) -> foldr1 (liftA2 (+)) es
+    Prod [] -> Just 1
+    Prod es@(_:_) -> foldr1 (liftA2 (*)) es
     BinOp Pow e1 e2 -> liftA2 (**) e1 e2
     BinOp Sn e1 e2 -> fmap (\(x,_,_) -> x) $ liftA2 elljac_e e1 e2 
     BinOp Cn e1 e2 -> fmap (\(_,x,_) -> x) $ liftA2 elljac_e e1 e2 
@@ -233,9 +278,10 @@ rewrites =
     , ("a"*"b")+("a"*"c") := "a"*("b"+"c") -- factor
 
     , powP "a" "b"*powP "a" "c" := powP "a" ("b" + "c") -- pow mul
+    , powP "a" "b" * "a" := powP "a" ("b" + 1)
     , powP "a" 0 := 1 :| is_not_zero "a"
     , powP "a" 1 := "a"
-    , powP "a" 2 := "a"*"a"
+    , "a" * "a" := powP "a" 2
     , powP "a" (fromInteger $ -1) := 1/"a" :| is_not_zero "a"
 
     , "x"*(1/"x") := 1 :| is_not_zero "x"
@@ -247,7 +293,8 @@ rewrites =
 
     -- How can the binomial theorem be represented?
     -- Is it really only available for one integer at a time?
-    ++ [ powP ("a" + "b") (NonVariablePattern . Const $ fromIntegral n) := sum [(fromInteger $ n `choose` k) * powP "a" (fromInteger k) * powP "b" (fromInteger $ n - k) | k <- [0..n]] | n <- [2..1000]] ++
+    -- ++ [ powP ("a" + "b") (NonVariablePattern . Const $ fromIntegral n) := sum [(fromInteger $ n `_choose` k) * powP "a" (fromInteger k) * powP "b" (fromInteger $ n - k) | k <- [0..n]] | n <- [2..1000]]
+    ++
 
     -- It's a bit unclear to me how to determine that high powers
     -- can be reduced. Ideally something like:
@@ -273,11 +320,11 @@ rewrites =
     , dnP (fromInteger (-1) * "x") "k" := dnP "x" "k"
 
     , snP "x" 0 := sinP "x"
-    -- , snP "x" 1 := tanhP "x"
+    , snP "x" 1 := tanhP "x"
     , cnP "x" 0 := cosP "x"
-    -- , cnP "x" 1 := 1 / powP (coshP "x") 2
+    , cnP "x" 1 := powP (sechP "x") 2
     , dnP "x" 0 := 1
-    -- , dnP "x" 1 := 1 / powP (coshP "x") 2
+    , dnP "x" 1 := powP (sechP "x") 2
     , cosP ("x" + "y") := cosP "x" * cosP "y" - sinP "x" * sinP "y"
     , sinP ("x" + "y") := sinP "x" * cosP "y" + cosP "x" * sinP "y"
     , coshP ("x" + "y") := coshP "x" * coshP "y" + sinhP "x" * sinhP "y"
@@ -331,12 +378,12 @@ rewrites =
     , "a"-(fromInteger (-1)*"b") := "a"+"b"
 
     ] where
-    n `choose` k
+    n `_choose` k
       | k < 0 || k > n = 0
       | k == 0 || k == n = 1
       | k == 1 || k == n - 1 = n
-      | 2 * k > n = n `choose` (n - k)
-      | otherwise = (n - 1) `choose` (k - 1) * n `div` k
+      | 2 * k > n = n `_choose` (n - k)
+      | otherwise = (n - 1) `_choose` (k - 1) * n `div` k
 
 rewrite :: Fix Expr -> Fix Expr
 rewrite e = fst $ equalitySaturation e rewrites symCost
@@ -435,7 +482,7 @@ symTests = testGroup "Jacobi"
 
     -- TODO: More elliptic function identities may be worthwhile.
     , testCase "reduce (dn(x,k))^11 in terms of sn(x,k)" $
-        rewrite (_pow (_dn "x" "k") 11) @?= _pow ((1 - _pow (_sn "x" "k") 2) / _pow "k" 2) 5 * _dn "x" "k" -- this should actually not be equal
+        fst (equalitySaturation' (defaultBackoffScheduler { banLength = 100 }) (_pow (_dn "x" "k") 11) rewrites depthCost) @?= _pow ((1 - _pow (_sn "x" "k") 2) / _pow "k" 2) 5 * _dn "x" "k" -- this should actually not be equal
 
     , testCase "reduce (dn(x,k))^1001 in terms of sn(x,k)" $
         rewrite (_pow (_dn "x" "k") 1001) @?= _pow ((1 - _pow (_sn "x" "k") 2) / _pow "k" 2) 500 * _dn "x" "k"
@@ -484,6 +531,12 @@ coshP a = NonVariablePattern (UnOp Cosh a)
 
 sinhP :: Pattern Expr -> Pattern Expr
 sinhP a = NonVariablePattern (UnOp Sinh a)
+
+tanhP :: Pattern Expr -> Pattern Expr
+tanhP a = NonVariablePattern (Prod [NonVariablePattern $ UnOp Sinh a, NonVariablePattern $ BinOp Pow (NonVariablePattern $ UnOp Cosh a) (NonVariablePattern . Const $ -1)])
+
+sechP :: Pattern Expr -> Pattern Expr
+sechP a = NonVariablePattern $ BinOp Pow (NonVariablePattern $ UnOp Cosh a) (NonVariablePattern . Const $ -1)
 
 lnP :: Pattern Expr -> Pattern Expr
 lnP a = NonVariablePattern (UnOp Ln a)

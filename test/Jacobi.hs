@@ -293,7 +293,7 @@ rewrites =
 
     -- How can the binomial theorem be represented?
     -- Is it really only available for one integer at a time?
-    -- ++ [ powP ("a" + "b") (NonVariablePattern . Const $ fromIntegral n) := sum [(fromInteger $ n `_choose` k) * powP "a" (fromInteger k) * powP "b" (fromInteger $ n - k) | k <- [0..n]] | n <- [2..1000]]
+    -- ++ [ powP ("a" + "b") (NonVariablePattern . Const $ fromIntegral n) := sum [(fromInteger $ n `choose` k) * powP "a" (fromInteger k) * powP "b" (fromInteger $ n - k) | k <- [0..n]] | n <- [2..1000]]
     ++
 
     -- It's a bit unclear to me how to determine that high powers
@@ -306,6 +306,7 @@ rewrites =
 
     , sinP 0 := 0
     , cosP 0 := 1
+    , sinhP 0 := 0
     , coshP 0 := 1
     , snP 0 "k" := 0
     , cnP 0 "k" := 1
@@ -377,13 +378,15 @@ rewrites =
     -- Additional ad-hoc: because of negate representations?
     , "a"-(fromInteger (-1)*"b") := "a"+"b"
 
-    ] where
-    n `_choose` k
-      | k < 0 || k > n = 0
-      | k == 0 || k == n = 1
-      | k == 1 || k == n - 1 = n
-      | 2 * k > n = n `_choose` (n - k)
-      | otherwise = (n - 1) `_choose` (k - 1) * n `div` k
+    ]
+
+choose :: Integral i => i -> i -> i
+n `choose` k
+  | k < 0 || k > n = 0
+  | k == 0 || k == n = 1
+  | k == 1 || k == n - 1 = n
+  | 2 * k > n = n `choose` (n - k)
+  | otherwise = (n - 1) `choose` (k - 1) * n `div` k
 
 rewrite :: Fix Expr -> Fix Expr
 rewrite e = fst $ equalitySaturation e rewrites symCost
@@ -481,11 +484,15 @@ symTests = testGroup "Jacobi"
         rewrite (_sin("a" + "b")) @?= _sin "a" * _cos "b" + _cos "a" * _sin "b"
 
     -- TODO: More elliptic function identities may be worthwhile.
+    -- This is just this expanded via the binomial theorem:
+    -- _pow ((1 - _pow (_sn "x" "k") 2) / _pow "k" 2) 5 * _dn "x" "k"
     , testCase "reduce (dn(x,k))^11 in terms of sn(x,k)" $
-        fst (equalitySaturation' (defaultBackoffScheduler { banLength = 100 }) (_pow (_dn "x" "k") 11) rewrites depthCost) @?= _pow ((1 - _pow (_sn "x" "k") 2) / _pow "k" 2) 5 * _dn "x" "k" -- this should actually not be equal
+        fst (equalitySaturation' (defaultBackoffScheduler { banLength = 100 }) (_pow (_dn "x" "k") 11) rewrites symCost) @?= _pow "k" (-10) * _dn "x" "k" - 5 * _pow "k" (-10) * _pow (_sn "x" "k") 2 * _dn "x" "k" + 10 * _pow "k" (-10) * _pow (_sn "x" "k") 4 * _dn "x" "k" - 10 * _pow "k" (-10) * _pow (_sn "x" "k") 6 * _dn "x" "k" + 5 * _pow "k" (-10) * _pow (_sn "x" "k") 8 * _dn "x" "k" - _pow "k" 10 * _pow (_sn "x" "k") 10 * _dn "x" "k"
 
+    -- This is also expanded via the binomial theorem, programmatically.
+    -- _pow ((1 - _pow (_sn "x" "k") 2) / _pow "k" 2) 500 * _dn "x" "k"
     , testCase "reduce (dn(x,k))^1001 in terms of sn(x,k)" $
-        rewrite (_pow (_dn "x" "k") 1001) @?= _pow ((1 - _pow (_sn "x" "k") 2) / _pow "k" 2) 500 * _dn "x" "k"
+        rewrite (_pow (_dn "x" "k") 1001) @?= sum [(fromInteger $ 500 `choose` m) * (-1)^m * _pow "k" (-1000) * _pow (_dn "x" "k") (2 * fromInteger m) | m <- [0..50]]
 
     , testCase "cubic binomial (a+b)^3 = a^3 + 3*a^2*b + 3*a*b^2 + b^3" $
         rewrite (_pow ("a" + "b") 3) @?= _pow "a" 3 + fromInteger 3 * _pow "a" 2 * "b" + fromInteger 3 * "a" * _pow "b" 2 + _pow "b" 3

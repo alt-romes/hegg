@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.4.0.0 -- 2023-06-24
+
+* Make `Language` a constraint type synonym instead of a standalone empty class
+* Use `QuantifiedConstraints` instead of `Eq1,Ord1,Show1` in the implementation,
+    which results in the user only having to provide an `Eq a => Eq (language
+    a)` instance rather than a `Eq1 language` one (which is much simpler and can
+    usually be done automatically!)
+* Make `_classes` a `Traversal` lens over all e-classes rather than a `Lens` into `IntMap EClass`
+
 ## 0.3.0.0 -- 2022-12-09
 
 * A better `Analysis` tutorial in the README.

@@ -77,7 +77,7 @@ find' k (Bin _p m l r)
   | zero k m  = find' k l
   | otherwise = find' k r
 find' k (Tip kx x) | isTrue# (k `eqWord#` kx) = x
-find' _ _ = error ("IntMap.!: key ___ is not an element of the map")
+find' k _ = error ("IntMap.!: key " ++ show (I# (word2Int# k)) ++ " is not an element of the map")
 
 -- * Other stuff taken from IntMap
 

@@ -303,15 +303,15 @@ repairAnal (repair_id, node) egr =
 -- that their e-class ids are represented by the same e-class canonical ids
 --
 -- canonicalize(𝑓(𝑎,𝑏,𝑐,...)) = 𝑓((find 𝑎), (find 𝑏), (find 𝑐),...)
-canonicalize :: Functor l => ENode l -> EGraph a l -> ENode l
+canonicalize :: (Analysis a l, Language l) => ENode l -> EGraph a l -> ENode l
 canonicalize (Node enode) eg = Node $ fmap (`find` eg) enode
 {-# INLINE canonicalize #-}
 
 -- | Find the canonical representation of an e-class id in the e-graph
 --
 -- Invariant: The e-class id always exists.
-find :: ClassId -> EGraph a l -> ClassId
-find cid = findRepr cid . unionFind
+find :: (Analysis a l, Language l) => ClassId -> EGraph a l -> ClassId
+find cid = findRepr cid . unionFind . rebuild
 {-# INLINE find #-}
 
 -- | The empty e-graph. Nothing is represented in it yet.

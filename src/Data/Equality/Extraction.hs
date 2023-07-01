@@ -25,6 +25,7 @@ import qualified Data.IntMap.Strict as IM
 import Data.Equality.Graph.Internal (EGraph(classes))
 import Data.Equality.Utils
 import Data.Equality.Graph
+import Data.Equality.Analysis
 
 -- vvvv and necessarily all the best sub-expressions from children equilalence classes
 
@@ -41,7 +42,7 @@ import Data.Equality.Graph
 --
 -- For a real example you might want to check out the source code of 'Data.Equality.Saturation.equalitySaturation''
 extractBest :: forall anl lang cost
-             . (Language lang, Ord cost)
+             . (Analysis anl lang, Language lang, Ord cost)
             => EGraph anl lang        -- ^ The e-graph out of which we are extracting an expression
             -> CostFunction lang cost -- ^ The cost function to define /best/
             -> ClassId                -- ^ The e-class from which we'll extract the expression

@@ -16,15 +16,15 @@ module Data.Equality.Graph
       -- * Definition of e-graph
       EGraph
 
-      -- * Functions on e-graphs
-    , emptyEGraph
-
       -- ** Transformations
     , represent, add, merge, rebuild
     -- , repair, repairAnal
 
       -- ** Querying
     , find, canonicalize
+
+      -- * Functions on e-graphs
+    , emptyEGraph, newEClass
 
       -- * Re-exports
     , module Data.Equality.Graph.Classes
@@ -318,6 +318,23 @@ find cid = findRepr cid . unionFind
 emptyEGraph :: Language l => EGraph a l
 emptyEGraph = EGraph emptyUF mempty mempty mempty mempty
 {-# INLINE emptyEGraph #-}
+
+-- | Creates an empty e-class in an e-graph, with the explicitly given domain analysis data.
+-- (That is, an e-class with no e-nodes)
+newEClass :: (Analysis a l, Language l) => a -> EGraph a l -> (ClassId, EGraph a l)
+newEClass adata egr =
+  let
+    -- Make new equivalence class with a new id in the union-find
+    (new_eclass_id, new_uf) = makeNewSet (unionFind egr)
+
+    -- New empty e-class stores just the analysis data
+    new_eclass = EClass new_eclass_id S.empty adata mempty
+   in ( new_eclass_id
+      , egr { unionFind = new_uf
+            , classes   = IM.insert new_eclass_id new_eclass (classes egr)
+            }
+      )
+{-# INLINE newEClass #-}
 
 -- | Represent an expression (in fix-point form) and merge it with the e-class with the given id
 representAndMerge :: (Analysis a l, Language l) => ClassId -> Fix l -> EGraph a l -> EGraph a l

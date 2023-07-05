@@ -6,8 +6,10 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Sym where
 
+import GHC.Generics
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -35,6 +37,7 @@ data Expr a = Sym   !String
             | BinOp !BOp !a !a
             deriving ( Eq, Ord, Show
                      , Functor, Foldable, Traversable
+                     , Generic
                      )
 data BOp = Add
          | Sub
@@ -43,13 +46,13 @@ data BOp = Add
          | Pow
          | Diff
          | Integral
-        deriving (Eq, Ord, Show)
+        deriving (Eq, Ord, Show, Generic)
 
 data UOp = Sin
          | Cos
          | Sqrt
          | Ln
-         deriving (Eq, Ord, Show)
+         deriving (Eq, Ord, Show, Generic)
 
 instance IsString (Fix Expr) where
     fromString = Fix . Sym

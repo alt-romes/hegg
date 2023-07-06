@@ -1,6 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE MagicHash #-}
 -- {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -25,18 +24,13 @@ module Data.Equality.Graph
     , find, canonicalize
 
       -- * Functions on e-graphs
-    , emptyEGraph
-
-      -- ** Low-level operations
-    , newEClass, newPointerToClassId
+    , emptyEGraph, newEClass
 
       -- * Re-exports
     , module Data.Equality.Graph.Classes
     , module Data.Equality.Graph.Nodes
     , module Data.Equality.Language
     ) where
-
-import GHC.Exts (Int(..), (+#), (<#), isTrue#)
 
 -- ROMES:TODO: Is the E-Graph a Monad if the analysis data were the type arg? i.e. Monad (EGraph language)?
 
@@ -58,7 +52,6 @@ import Data.Equality.Utils.SizedList
 
 import Data.Equality.Graph.Internal
 import Data.Equality.Graph.ReprUnionFind
-import qualified Data.Equality.Utils.IntToIntMap as IIM
 import Data.Equality.Graph.Classes
 import Data.Equality.Graph.Nodes
 import Data.Equality.Analysis
@@ -341,32 +334,7 @@ newEClass adata egr =
             , classes   = IM.insert new_eclass_id new_eclass (classes egr)
             }
       )
-{-# INLINEABLE newEClass #-}
-
--- | Create a mapping from some class-id that does not exist in the e-graph to
--- the given e-class id target. In practice, this basically creates an
--- alias from the a given class-id to the e-class id of the target
---
--- If, instead, you want to create a mapping from an existing class-id to another one, use 'merge'.
---
--- Under the hood, this operation will bump the union find counter for next-ids
--- to the given id+1 and add an entry to the union find from given id to the
--- given target id.
---
--- This means that all e-class ids up to the new pointer id will be considered to be in use.
---
--- INVARIANT: The given e-class pointer does not exist in the e-graph
-newPointerToClassId :: ClassId -- ^ Given Id (pointer) that will point to the target
-                    -> ClassId -- ^ The target id
-                    -> EGraph a l -> EGraph a l
-newPointerToClassId (I# pointer) (I# target) egr =
-   egr { unionFind = case unionFind egr of
-                       RUF im _size ->
-                         if isTrue# (pointer <# _size)
-                            then error $ "newPointerToClassId: given pointer id (" ++ show (I# pointer) ++ ") already exists in the e-graph"
-                            else RUF (IIM.insert pointer target im) (pointer +# 1#)
-       }
-{-# INLINEABLE newPointerToClassId #-}
+{-# INLINE newEClass #-}
 
 -- | Represent an expression (in fix-point form) and merge it with the e-class with the given id
 representAndMerge :: (Analysis a l, Language l) => ClassId -> Fix l -> EGraph a l -> EGraph a l

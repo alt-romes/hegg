@@ -8,7 +8,7 @@ Union-find-like data structure that defines equivalence classes of e-class ids.
 
 -}
 module Data.Equality.Graph.ReprUnionFind
-  ( ReprUnionFind(..)
+  ( ReprUnionFind
   , emptyUF
   , makeNewSet
   , unionSets

@@ -5,7 +5,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TupleSections #-}
 {-|
    An e-graph efficiently represents a congruence relation over many expressions.
 
@@ -25,6 +25,14 @@ module Data.Equality.Graph
 
       -- * Functions on e-graphs
     , emptyEGraph, newEClass
+
+      -- ** Monadic transformations
+      -- | These are the same operations over e-graphs as above but over a monad in which the analysis is defined.
+      -- It is common to only have a valid 'Analysis' under a monadic context.
+      -- In that case, these are the functions to use -- they are just like the
+      -- non-monadic ones, but have require an 'Analysis' defined in a
+      -- monadic context.
+    , representM, addM, mergeM, rebuildM
 
       -- * Re-exports
     , module Data.Equality.Graph.Classes
@@ -340,3 +348,26 @@ newEClass adata egr =
 representAndMerge :: (Analysis a l, Language l) => ClassId -> Fix l -> EGraph a l -> EGraph a l
 representAndMerge o f g = case represent f g of
                         (i, e) -> snd $ merge o i e
+
+----- Monadic operations on e-graphs
+
+representM :: forall a l m. (Applicative m, Analysis (m a) l, Language l) => Fix l -> EGraph a l -> m (ClassId, EGraph a l)
+representM expr egraph =
+  let (cid, egraph') = represent expr (egraph & _classes . _data %~ pure @m)
+   in (cid,) <$> (_classes . _data) id egraph'
+
+addM :: forall a l m. (Applicative m, Analysis (m a) l, Language l) => ENode l -> EGraph a l -> m (ClassId, EGraph a l)
+addM enode egraph =
+  let (cid, egraph') = add enode (egraph & _classes . _data %~ pure @m)
+   in (cid,) <$> (_classes . _data) id egraph'
+
+mergeM :: forall a l m. (Applicative m, Analysis (m a) l, Language l) => ClassId -> ClassId -> EGraph a l -> m (ClassId, EGraph a l)
+mergeM x y egraph =
+  let (cid, egraph') = merge x y (egraph & _classes . _data %~ pure @m)
+   in (cid,) <$> (_classes . _data) id egraph'
+
+rebuildM :: forall a l m. (Applicative m, Analysis (m a) l, Language l) => EGraph a l -> m (EGraph a l)
+rebuildM egraph =
+  let egraph' = rebuild (egraph & _classes . _data %~ pure @m)
+   in (_classes . _data) id egraph'
+

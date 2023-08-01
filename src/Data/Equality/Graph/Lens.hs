@@ -24,6 +24,7 @@ import Data.Equality.Graph.ReprUnionFind
 
 -- | A 'Lens'' as defined in other lenses libraries
 type Lens' s a = forall f. Functor f => (a -> f a) -> (s -> f s)
+type Lens s t a b = forall f. Functor f => (a -> f b) -> (s -> f t)
 type Traversal s t a b = forall f. Applicative f => (a -> f b) -> (s -> f t)
 
 -- outdated comment for "getClass":
@@ -62,8 +63,8 @@ _iclasses afb egr = (\m1 -> egr {classes = m1}) <$> IM.traverseWithKey (curry af
 {-# INLINE _iclasses #-}
 
 -- | Lens for the 'Domain' of an e-class
-_data :: Lens' (EClass domain l) domain
-_data afa EClass{..} = (\d1 -> EClass eClassId eClassNodes d1 eClassParents) <$> afa eClassData
+_data :: Lens (EClass domain l) (EClass domain' l) domain domain'
+_data afb EClass{..} = (\d1 -> EClass eClassId eClassNodes d1 eClassParents) <$> afb eClassData
 {-# INLINE _data #-}
 
 -- | Lens for the parent e-classes of an e-class
@@ -89,7 +90,7 @@ infixr 4 .~
 {-# INLINE (.~) #-}
 
 -- | Synonym for @'over'@
-(%~) :: Lens' s a -> (a -> a) -> (s -> s)
+(%~) :: ASetter s t a b -> (a -> b) -> (s -> t)
 (%~) = over
 infixr 4 %~
 {-# INLINE (%~) #-}
@@ -105,13 +106,25 @@ set ln x = over ln (const x)
 {-# INLINE set #-}
 
 -- | Applies a function to the target
-over :: Lens' s a -> (a -> a) -> (s -> s)
+over :: ASetter s t a b -> (a -> b) -> (s -> t)
 over ln f = runIdentity . ln (Identity . f)
 {-# INLINE over #-}
+
+traverseOf :: Traversal s t a b -> forall f. Applicative f => (a -> f b) -> s -> f t 
+traverseOf t = t
+{-# INLINE traverseOf #-}
 
 -- | Returns True if every target of a Traversable satisfies a predicate.
 allOf :: Traversal s t a b -> (a -> Bool) -> s -> Bool
 allOf trv f = getAll . getConst . trv (Const . All . f)
 {-# INLINE allOf #-}
 
+-- * Utilities
 
+-- We need to use 'ASetter' instead of 'Lens' in %~ to ensure type inference can
+-- figure out the Functor or Applicative is 'Identity'. Otherwise, we won't be
+-- able to use the 'Traversal' to modify something through a 'Lens'.
+--
+-- | Used instead of 'Lens' in 'over' and '%~' to ensure one can call those
+-- combinators on 'Lens's and 'Traversal's
+type ASetter s t a b = (a -> Identity b) -> s -> Identity t

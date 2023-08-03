@@ -68,7 +68,6 @@ testCompileToQuery p = case fst $ compileToQuery p of
                            | _:xs <- queryHeadVars q ->
                                L.sort xs == L.sort (vars p)
                                  && length atoms == numNonVarPatterns p
-                         _ -> error "impossible! testCompileToQuery"
     where
         numNonVarPatterns :: Foldable lang => Pattern lang -> Int
         numNonVarPatterns (VariablePattern _) = 0

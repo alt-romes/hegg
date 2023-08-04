@@ -4,7 +4,8 @@
    Monadic interface to e-graph stateful computations
  -}
 module Data.Equality.Graph.Monad
-  ( egraph
+  (
+    egraph
   , represent
   , add
   , merge
@@ -12,10 +13,13 @@ module Data.Equality.Graph.Monad
   , EG.canonicalize
   , EG.find
   , EG.emptyEGraph
+  , representM, addM, mergeM, rebuildM
 
   -- * E-graph stateful computations
   , EGraphM
+  , EGraphMT
   , runEGraphM
+  , runEGraphMT
 
   -- * E-graph definition re-export
   , EG.EGraph
@@ -30,11 +34,13 @@ import Control.Monad.Trans.State.Strict
 import Data.Equality.Utils (Fix, cata)
 
 import Data.Equality.Analysis
+import qualified Data.Equality.Analysis.Monadic as AM
 import Data.Equality.Graph (EGraph, ClassId, Language, ENode(..))
 import qualified Data.Equality.Graph as EG
 
 -- | E-graph stateful computation
 type EGraphM a l = State (EGraph a l)
+type EGraphMT a l = StateT (EGraph a l)
 
 -- | Run EGraph computation on an empty e-graph
 --
@@ -84,3 +90,26 @@ runEGraphM :: EGraph anl l -> EGraphM anl l a -> (a, EGraph anl l)
 runEGraphM = flip runState
 {-# INLINE runEGraphM #-}
 
+--------------------------------------------------------------------------------
+-- Monadic Analysis interface
+
+-- | Run 'EGraphM' computation on a given e-graph over a monadic analysis
+runEGraphMT :: EGraph anl l -> EGraphMT anl l m a -> m (a, EGraph anl l)
+runEGraphMT = flip runStateT
+{-# INLINE runEGraphMT #-}
+
+representM :: (AM.Analysis m anl l, Language l) => Fix l -> EGraphMT anl l m ClassId
+representM = StateT . EG.representM
+{-# INLINE representM #-}
+
+addM :: (AM.Analysis m anl l, Language l) => ENode l -> EGraphMT anl l m ClassId
+addM = StateT . EG.addM
+{-# INLINE addM #-}
+
+mergeM :: (AM.Analysis m anl l, Language l) => ClassId -> ClassId -> EGraphMT anl l m ClassId
+mergeM a b = StateT (EG.mergeM a b)
+{-# INLINE mergeM #-}
+
+rebuildM :: (AM.Analysis m anl l, Language l) => EGraphMT anl l m ()
+rebuildM = StateT (fmap ((),) . EG.rebuildM)
+{-# INLINE rebuildM #-}

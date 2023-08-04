@@ -332,7 +332,7 @@ emptyEGraph = EGraph emptyUF mempty mempty mempty mempty
 
 -- | Creates an empty e-class in an e-graph, with the explicitly given domain analysis data.
 -- (That is, an e-class with no e-nodes)
-newEClass :: (Analysis a l, Language l) => a -> EGraph a l -> (ClassId, EGraph a l)
+newEClass :: (Language l) => a -> EGraph a l -> (ClassId, EGraph a l)
 newEClass adata egr =
   let
     -- Make new equivalence class with a new id in the union-find

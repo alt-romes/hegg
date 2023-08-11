@@ -105,7 +105,7 @@ instance forall l. Analysis () l where
   joinA = (<>)
 
 
--- This instance is not necessarily well behaved for any two analysis, so care
+-- | This instance is not necessarily well behaved for any two analysis, so care
 -- must be taken when using it.
 --
 -- A possible criterion is:

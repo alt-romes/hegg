@@ -46,6 +46,13 @@ source-repository head
     location: https://github.com/alt-romes/hegg
 
 library
+    other-extensions: BlockArguments StandaloneKindSignatures
+
+    -- QuantifiedConstraints are quite broken with GHC-9.0
+    -- Ord (Pattern l) instance triggers same issue like
+    -- https://github.com/haskell/mtl/issues/138
+    build-depends: base >=4.16  || <4.15
+
     ghc-options:      -Wall -Wcompat
 
                       -- -fno-prof-auto
@@ -92,7 +99,8 @@ library
     -- other-modules:
 
     -- LANGUAGE extensions used by modules in this package.
-    build-depends:    base         >= 4.4 && < 5,
+    -- base-4.13, because foldMap' is used.
+    build-depends:    base         >= 4.13 && < 5,
                       transformers >= 0.4 && < 0.7,
                       containers   >= 0.4 && < 0.7
     if flag(vizdot)

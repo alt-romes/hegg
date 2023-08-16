@@ -117,7 +117,7 @@ We want to associate constant data to the e-class, so we must find if the
 e-node has a constant value or otherwise return `Nothing`:
 
 ```hs
-makeA :: SymExpr (Maybe Double) -> Maybe Int
+makeA :: SymExpr (Maybe Double) -> Maybe Double
 makeA = \case
   Const x -> Just x
   Symbol _ -> Nothing

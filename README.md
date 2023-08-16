@@ -181,15 +181,6 @@ instance Analysis () lang where
   joinA _ _ = ()
 ```
 
-### Language, again
-
-With this setup, we can now express that `SymExpr` forms a `Language` which we
-can represent and manipulate in an e-graph by simply instancing it (there are no
-additional functions to define).
-```hs
-instance Language SymExpr
-```
-
 ### Equality saturation
 
 Equality saturation is defined as the function

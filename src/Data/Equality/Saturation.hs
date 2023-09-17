@@ -123,7 +123,7 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
       -- Read-only phase, invariants are preserved
       -- With backoff scheduler
       -- ROMES:TODO parMap with chunks
-      let (!matches, newStats) = mconcat (fmap (matchWithScheduler db i stats) (zip [1..] rewrites))
+      let (!matches, newStats) = mconcat (fmap (\(rw_id,rw) -> first (map (rw,)) $ matchWithScheduler db i stats rw_id rw) (zip [1..] rewrites))
 
       -- Write-only phase, temporarily break invariants
       forM_ matches applyMatchesRhs
@@ -141,10 +141,10 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
                 && IM.size afterClasses == IM.size beforeClasses)
           (runEqualitySaturation' (i+1) newStats)
 
-  matchWithScheduler :: Database l -> Int -> IM.IntMap (Stat schd) -> (Int, Rewrite a l) -> ([(Rewrite a l, Match)], IM.IntMap (Stat schd))
-  matchWithScheduler db i stats = \case
-      (rw_id, rw :| cnd) -> first (map (first (:| cnd))) $ matchWithScheduler db i stats (rw_id, rw)
-      (rw_id, lhs := rhs) -> do
+  matchWithScheduler :: Database l -> Int -> IM.IntMap (Stat schd) -> Int -> Rewrite a l -> ([Match], IM.IntMap (Stat schd))
+  matchWithScheduler db i stats rw_id = \case
+      rw  :| _ -> matchWithScheduler db i stats rw_id rw
+      lhs := _ -> do
           case IM.lookup rw_id stats of
             -- If it's banned until some iteration, don't match this rule
             -- against anything.
@@ -159,7 +159,7 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
                 -- Backoff scheduler: update stats
                 let newStats = updateStats schd i rw_id x stats matches'
 
-                (map (lhs := rhs,) matches', newStats)
+                (matches', newStats)
 
   applyMatchesRhs :: (Rewrite a l, Match) -> EGraphM a l ()
   applyMatchesRhs =

@@ -24,10 +24,7 @@ import Data.GraphViz.Attributes (style, dotted, textLabel)
 import Data.GraphViz.Attributes.Complete
 
 import Data.Equality.Graph
-import Data.Equality.Graph.Nodes
-import Data.Equality.Graph.Classes
 import Data.Equality.Graph.Internal
-import Data.Equality.Language
 
 txt :: Show a => a -> Text
 txt = pack . show

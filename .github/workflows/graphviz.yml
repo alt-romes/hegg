@@ -1,7 +1,13 @@
 name: Build GraphViz Module
 on:
-    - push
-    - pull_request
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -18,4 +24,22 @@ jobs:
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: ${{ matrix.cabal }}
-      - run: cabal build -f vizdot
+      - name: Configure the build plan
+        run: |
+            cabal update
+            cabal build -f vizdot --dry-run
+          # cabal build --dry-run creates dist-newstyle/cache/plan.json
+          # Keep a watch on this `cabal-3.9 build --dry-run` bug:
+          # https://github.com/haskell/cabal/issues/8706
+      - name: Read the Cabal cache
+        uses: actions/cache@v3
+        with:
+            path: |
+              ~/.cabal/store
+              dist-newstyle
+            key: |
+              cabal-cache-ghc-${{ matrix.ghc }}-cabal-${{ matrix.cabal }}-${{ hashFiles('**/plan.json') }}
+            restore-keys: |
+              cabal-cache-ghc-${{ matrix.ghc }}-cabal-${{ matrix.cabal }}-
+      - name: Build the Data.Equality.Graph.Dot module
+        run: cabal build -f vizdot

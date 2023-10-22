@@ -1,0 +1,21 @@
+name: Build GraphViz Module
+on:
+    - push
+    - pull_request
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        ghc: ['8.10.7', '9.2.7', '9.4.5', '9.6.2']
+        cabal: ['3.0.0.0']
+        os: [ubuntu-latest]
+    name: Build GraphViz Module ${{ matrix.ghc }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Haskell
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: ${{ matrix.ghc }}
+          cabal-version: ${{ matrix.cabal }}
+      - run: cabal build -f vizdot

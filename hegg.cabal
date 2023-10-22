@@ -38,7 +38,7 @@ author:             Rodrigo Mesquita <romes>
 maintainer:         Rodrigo Mesquita <rodrigo.m.mesquita@gmail.com>
 copyright:          Copyright (C) 2022 Rodrigo Mesquita
 category:           Data
-extra-source-files: CHANGELOG.md
+extra-doc-files:    CHANGELOG.md
                     README.md
 
 source-repository head
@@ -138,8 +138,8 @@ benchmark hegg-bench
                   tasty,
                   tasty-hunit,
                   tasty-quickcheck,
-                  tasty-bench >= 0.2,
-                  deepseq
+                  tasty-bench >= 0.2 && < 0.4,
+                  deepseq >= 1.4 && < 1.6
   ghc-options:    -with-rtsopts=-A32m
   if impl(ghc >= 8.6)
     ghc-options: -fproc-alignment=64

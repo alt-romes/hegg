@@ -13,6 +13,7 @@ import SimpleSym
 
 import qualified T1
 import qualified T2
+import qualified T3
 
 tests :: TestTree
 tests = testGroup "Tests"
@@ -22,6 +23,7 @@ tests = testGroup "Tests"
   , invariants
   , testCase "T1" (T1.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
   , testCase "T2" (T2.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
+  , testCase "T3" (T3.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
   ]
 
 main :: IO ()

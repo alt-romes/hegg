@@ -37,7 +37,7 @@ type Traversal s t a b = forall f. Applicative f => (a -> f b) -> (s -> f t)
 --
 -- Invariant: The e-class exists.
 
--- | Lens for the e-class with the given id in an e-graph
+-- | Lens for the e-class at the representative of the given id in an e-graph
 --
 -- Calls 'error' when the e-class doesn't exist
 _class :: ClassId -> Lens' (EGraph a l) (EClass a l)

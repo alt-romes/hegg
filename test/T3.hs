@@ -29,11 +29,19 @@ main = do
         a1  <- EGM.add (Node (And id3 id1))
         a2  <- EGM.add (Node (And id3 id2))
         EGM.merge a1 a2
-        -- EGM.rebuild
+        EGM.rebuild -- even rebuilding this fails...
         return (id1,id2)
 
-  -- The children should now be in the same e-class
-  find s1 eg @=? find s2 eg
+  -- The children should now be in the same e-class?
+  --
+  -- Turns out, they don't. So this test should actually be the other way
+  -- around (we do not learn s1 ~= s2 from merging a1 and a2)
+  --
+  -- A counter example:
+  -- Consider `f` that returns its second argument (f _ x = x):
+  -- so f(a,c) = f(b,c), but a != b
+  --
+  -- find s1 eg @=? find s2 eg
 
   return ()
 

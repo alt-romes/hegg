@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+## 0.5.0.0 -- 2023-10-31
+
+* Change `'modifyA'` to instead operate over e-graphs, instead of being
+    constrained to editing the e-class that prompted the modification.
+    (Remember that the e-graph lenses in `'Data.Equality.Graph.Lens'` are the
+    preferred way to edit the e-graph and the desired e-class (by id), and its
+    data, etc...)
+
+* Fix compilation of Data.Equality.Graph.Dot, the graphviz rendering backend
+    (despite there being some usability bugs still) (by @BinderDavid)
+
+* Dropped support for GHC 9.0 because of the QuantifiedConstraints bug (by @phadej)
+
+* Add `AnalysisM`, a class for e-graph analysis that are only well-defined
+    within a certain monadic context. Accordingly, we also add versions of the
+    current e-graph transformation functions (such as `add` and `merge`) for
+    analysis defined monadically (such as `addM` and `mergeM`).
+
+* Add operation to create empty e-classes with explicit domain data
+    (experimental, not sure whether this is something good to keep in the API)
+
 ## 0.4.0.0 -- 2023-06-24
 
 * Make `Language` a constraint type synonym instead of a standalone empty class

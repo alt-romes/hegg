@@ -144,19 +144,22 @@ joinA (Just x) (Just y) = if x == y then Just x else error "ouch, that shouldn't
 Finally, `modifyA` describes how an e-class should (optionally) be modified
 according to the e-class data and what new language expressions are to be added
 to the e-class also w.r.t. the e-class data.
-Its type is `EClass domain l -> (EClass domain l, [Fix l])`, where the argument
-is the class to modify, the first element of the return tuple is the
-(optionally) modified e-class and the second element is a list of the
-expressions to represent and merge with this e-class.
-For our example, if the e-class has a constant value associated to it, we want
-to create a new e-class with that constant value and merge it to this e-class.
+Its type is `ClassId -> EGraph domain l -> EGraph domain l`, where the first argument
+is the id of the class to modify (the class which prompted the modification),
+and then receives and returns an e-graph, in which the e-class has been
+modified.  For our example, if the e-class has a constant value associated to
+it, we want to create a new e-class with that constant value and merge it to
+this e-class.
 
 ```hs
--- import Data.Equality.Graph.Lens ((^.), _data)
-modifyA :: EClass (Maybe Double) SymExpr -> (EClass (Maybe Double) SymExpr, [Fix SymExpr])
-modifyA c = case c^._data of
-              Nothing -> (c, [])
-              Just i  -> (c, [Fix (Const i)])
+-- import Data.Equality.Graph.Lens ((^.), _class, _data)
+modifyA :: ClassId -> EGraph (Maybe Double) SymExpr -> EGraph (Maybe Double) SymExpr
+modifyA c egr
+    = case egr ^._class c._data of
+        Nothing -> egr
+        Just i ->
+          let (c', egr') = represent (Fix (Const i)) egr
+           in snd $ merge c c' egr'
 ```
 
 Modify is a bit trickier than the other methods, but it allows our e-graph to

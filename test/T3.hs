@@ -8,7 +8,7 @@ module T3 where
 
 import Prelude hiding (not)
 
-import Test.Tasty.HUnit
+-- import Test.Tasty.HUnit
 import Data.Equality.Graph
 import Data.Equality.Utils
 import qualified Data.Equality.Graph.Monad as EGM
@@ -22,13 +22,13 @@ data Lang a = And a a
 
 main :: IO ()
 main = do
-  let ((s1,s2), eg) = EGM.egraph @Lang @() $ do
+  let _ = EGM.egraph @Lang @() $ do
         id1 <- EGM.represent (Fix (Sym 1))
         id2 <- EGM.represent (Fix (Not (Fix (Not (Fix (Sym 1))))))
         id3 <- EGM.represent (Fix (Sym 2))
         a1  <- EGM.add (Node (And id3 id1))
         a2  <- EGM.add (Node (And id3 id2))
-        EGM.merge a1 a2
+        _ <- EGM.merge a1 a2
         EGM.rebuild -- even rebuilding this fails...
         return (id1,id2)
 

@@ -7,6 +7,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE CPP #-}
 module Sym where
 
 import GHC.Generics
@@ -20,7 +21,10 @@ import Data.Maybe (isJust)
 
 import qualified Data.Foldable as F
 
+#if MIN_VERSION_base(4,18,0)
+#else
 import Control.Applicative (liftA2)
+#endif
 import Control.Monad (unless)
 
 import Data.Equality.Graph.Lens

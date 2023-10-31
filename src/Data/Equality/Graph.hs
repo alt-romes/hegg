@@ -14,25 +14,25 @@
  -}
 module Data.Equality.Graph
     (
-      -- * Definition of e-graph
+      -- ** Definition of e-graph
       EGraph
 
-      -- ** Transformations
+      -- ** E-graph transformations
     , represent, add, merge, rebuild
     -- , repair, repairAnal
 
       -- ** Querying
     , find, canonicalize
 
-      -- * Functions on e-graphs
+      -- ** Functions on e-graphs
     , emptyEGraph, newEClass
 
-      -- ** Monadic transformations
+      -- * E-graph transformations for monadic analysis
       -- | These are the same operations over e-graphs as above but over a monad in which the analysis is defined.
       -- It is common to only have a valid 'Analysis' under a monadic context.
       -- In that case, these are the functions to use -- they are just like the
       -- non-monadic ones, but have require an 'Analysis' defined in a
-      -- monadic context.
+      -- monadic context ('AnalysisM').
     , representM, addM, mergeM, rebuildM
 
       -- * Re-exports
@@ -346,12 +346,16 @@ newEClass adata egr =
 
 -- TODO: Move these to new module?
 
+-- * E-graph operations for analysis defined monadically ('AM.AnalysisM')
+
+-- | Like 'represent', but for a monadic analysis
 representM :: forall a l m. (AM.AnalysisM m a l, Language l) => Fix l -> EGraph a l -> m (ClassId, EGraph a l)
 representM = cata $ \l e -> do
   -- Canonical implementation is represent, this is just the monadic variant of it
   (l', e') <- (`runStateT` e) $ traverse (\f -> get >>= lift . f >>= StateT . const . pure) l
   addM (Node l') e'
 
+-- | Like 'add', but for a monadic analysis
 addM :: forall a l m. (AM.AnalysisM m a l, Language l) => ENode l -> EGraph a l -> m (ClassId, EGraph a l)
 addM uncanon_e egr =
   -- Canonical implementation is add, this is just the monadic variant of it
@@ -387,6 +391,7 @@ addM uncanon_e egr =
         return ( new_eclass_id, egr1 )
 {-# INLINABLE addM #-}
 
+-- | Like 'merge', but for a monadic analysis
 mergeM :: forall a l m. (AM.AnalysisM m a l, Language l) => ClassId -> ClassId -> EGraph a l -> m (ClassId, EGraph a l)
 mergeM a b egr0 = do
   -- Canonical implementation is merge, this is just the monadic variant of it
@@ -451,6 +456,7 @@ mergeM a b egr0 = do
        return (new_id, egr1)
 {-# INLINEABLE mergeM #-}
 
+-- | Like 'rebuild', but for a monadic analysis
 rebuildM :: forall a l m. (AM.AnalysisM m a l, Language l) => EGraph a l -> m (EGraph a l)
 rebuildM (EGraph uf cls mm wl awl) = do
   -- Canonical implementation is rebuild, this is just the monadic variant of it
@@ -470,6 +476,7 @@ rebuildM (EGraph uf cls mm wl awl) = do
      else rebuildM egr''
 {-# INLINEABLE rebuildM #-}
 
+-- | Like 'repair', but for a monadic analysis
 repairM :: forall a l m. (AM.AnalysisM m a l, Language l) => (ClassId, ENode l) -> EGraph a l -> m (EGraph a l)
 repairM (repair_id, node) egr =
   -- Canonical implementation is repair, this is just the monadic variant of it
@@ -480,7 +487,7 @@ repairM (repair_id, node) egr =
       (Just existing_class, memo') -> snd <$> (mergeM existing_class repair_id egr{memo = memo'})
 {-# INLINE repairM #-}
 
--- | Repair a single analysis-worklist entry.
+-- | Like 'repairAnal', but for a monadic analysis
 repairAnalM :: forall a l m. (AM.AnalysisM m a l, Language l) => (ClassId, ENode l) -> EGraph a l -> m (EGraph a l)
 repairAnalM (repair_id, node) egr = do
   -- Canonical implementation is repairAnal, this is just the monadic variant of it

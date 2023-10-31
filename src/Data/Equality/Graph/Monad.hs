@@ -5,6 +5,10 @@
  -}
 module Data.Equality.Graph.Monad
   (
+    -- * Threading e-graphs in a stateful computation
+    --
+    -- | These are the same operations over e-graphs as in 'Data.Equality.Graph',
+    -- but defined in the context of a 'State' monad threading around the e-graph.
     egraph
   , represent
   , add
@@ -13,6 +17,11 @@ module Data.Equality.Graph.Monad
   , EG.canonicalize
   , EG.find
   , EG.emptyEGraph
+
+    -- * E-graph transformations for monadic analysis
+    --
+    -- | The same e-graph operations in a stateful computation threading around
+    -- the e-graph, but for 'Analysis' defined monadically ('AnalysisM').
   , representM, addM, mergeM, rebuildM
 
   -- * E-graph stateful computations
@@ -40,6 +49,7 @@ import qualified Data.Equality.Graph as EG
 
 -- | E-graph stateful computation
 type EGraphM a l = State (EGraph a l)
+-- | E-graph stateful computation over an arbitrary monad
 type EGraphMT a l = StateT (EGraph a l)
 
 -- | Run EGraph computation on an empty e-graph
@@ -98,18 +108,22 @@ runEGraphMT :: EGraph anl l -> EGraphMT anl l m a -> m (a, EGraph anl l)
 runEGraphMT = flip runStateT
 {-# INLINE runEGraphMT #-}
 
+-- | Like 'represent', but for a monadic analysis
 representM :: (AM.AnalysisM m anl l, Language l) => Fix l -> EGraphMT anl l m ClassId
 representM = StateT . EG.representM
 {-# INLINE representM #-}
 
+-- | Like 'add', but for a monadic analysis
 addM :: (AM.AnalysisM m anl l, Language l) => ENode l -> EGraphMT anl l m ClassId
 addM = StateT . EG.addM
 {-# INLINE addM #-}
 
+-- | Like 'merge', but for a monadic analysis
 mergeM :: (AM.AnalysisM m anl l, Language l) => ClassId -> ClassId -> EGraphMT anl l m ClassId
 mergeM a b = StateT (EG.mergeM a b)
 {-# INLINE mergeM #-}
 
+-- | Like 'rebuild', but for a monadic analysis
 rebuildM :: (AM.AnalysisM m anl l, Language l) => EGraphMT anl l m ()
 rebuildM = StateT (fmap ((),) . EG.rebuildM)
 {-# INLINE rebuildM #-}

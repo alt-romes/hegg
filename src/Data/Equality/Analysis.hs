@@ -78,11 +78,15 @@ class Eq domain => Analysis domain (l :: Type -> Type) where
     -- leaf values, and adding a constant value node
     --
     -- @
-    --  -- Prune all except leaf e-nodes
-    --  modifyA cl =
-    --    case cl^._data of
-    --      Nothing -> (cl, [])
-    --      Just d -> ((_nodes %~ S.filter (F.null .unNode)) cl, [Fix (Const d)])
+    -- modifyA cl eg0
+    --   = case eg0^._class cl._data of
+    --       Nothing -> eg0
+    --       Just d  ->
+    --             -- Add constant as e-node
+    --         let (new_c,eg1) = represent (Fix (Const d)) eg0
+    --             (rep, eg2)  = merge cl new_c eg1
+    --             -- Prune all except leaf e-nodes
+    --          in eg2 & _class rep._nodes %~ S.filter (F.null .unNode)
     -- @
     modifyA :: ClassId
             -- ^ Id of class @c@ whose new data @d_c@ triggered the modify call

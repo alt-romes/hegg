@@ -22,9 +22,11 @@ import Data.Equality.Graph.Nodes
 import Data.Equality.Graph.Classes
 import Data.Equality.Graph.ReprUnionFind
 
--- | A 'Lens'' as defined in other lenses libraries
+-- | A 'Lens'' as defined in lens
 type Lens' s a = forall f. Functor f => (a -> f a) -> (s -> f s)
+-- | A 'Lens' as defined in lens
 type Lens s t a b = forall f. Functor f => (a -> f b) -> (s -> f t)
+-- | A 'Traversal' as defined in lens
 type Traversal s t a b = forall f. Applicative f => (a -> f b) -> (s -> f t)
 
 -- outdated comment for "getClass":
@@ -110,6 +112,7 @@ over :: ASetter s t a b -> (a -> b) -> (s -> t)
 over ln f = runIdentity . ln (Identity . f)
 {-# INLINE over #-}
 
+-- | Basically 'traverse' over a 'Traversal'
 traverseOf :: Traversal s t a b -> forall f. Applicative f => (a -> f b) -> s -> f t 
 traverseOf t = t
 {-# INLINE traverseOf #-}
@@ -124,7 +127,8 @@ allOf trv f = getAll . getConst . trv (Const . All . f)
 -- We need to use 'ASetter' instead of 'Lens' in %~ to ensure type inference can
 -- figure out the Functor or Applicative is 'Identity'. Otherwise, we won't be
 -- able to use the 'Traversal' to modify something through a 'Lens'.
---
+
 -- | Used instead of 'Lens' in 'over' and '%~' to ensure one can call those
--- combinators on 'Lens's and 'Traversal's
+-- combinators on 'Lens's and 'Traversal's. Essentially, it helps type
+-- inference in such function applications
 type ASetter s t a b = (a -> Identity b) -> s -> Identity t

@@ -73,14 +73,16 @@ type LA = (FreeVars, Maybe (Lambda ()))
 instance Analysis (Maybe (Lambda ())) Lambda where
   makeA = evalL
   joinA = (<|>)
-  modifyA c = case c^._data of
-                Nothing -> (c, [])
-                Just v  -> (c, [f v])
-                  where
-                    f = \case
-                      Bool b -> Fix $ Bool b
-                      Num i  -> Fix $ Num i
-                      _ -> error "impossible, lambda () can't construct this"
+  modifyA c eg
+    = case eg^._class c._data of
+        Nothing -> eg
+        Just v  -> let (c', eg') = represent (f v) eg
+                    in snd $ merge c c' eg'
+          where
+            f = \case
+              Bool b -> Fix $ Bool b
+              Num i  -> Fix $ Num i
+              _ -> error "impossible, lambda () can't construct this"
                       
 
 -- Free variable analysis for lambda

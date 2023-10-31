@@ -27,6 +27,7 @@ import Control.Applicative (liftA2)
 #endif
 import Control.Monad (unless)
 
+import Data.Function ((&))
 import Data.Equality.Graph.Lens
 import Data.Equality.Graph
 import Data.Equality.Extraction
@@ -119,17 +120,15 @@ instance Analysis (Maybe Double) Expr where
         !_ <- unless (a == b || (a == 0 && b == (-0)) || (a == (-0) && b == 0)) (error "Merged non-equal constants!")
         return a
 
-    modifyA cl = case cl^._data of
-                 Nothing -> (cl, [])
-                 Just d -> ((_nodes %~ S.filter (F.null .unNode)) cl, [Fix (Const d)])
-
-    --         -- Add constant as e-node
-    --         new_c <- represent (Fix $ Const d)
-    --         _     <- GM.merge i new_c
-
-    --         -- Prune all except leaf e-nodes
-    --         modify (_class i._nodes %~ S.filter (F.null . unNode))
-
+    modifyA cl eg0
+      = case eg0^._class cl._data of
+          Nothing -> eg0
+          Just d  ->
+                -- Add constant as e-node
+            let (new_c,eg1) = represent (Fix (Const d)) eg0
+                (rep, eg2)  = merge cl new_c eg1
+                -- Prune all except leaf e-nodes
+             in eg2 & _class rep._nodes %~ S.filter (F.null .unNode)
 
 
 evalConstant :: Expr (Maybe Double) -> Maybe Double

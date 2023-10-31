@@ -30,8 +30,10 @@ module Data.Equality.Analysis where
 import Data.Kind (Type)
 import Control.Arrow ((***))
 
-import Data.Equality.Utils
+import Data.Function ((&))
+import Data.Equality.Graph.Lens
 import Data.Equality.Language
+import Data.Equality.Graph.Internal (EGraph)
 import Data.Equality.Graph.Classes
 
 -- | An e-class analysis with domain @domain@ defined for a language @l@.
@@ -70,17 +72,6 @@ class Eq domain => Analysis domain (l :: Type -> Type) where
     -- e-node to c. Modify should be idempotent if no other changes occur to
     -- the e-class, i.e., modify(modify(c)) = modify(c)
     --
-    -- The return value of the modify function is both the modified class and
-    -- the expressions (in their fixed-point form) to add to this class. We
-    -- can't manually add them because not only would it skip some of the
-    -- internal steps of representing + merging, but also because it's
-    -- impossible to add any expression with depth > 0 without access to the
-    -- e-graph (since we must represent every sub-expression in the e-graph
-    -- first).
-    --
-    -- That's why we must return the modified class and the expressions to add
-    -- to this class.
-    --
     -- === Example
     --
     -- Pruning an e-class with a constant value of all its nodes except for the
@@ -93,8 +84,13 @@ class Eq domain => Analysis domain (l :: Type -> Type) where
     --      Nothing -> (cl, [])
     --      Just d -> ((_nodes %~ S.filter (F.null .unNode)) cl, [Fix (Const d)])
     -- @
-    modifyA :: EClass domain l -> (EClass domain l, [Fix l])
-    modifyA c = (c, [])
+    modifyA :: ClassId
+            -- ^ Id of class @c@ whose new data @d_c@ triggered the modify call
+            -> EGraph domain l
+            -- ^ E-graph where class @c@ being modified exists
+            -> EGraph domain l
+            -- ^ E-graph resulting from the modification
+    modifyA _ = id
     {-# INLINE modifyA #-}
 
 
@@ -111,7 +107,8 @@ instance forall l. Analysis () l where
 -- A possible criterion is:
 --
 -- For any two analysis, where 'modifyA' is called @m1@ and @m2@ respectively,
--- this instance is well behaved if @m1@ and @m2@ commute.
+-- this instance is well behaved if @m1@ and @m2@ commute, and the analysis
+-- only change the e-class being modified.
 --
 -- That is, if @m1@ and @m2@ satisfy the following law:
 -- @
@@ -133,10 +130,12 @@ instance (Language l, Analysis a l, Analysis b l) => Analysis (a, b) l where
   joinA :: (a,b) -> (a,b) -> (a,b)
   joinA (x,y) = joinA @a @l x *** joinA @b @l y
 
-  modifyA :: EClass (a, b) l -> (EClass (a, b) l, [Fix l])
-  modifyA c =
-    let (ca, la) = modifyA @a (c { eClassData = fst (eClassData c) })
-        (cb, lb) = modifyA @b (c { eClassData = snd (eClassData c) })
-     in ( EClass (eClassId c) (eClassNodes ca <> eClassNodes cb) (eClassData ca, eClassData cb) (eClassParents ca <> eClassParents cb)
-        , la <> lb
-        )
+  modifyA :: ClassId -> EGraph (a, b) l -> EGraph (a, b) l
+  modifyA c egr =
+    let egra = modifyA @a c (egr & _classes._data %~ fst)
+        egrb = modifyA @b c (egr & _classes._data %~ snd)
+        ca = egra ^._class c
+        cb = egrb ^._class c
+     in
+      egr &
+        _class c .~ (EClass c (eClassNodes ca <> eClassNodes cb) (eClassData ca, eClassData cb) (eClassParents ca <> eClassParents cb))

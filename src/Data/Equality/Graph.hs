@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -ddump-to-file -ddump-simpl #-}
 {-|
    An e-graph efficiently represents a congruence relation over many expressions.
 
@@ -100,12 +101,7 @@ add uncanon_e egr =
             (new_eclass_id, new_uf) = makeNewSet (unionFind egr)
 
             -- New singleton e-class stores the e-node and its analysis data
-            -- which is modified according to analysis
-            --
-            -- The modification also produces a list of expressions to
-            -- represent and merge with this class, which we'll do before
-            -- returning from this function
-            (new_eclass, added_nodes) = modifyA $ EClass new_eclass_id (S.singleton new_en) (makeA @a ((\i -> egr^._class i._data @a) <$> unNode new_en)) mempty
+            new_eclass = EClass new_eclass_id (S.singleton new_en) (makeA @a ((\i -> egr^._class i._data @a) <$> unNode new_en)) mempty
 
             -- TODO:Performance: All updates can be done to the map first? Parallelize?
             --
@@ -149,20 +145,14 @@ add uncanon_e egr =
             -- Add the e-node's e-class id at the e-node's id
             new_memo         = insertNM new_en new_eclass_id (memo egr)
 
-            -- So we have our almost final e-graph. We just need to represent
-            -- and merge in it all expressions which resulted from 'modifyA'
-            -- above
-            egr1             = egr { unionFind = new_uf
-                                   , classes   = new_classes
-                                   , worklist  = new_worklist
-                                   , memo      = new_memo
-                                   }
-
-            egr2             = foldr (representAndMerge new_eclass_id) egr1 added_nodes
-
-
          in ( new_eclass_id
-            , egr2
+            , egr { unionFind = new_uf
+                  , classes   = new_classes
+                  , worklist  = new_worklist
+                  , memo      = new_memo
+                  }
+                  -- Modify created node according to analysis
+                  & modifyA new_eclass_id
             )
 {-# INLINABLE add #-}
 
@@ -195,11 +185,10 @@ merge a b egr0 =
 
            -- Update leader class with all e-nodes and parents from the
            -- subsumed class
-           (updatedLeader, added_nodes) = leader_class
-                                            & _parents %~ (sub_class^._parents <>)
-                                            & _nodes   %~ (sub_class^._nodes <>)
-                                            & _data    .~ new_data
-                                            & modifyA
+           updatedLeader = leader_class
+                             & _parents %~ (sub_class^._parents <>)
+                             & _nodes   %~ (sub_class^._nodes <>)
+                             & _data    .~ new_data
 
            new_data = joinA @a @l (leader_class^._data) (sub_class^._data)
 
@@ -237,10 +226,10 @@ merge a b egr0 =
              , worklist  = new_worklist
              , analysisWorklist = new_analysis_worklist
              }
+             -- Modify according to analysis
+             & modifyA new_id
 
-           egr2 = foldr (representAndMerge leader) egr1 added_nodes
-
-        in (new_id, egr2)
+        in (new_id, egr1)
 {-# INLINEABLE merge #-}
             
 
@@ -287,22 +276,18 @@ repair (repair_id, node) egr =
 repairAnal :: forall a l. (Analysis a l, Language l) => (ClassId, ENode l) -> EGraph a l -> EGraph a l
 repairAnal (repair_id, node) egr =
     let
-        c1                = egr^._class repair_id
-        new_data          = joinA @a @l (c1^._data) (makeA @a ((\i -> egr^._class i^._data @a) <$> unNode node))
-        (c2, added_nodes) = modifyA (c1 & _data .~ new_data)
+        c                = egr^._class repair_id
+        new_data          = joinA @a @l (c^._data) (makeA @a ((\i -> egr^._class i^._data @a) <$> unNode node))
     in
     -- Take action if the new_data is different from the existing data
-    if c1^._data /= new_data
+    if c^._data /= new_data
         -- Merge result is different from original class data, update class
         -- with new_data
        then
-        let
-            new_classes = IM.insert repair_id c2 (classes egr)
-            egr1 = egr { analysisWorklist = toListSL (c1^._parents) <> analysisWorklist egr
-                       , classes = new_classes
-                       }
-            egr2 = foldr (representAndMerge repair_id) egr1 added_nodes
-         in egr2
+         egr { analysisWorklist = toListSL (c^._parents) <> analysisWorklist egr
+             , classes = IM.adjust (_data .~ new_data) repair_id (classes egr)
+             }
+             & modifyA repair_id
        else egr
 {-# INLINE repairAnal #-}
 
@@ -347,12 +332,6 @@ newEClass adata egr =
       )
 {-# INLINE newEClass #-}
 
--- | Represent an expression (in fix-point form) and merge it with the e-class with the given id
-representAndMerge :: (Analysis a l, Language l) => ClassId -> Fix l -> EGraph a l -> EGraph a l
-representAndMerge o f g = case represent f g of
-                        (i, e) -> snd $ merge o i e
-{-# INLINE representAndMerge #-}
-
 ----- Monadic operations on e-graphs
 -- Unfortunately, these cannot be defined in terms of the primary ones.
 -- This could almost be done by defining the domain of the standard Analysis to
@@ -367,13 +346,13 @@ representAndMerge o f g = case represent f g of
 
 -- TODO: Move these to new module?
 
-representM :: forall a l m. (AM.Analysis m a l, Language l) => Fix l -> EGraph a l -> m (ClassId, EGraph a l)
+representM :: forall a l m. (AM.AnalysisM m a l, Language l) => Fix l -> EGraph a l -> m (ClassId, EGraph a l)
 representM = cata $ \l e -> do
   -- Canonical implementation is represent, this is just the monadic variant of it
   (l', e') <- (`runStateT` e) $ traverse (\f -> get >>= lift . f >>= StateT . const . pure) l
   addM (Node l') e'
 
-addM :: forall a l m. (AM.Analysis m a l, Language l) => ENode l -> EGraph a l -> m (ClassId, EGraph a l)
+addM :: forall a l m. (AM.AnalysisM m a l, Language l) => ENode l -> EGraph a l -> m (ClassId, EGraph a l)
 addM uncanon_e egr =
   -- Canonical implementation is add, this is just the monadic variant of it
     let !new_en = canonicalize uncanon_e egr
@@ -385,31 +364,30 @@ addM uncanon_e egr =
             (new_eclass_id, new_uf) = makeNewSet (unionFind egr)
 
         new_data <- AM.makeA @m @a ((\i -> egr^._class i._data @a) <$> unNode new_en)
-        (new_eclass, added_nodes) <- AM.modifyA $ EClass new_eclass_id (S.singleton new_en) new_data mempty
 
         let
-            new_parents      = ((new_eclass_id, new_en) |:)
-            new_classes      = IM.insert new_eclass_id new_eclass $
-                                    foldr  (IM.adjust (_parents %~ new_parents))
-                                           (classes egr)
-                                           (unNode new_en)
+            new_eclass   =  EClass new_eclass_id (S.singleton new_en) new_data mempty
+            new_parents  = ((new_eclass_id, new_en) |:)
+            new_classes  = IM.insert new_eclass_id new_eclass $
+                                foldr  (IM.adjust (_parents %~ new_parents))
+                                       (classes egr)
+                                       (unNode new_en)
 
-            new_worklist     = (new_eclass_id, new_en):worklist egr
+            new_worklist = (new_eclass_id, new_en):worklist egr
 
-            new_memo         = insertNM new_en new_eclass_id (memo egr)
+            new_memo     = insertNM new_en new_eclass_id (memo egr)
 
-            egr1             = egr { unionFind = new_uf
-                                   , classes   = new_classes
-                                   , worklist  = new_worklist
-                                   , memo      = new_memo
-                                   }
+        egr1 <- egr { unionFind = new_uf
+                    , classes   = new_classes
+                    , worklist  = new_worklist
+                    , memo      = new_memo
+                    }
+                    & AM.modifyA new_eclass_id
 
-        egr2 <- foldlM (flip $ representAndMergeM new_eclass_id) egr1 added_nodes
-
-        return ( new_eclass_id, egr2 )
+        return ( new_eclass_id, egr1 )
 {-# INLINABLE addM #-}
 
-mergeM :: forall a l m. (AM.Analysis m a l, Language l) => ClassId -> ClassId -> EGraph a l -> m (ClassId, EGraph a l)
+mergeM :: forall a l m. (AM.AnalysisM m a l, Language l) => ClassId -> ClassId -> EGraph a l -> m (ClassId, EGraph a l)
 mergeM a b egr0 = do
   -- Canonical implementation is merge, this is just the monadic variant of it
   let
@@ -433,13 +411,12 @@ mergeM a b egr0 = do
 
        new_data <- AM.joinA @m @a @l (leader_class^._data) (sub_class^._data)
 
-       (updatedLeader, added_nodes) <- leader_class
-                                        & _parents %~ (sub_class^._parents <>)
-                                        & _nodes   %~ (sub_class^._nodes <>)
-                                        & _data    .~ new_data
-                                        & AM.modifyA
-
        let
+           updatedLeader = leader_class
+                             & _parents %~ (sub_class^._parents <>)
+                             & _nodes   %~ (sub_class^._nodes <>)
+                             & _data    .~ new_data
+
            new_classes = (IM.insert leader updatedLeader . IM.delete sub) (classes egr0)
 
            -- Add all subsumed parents to worklist We can do this instead of
@@ -459,24 +436,22 @@ mergeM a b egr0 = do
                 else mempty) <>
              analysisWorklist egr0
 
-           -- ROMES:TODO: The code that makes the -1 * cos test pass when some other things are tweaked
-           -- new_memo = foldr (`insertNM` leader) (memo egr0) (sub_class^._nodes)
+       -- ROMES:TODO: The code that makes the -1 * cos test pass when some other things are tweaked
+       -- new_memo = foldr (`insertNM` leader) (memo egr0) (sub_class^._nodes)
 
-           -- Build new e-graph
-           egr1 = egr0
-             { unionFind = new_uf
-             , classes   = new_classes
-             -- , memo      = new_memo
-             , worklist  = new_worklist
-             , analysisWorklist = new_analysis_worklist
-             }
+       -- Build new e-graph
+       egr1 <- egr0 { unionFind = new_uf
+                    , classes   = new_classes
+                    -- , memo      = new_memo
+                    , worklist  = new_worklist
+                    , analysisWorklist = new_analysis_worklist
+                    }
+                    & AM.modifyA new_id
 
-       egr2 <- foldlM (flip $ representAndMergeM leader) egr1 added_nodes
-
-       return (new_id, egr2)
+       return (new_id, egr1)
 {-# INLINEABLE mergeM #-}
 
-rebuildM :: forall a l m. (AM.Analysis m a l, Language l) => EGraph a l -> m (EGraph a l)
+rebuildM :: forall a l m. (AM.AnalysisM m a l, Language l) => EGraph a l -> m (EGraph a l)
 rebuildM (EGraph uf cls mm wl awl) = do
   -- Canonical implementation is rebuild, this is just the monadic variant of it
   let
@@ -495,14 +470,7 @@ rebuildM (EGraph uf cls mm wl awl) = do
      else rebuildM egr''
 {-# INLINEABLE rebuildM #-}
 
-representAndMergeM :: forall a l m. (AM.Analysis m a l, Language l) => ClassId -> Fix l -> EGraph a l -> m (EGraph a l)
-representAndMergeM o f g = do
-  -- Canonical implementation is representAndMerge, this is just the monadic variant of it
-  (i,e) <- representM f g
-  snd <$> mergeM o i e
-{-# INLINE representAndMergeM #-}
-
-repairM :: forall a l m. (AM.Analysis m a l, Language l) => (ClassId, ENode l) -> EGraph a l -> m (EGraph a l)
+repairM :: forall a l m. (AM.AnalysisM m a l, Language l) => (ClassId, ENode l) -> EGraph a l -> m (EGraph a l)
 repairM (repair_id, node) egr =
   -- Canonical implementation is repair, this is just the monadic variant of it
    case insertLookupNM node repair_id (memo egr) of
@@ -513,24 +481,19 @@ repairM (repair_id, node) egr =
 {-# INLINE repairM #-}
 
 -- | Repair a single analysis-worklist entry.
-repairAnalM :: forall a l m. (AM.Analysis m a l, Language l) => (ClassId, ENode l) -> EGraph a l -> m (EGraph a l)
+repairAnalM :: forall a l m. (AM.AnalysisM m a l, Language l) => (ClassId, ENode l) -> EGraph a l -> m (EGraph a l)
 repairAnalM (repair_id, node) egr = do
   -- Canonical implementation is repairAnal, this is just the monadic variant of it
-    let c1 = egr^._class repair_id
+    let c = egr^._class repair_id
 
-    new_data <- AM.joinA @m @a @l (c1^._data) =<< AM.makeA @m @a ((\i -> egr^._class i^._data @a) <$> unNode node)
+    new_data <- AM.joinA @m @a @l (c^._data) =<< AM.makeA @m @a ((\i -> egr^._class i^._data @a) <$> unNode node)
 
-    (c2, added_nodes) <- AM.modifyA (c1 & _data .~ new_data)
-
-    if c1^._data /= new_data
-       then do
-        let
-            new_classes = IM.insert repair_id c2 (classes egr)
-            egr1 = egr { analysisWorklist = toListSL (c1^._parents) <> analysisWorklist egr
-                       , classes = new_classes
-                       }
-        egr2 <- foldlM (flip $ representAndMergeM repair_id) egr1 added_nodes
-        return egr2
+    if c^._data /= new_data
+       then
+         egr { analysisWorklist = toListSL (c^._parents) <> analysisWorklist egr
+             , classes = IM.adjust (_data .~ new_data) repair_id (classes egr)
+             }
+             & AM.modifyA repair_id
        else
         return egr
 {-# INLINE repairAnalM #-}

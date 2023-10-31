@@ -98,18 +98,18 @@ runEGraphMT :: EGraph anl l -> EGraphMT anl l m a -> m (a, EGraph anl l)
 runEGraphMT = flip runStateT
 {-# INLINE runEGraphMT #-}
 
-representM :: (AM.Analysis m anl l, Language l) => Fix l -> EGraphMT anl l m ClassId
+representM :: (AM.AnalysisM m anl l, Language l) => Fix l -> EGraphMT anl l m ClassId
 representM = StateT . EG.representM
 {-# INLINE representM #-}
 
-addM :: (AM.Analysis m anl l, Language l) => ENode l -> EGraphMT anl l m ClassId
+addM :: (AM.AnalysisM m anl l, Language l) => ENode l -> EGraphMT anl l m ClassId
 addM = StateT . EG.addM
 {-# INLINE addM #-}
 
-mergeM :: (AM.Analysis m anl l, Language l) => ClassId -> ClassId -> EGraphMT anl l m ClassId
+mergeM :: (AM.AnalysisM m anl l, Language l) => ClassId -> ClassId -> EGraphMT anl l m ClassId
 mergeM a b = StateT (EG.mergeM a b)
 {-# INLINE mergeM #-}
 
-rebuildM :: (AM.Analysis m anl l, Language l) => EGraphMT anl l m ()
+rebuildM :: (AM.AnalysisM m anl l, Language l) => EGraphMT anl l m ()
 rebuildM = StateT (fmap ((),) . EG.rebuildM)
 {-# INLINE rebuildM #-}

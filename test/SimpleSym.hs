@@ -13,7 +13,8 @@ import Data.Equality.Utils
 import Data.Equality.Matching
 import Data.Equality.Saturation
 import Data.Equality.Analysis
-import Data.Equality.Graph.Lens ((^.), _data)
+import Data.Equality.Graph
+import Data.Equality.Graph.Lens
 
 data SymExpr a = Const Double
                | Symbol String
@@ -37,9 +38,12 @@ instance Analysis (Maybe Double) SymExpr where
   joinA Nothing Nothing  = Nothing
   joinA (Just x) (Just y) = if x == y then Just x else error "ouch, that shouldn't have happened"
 
-  modifyA c = case c^._data of
-                Nothing -> (c, [])
-                Just i  -> (c, [Fix (Const i)])
+  modifyA c eg
+    = case eg^._class c._data of
+        Nothing -> eg
+        Just i  ->
+          let (c', eg') = represent (Fix (Const i)) eg
+           in snd $ merge c c' eg'
 
 cost :: CostFunction SymExpr Int
 cost = \case

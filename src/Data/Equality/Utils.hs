@@ -1,11 +1,14 @@
-{-# LANGUAGE UnicodeSyntax, RankNTypes, QuantifiedConstraints, UndecidableInstances #-}
+{-# LANGUAGE UnicodeSyntax, RankNTypes, QuantifiedConstraints, UndecidableInstances, CPP #-}
 {-|
  Misc utilities used accross modules
  -}
 module Data.Equality.Utils where
 
 -- import GHC.Conc
+#if MIN_VERSION_base(4,20,0)
+#else
 import Data.Foldable
+#endif
 import Data.Bits
 
 -- import qualified Data.Set    as S

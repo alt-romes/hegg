@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP #-}
 {-|
    Custom database implemented with trie-maps specialized to run conjunctive
    queries using a (worst-case optimal) generic join algorithm.
@@ -31,6 +32,9 @@ import Data.Function (on)
 import Data.Maybe (mapMaybe)
 import Control.Monad
 
+#if MIN_VERSION_base(4,20,0)
+import Data.Foldable as F (toList, length)
+#endif
 import Data.Foldable as F (toList, foldl', length)
 import qualified Data.Map.Strict    as M
 import qualified Data.IntMap.Strict as IM

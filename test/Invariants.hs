@@ -64,10 +64,10 @@ testCompileToQuery p = case fst $ compileToQuery p of
                          -- Handle special case for selectAll queries...
                          SelectAllQuery x -> [x] == vars p && numNonVarPatterns p == 0
                          q@(Query _ atoms)
-                           | [] <- queryHeadVars q   -> False
                            | _:xs <- queryHeadVars q ->
                                L.sort xs == L.sort (vars p)
                                  && length atoms == numNonVarPatterns p
+                           | otherwise -> False
     where
         numNonVarPatterns :: Foldable lang => Pattern lang -> Int
         numNonVarPatterns (VariablePattern _) = 0

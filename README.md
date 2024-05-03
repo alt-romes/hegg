@@ -303,3 +303,10 @@ eventlog2html hegg-test.eventlog
 open hegg-test.svg
 open hegg-test.eventlog.html
 ```
+
+## Coverage
+
+```
+cabal test hegg-test --enable-coverage --enable-library-coverage
+```
+

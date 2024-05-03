@@ -101,8 +101,8 @@ library
     -- LANGUAGE extensions used by modules in this package.
     -- base-4.13, because foldMap' is used.
     build-depends:    base         >= 4.13 && < 5,
-                      transformers >= 0.4 && < 0.7,
-                      containers   >= 0.4 && < 0.7
+                      transformers >= 0.4 && < 0.8,
+                      containers   >= 0.4 && < 0.8
     if flag(vizdot)
         build-depends: graphviz >= 2999.20 && < 2999.21,
                        text

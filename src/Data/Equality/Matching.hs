@@ -10,7 +10,11 @@ module Data.Equality.Matching
     ( ematch
     , eGraphToDatabase
     , Match(..)
+
+    -- * Compiling a Pattern to a Query
     , compileToQuery
+    , VarsState(varNames), findVarName
+    , userPatVars
 
     , module Data.Equality.Matching.Pattern
     )
@@ -31,6 +35,7 @@ import Data.Equality.Graph
 import Data.Equality.Graph.Lens
 import Data.Equality.Matching.Database
 import Data.Equality.Matching.Pattern
+import Data.Coerce (coerce)
 
 -- | Matching a pattern on an e-graph returns the e-class in which the pattern
 -- was matched and an e-class substitution for every 'VariablePattern' in the pattern.
@@ -41,7 +46,8 @@ data Match = Match
 
 -- TODO: Perhaps e-graph could carry database and rebuild it on rebuild
 
--- | Match a pattern against a 'Database', which can be gotten from an 'EGraph' with 'eGraphToDatabase'
+-- | Match a pattern 'Query', gotten from 'compileToQuery' on a 'Pattern',
+-- against a 'Database', which is built from an 'EGraph' with 'eGraphToDatabase'.
 --
 -- Returns a list of matches, one 'Match' for each set of valid substitutions
 -- for all variables and the equivalence class in which the pattern was matched.
@@ -50,21 +56,20 @@ data Match = Match
 -- could be constructed only once and shared accross matching.
 ematch :: Language l
        => Database l
-       -> Pattern l
+       -> (Query l, Var {- query root var -})
        -> [Match]
-ematch db patr =
+ematch db (q, root) =
     let
-        (q, root) = compileToQuery patr
-
         -- | Convert each substitution into a match by getting the class-id
         -- where we matched from the subst
         --
         -- If the substitution is empty there is no match
         f :: Subst -> Maybe Match
-        f s = if IM.null s then Nothing
-                           else case IM.lookup root s of
-                                  Nothing -> error "how is root not in map?"
-                                  Just found -> pure (Match s found)
+        f s = if nullSubst s
+                then Nothing
+                else case lookupSubst root s of
+                  Nothing -> error "how is root not in map?"
+                  Just found -> pure (Match s found)
 
      in mapMaybe f (genericJoin db q)
 
@@ -97,24 +102,28 @@ eGraphToDatabase egr = foldrWithKeyNM' addENodeToDB (DB mempty) (egr^._memo)
 -- | Auxiliary result in 'compileToQuery' algorithm
 data AuxResult lang = {-# UNPACK #-} !Var :~ [Atom lang]
 
+
 -- | Compiles a 'Pattern' to a 'Query' and returns the query root variable with
 -- it.
 -- The root variable's substitutions are the e-classes where the pattern
 -- matched
-compileToQuery :: (Traversable lang) => Pattern lang -> (Query lang, Var)
-compileToQuery (VariablePattern x) = (SelectAllQuery x, x)
-compileToQuery pa@(NonVariablePattern _) =
+compileToQuery :: (Traversable lang) => Pattern lang -> ((Query lang, Var), VarsState)
+compileToQuery (VariablePattern n) = flip runState emptyVarsState $ do
+  v <- getVarName n
+  return (SelectAllQuery v, v)
+compileToQuery pa =
 
-  let root :~ atoms = evalState (aux pa) 0
-   in (Query (nubInt $ root:vars pa) atoms, root)
+  let (root :~ atoms, varsState) = runState (aux pa) emptyVarsState
+   in ((Query (nubVars $ root:userPatVars varsState) atoms, root), varsState)
 
     where
 
-        aux :: (Traversable lang) => Pattern lang -> State Int (AuxResult lang)
-        aux (VariablePattern x) = return (x :~ []) -- from definition in relational e-matching paper (needed for as base case for recursion)
+        aux :: (Traversable lang) => Pattern lang -> State VarsState (AuxResult lang)
+        aux (VariablePattern x) = do
+          v <- getVarName x
+          return (v :~ []) -- from definition in relational e-matching paper (needed for as base case for recursion)
         aux (NonVariablePattern p) = do
-            v <- get
-            modify' (+1)
+            v <- nextVar
             (toList -> auxs) <- traverse aux p
             let boundVars = map (\(b :~ _) -> b) auxs
                 atoms     = join $ map (\(_ :~ a) -> a) auxs
@@ -128,9 +137,48 @@ compileToQuery pa@(NonVariablePattern _) =
                     -- taking from the bound vars array
                     subPatsToVars :: Traversable lang => lang (Pattern lang) -> [Var] -> State Int (lang Var)
                     subPatsToVars p' boundVars = traverse (const $ (boundVars !!) <$> (get >>= \i -> modify' (+1) >> return i)) p'
-
-        -- | Return distinct variables in a pattern
-        vars :: Foldable lang => Pattern lang -> [Var]
-        vars (VariablePattern x) = [x]
-        vars (NonVariablePattern p) = nubInt $ join $ map vars $ toList p
 {-# INLINABLE compileToQuery #-}
+
+--------------------------------------------------------------------------------
+-- ** Vars utils for compileToQuery
+--------------------------------------------------------------------------------
+
+-- | Map user-given Variable names to internal 'Var's plus a counter
+data VarsState = VarsState
+  { varNames  :: !(M.Map String Var)
+  , nextVarId :: !Int
+  }
+
+-- | An empty 'VarsState'
+emptyVarsState :: VarsState
+emptyVarsState = VarsState mempty 0
+
+-- | Compute the next internal 'Var' from the current 'VarNameMap'
+nextVar :: State VarsState Var
+nextVar = do
+  n <- gets nextVarId
+  modify' (\vs -> vs{nextVarId = nextVarId vs +1})
+  return (MatchVar n)
+
+-- | Add a name to the 'VarNameMap' and get the resulting 'Var'.
+getVarName :: String -> State VarsState Var
+getVarName s = do
+  vm <- gets varNames
+  case M.lookup s vm of
+    Nothing -> do
+      n <- nextVar
+      modify' (\vs -> vs{varNames = M.insert s n (varNames vs)})
+      return n
+    Just v ->
+      return v
+
+findVarName :: VarsState -> String -> Var
+findVarName vs s = (varNames vs) M.! s
+
+-- | Return the variables given in a pattern by a user, from the 'VarsState'
+userPatVars :: VarsState -> [Var]
+userPatVars = M.elems . varNames
+
+-- | Deduplicate list of pattern Vars
+nubVars :: [Var] -> [Var]
+nubVars = coerce . nubInt . coerce

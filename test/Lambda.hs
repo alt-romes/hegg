@@ -14,7 +14,6 @@ import Test.Tasty.HUnit
 
 import Data.Maybe
 
-import qualified Data.IntMap as IM
 import qualified Data.Set as S
 
 import Control.Applicative ((<|>))
@@ -111,17 +110,17 @@ instance Num (Fix Lambda) where
     abs = error "todo..."
     signum = error "todo..."
 
-unsafeGetSubst :: Pattern Lambda -> D.Subst -> ClassId
-unsafeGetSubst (NonVariablePattern _) _ = error "unsafeGetSubst: NonVariablePattern; expecting VariablePattern"
-unsafeGetSubst (VariablePattern v) subst = case IM.lookup v subst of
+unsafeGetSubst :: Pattern Lambda -> VarsState -> D.Subst -> ClassId
+unsafeGetSubst (NonVariablePattern _) _ _ = error "unsafeGetSubst: NonVariablePattern; expecting VariablePattern"
+unsafeGetSubst (VariablePattern v) vss subst = case lookupSubst (findVarName vss v) subst of
       Nothing -> error "Searching for non existent bound var in conditional"
       Just class_id -> class_id
 
 isConst :: Pattern Lambda -> RewriteCondition LA Lambda
-isConst v subst egr = isJust $ snd $ egr^._class (unsafeGetSubst v subst)._data
+isConst v vss subst egr = isJust $ snd $ egr^._class (unsafeGetSubst v vss subst)._data
 
 isNotSameVar :: Pattern Lambda -> Pattern Lambda -> RewriteCondition LA Lambda
-isNotSameVar v1 v2 subst egr = find (unsafeGetSubst v1 subst) egr /= find (unsafeGetSubst v2 subst) egr
+isNotSameVar v1 v2 vss subst egr = find (unsafeGetSubst v1 vss subst) egr /= find (unsafeGetSubst v2 vss subst) egr
 
 rules :: [Rewrite LA Lambda]
 rules =

@@ -16,6 +16,7 @@ module Data.Equality.Saturation.Scheduler
 
 import qualified Data.IntMap.Strict as IM
 import Data.Equality.Matching
+import Data.Equality.Matching.Database (sizeSubst)
 
 -- | A 'Scheduler' determines whether a certain rewrite rule is banned from
 -- being used based on statistics it defines and collects on applied rewrite
@@ -76,7 +77,7 @@ instance Scheduler BackoffScheduler where
         where
 
           -- TODO: Overall difficult, and buggy at the moment.
-          total_len = sum (map (length . matchSubst) matches)
+          total_len = sum (map (sizeSubst . matchSubst) matches)
 
           bannedN = case currentStat of
                       Nothing -> 0;

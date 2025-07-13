@@ -7,9 +7,6 @@ module Data.Equality.Matching.Pattern where
 
 import Data.String
 
-import Data.Equality.Utils
-import Data.Equality.Matching.Database
-
 -- | A pattern can be either a variable or an non-variable expression of
 -- patterns.
 --
@@ -64,7 +61,7 @@ import Data.Equality.Matching.Database
 -- @
 data Pattern lang
     = NonVariablePattern (lang (Pattern lang))
-    | VariablePattern Var -- ^ Should be a >0 positive number
+    | VariablePattern String
 
 -- | Synonym for 'NonVariablePattern'.
 --
@@ -93,5 +90,5 @@ instance (∀ a. Show a => Show (lang a)) => Show (Pattern lang) where
     showsPrec d (NonVariablePattern x) = showsPrec d x
 
 instance IsString (Pattern lang) where
-    fromString = VariablePattern . hashString
+    fromString = VariablePattern
 

@@ -9,7 +9,6 @@ module Data.Equality.Utils where
 #else
 import Data.Foldable
 #endif
-import Data.Bits
 
 -- import qualified Data.Set    as S
 -- import qualified Data.IntSet as IS
@@ -35,15 +34,6 @@ instance (∀ a. Show a => Show (f a)) => Show (Fix f) where
 cata :: Functor f => (f a -> a) -> (Fix f -> a)
 cata f = f . fmap (cata f) . unFix
 {-# INLINE cata #-}
-
--- | Get the hash of a string.
---
--- This util is currently used to generate an 'Int' used for the internal
--- pattern variable representation from the external pattern variable
--- representation ('String')
-hashString :: String -> Int
-hashString = foldl' (\h c -> 33*h `xor` fromEnum c) 5381
-{-# INLINE hashString #-}
 
 -- -- | We don't have the parallel package, so roll our own simple parMap
 -- parMap :: (a -> b) -> [a] -> [b]

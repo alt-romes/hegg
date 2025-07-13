@@ -21,10 +21,15 @@ module Data.Equality.Matching.Database
   , Database(..)
   , Query(..)
   , IntTrie(..)
-  , Subst
-  , Var
+  , Var(..)
   , Atom(..)
   , ClassIdOrVar(..)
+
+    -- * Subst
+  , Subst
+  , lookupSubst
+  , nullSubst
+  , sizeSubst
   ) where
 
 import Data.List (sortBy)
@@ -35,7 +40,6 @@ import Control.Monad
 #if MIN_VERSION_base(4,20,0)
 import Data.Foldable as F (toList, length)
 #endif
-import Data.Foldable as F (toList, foldl', length)
 import qualified Data.Map.Strict    as M
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
@@ -43,6 +47,7 @@ import qualified Data.IntSet as IS
 import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 import Data.Equality.Language
+import Data.Coerce
 
 -- | A variable in a query is identified by an 'Int'.
 -- This is much more efficient than using e.g. a 'String'.
@@ -50,11 +55,8 @@ import Data.Equality.Language
 -- As a consequence, patterns also use 'Int' to represent a variable, but we
 -- can still have an 'Data.String.IsString' instance for variable patterns by hashing the
 -- string into a unique number.
-type Var = Int
-
--- | Mapping from 'Var' to 'ClassId'. In a 'Subst' there is only one
--- substitution for each variable
-type Subst = IM.IntMap ClassId
+newtype Var = MatchVar { unsafeMatchVar :: Int }
+  deriving (Show, Eq, Ord)
 
 -- | A value which is either a 'ClassId' or a 'Var'
 data ClassIdOrVar = CClassId {-# UNPACK #-} !ClassId
@@ -70,7 +72,9 @@ data Atom lang
 
 -- | A conjunctive query to be run on the database
 data Query lang
-    = Query ![Var] ![Atom lang]
+    = Query -- Q(x1,...,xk) <- R1(x11,...x1n), ..., Rn(xn1,...,xnn)
+        ![Var] {- query head -}
+        ![Atom lang] {- query body -}
     | SelectAllQuery {-# UNPACK #-} !Var
 
 -- | The relational representation of an e-graph, as described in section 3.1
@@ -117,19 +121,18 @@ genericJoin :: forall l. Language l => Database l -> Query l -> [Subst]
 
 -- We want to match against ANYTHING, so we return a valid substitution for
 -- all existing e-class: get all relations and make a substition for each class in that relation, then join all substitutions across all classes
-genericJoin (DB m) (SelectAllQuery x) = concatMap (map (IM.singleton x) . IS.toList . tkeys) (M.elems m)
+genericJoin (DB m) (SelectAllQuery x) = concatMap (map (singleSubstVar x) . IS.toList . tkeys) (M.elems m)
 
 -- This is the last variable, so we return a valid substitution for every
 -- possible value for the variable (hence, we prepend @x@ to each and make it
 -- its own substitution)
--- ROMES:TODO: Start here. Map vars to indexs in an array and substitute in the resulting subst
 genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
 
  where
    genericJoin' :: [Atom l] -> [Var] -> [Subst]
    genericJoin' atoms' = \case
 
-     [] -> mempty <$> atoms'
+     [] -> const emptySubst <$> atoms'
 
      (!x):xs -> do
 
@@ -138,7 +141,7 @@ genericJoin d q@(Query _ atoms) = genericJoin' atoms (orderedVarsInQuery q)
        -- Each valid sub-query assumes x -> x_in_D substitution
        y <- genericJoin' (substitute x x_in_D atoms') xs
 
-       return $! IM.insert x x_in_D y -- TODO: A bit contrieved, perhaps better to avoid map ?
+       return $! insertSubstVar x x_in_D y
 
    domainX :: Var -> [Atom l] -> [Int]
    domainX x = IS.toList . intersectAtoms x d . filter (x `elemOfAtom`)
@@ -170,7 +173,10 @@ elemOfAtom !x (Atom v l) = case v of
 -- described in the paper (such as batching)
 orderedVarsInQuery :: (Functor lang, Foldable lang) => Query lang -> [Var]
 orderedVarsInQuery (SelectAllQuery x) = [x]
-orderedVarsInQuery (Query _ atoms) = IS.toList . IS.fromAscList $ sortBy (compare `on` varCost) $ mapMaybe toVar $ foldl' f mempty atoms
+orderedVarsInQuery (Query _ atoms) = coerce . IS.toList . IS.fromAscList . coerce $
+                                     sortBy (compare `on` varCost)                $
+                                     mapMaybe toVar                               $
+                                     foldl' f mempty atoms
     where
 
         f :: Foldable lang => [ClassIdOrVar] -> Atom lang -> [ClassIdOrVar]
@@ -214,7 +220,7 @@ intersectAtoms !var (DB db) (a:atoms) = foldr (\x xs -> (f x) `IS.intersection` 
 
         -- If needed relation does exist, find intersection in it
         -- Add list of found intersections to existing
-        Just r  -> case intersectInTrie var mempty r (v:toList l) of
+        Just r  -> case intersectInTrie var emptySubst r (v:toList l) of
                      Nothing ->  error "intersectInTrie should return valid substitution for variable query"
                      Just xs -> xs
 
@@ -239,7 +245,7 @@ intersectAtoms _ _ [] = error "can't intersect empty list of atoms?"
 --
 -- TODO: Really, a valid substitution is one which isn't empty...
 intersectInTrie :: Var -- ^ The variable whose domain we are looking for
-                -> IM.IntMap ClassId -- ^ A mapping from variables that have been substituted
+                -> Subst -- ^ A mapping from variables that have been substituted
                 -> IntTrie  -- ^ The trie
                 -> [ClassIdOrVar]  -- ^ The "query"
                 -> Maybe IS.IntSet -- ^ The resulting domain for a valid substitution
@@ -273,7 +279,7 @@ intersectInTrie !var !substs (MkIntTrie trieKeys m) = \case
     --      continue the recursion again to validate the assumption and
     --      possibly find the domain of the variable we're looking for ahead
     --
-    CVar x:xs -> case IM.lookup x substs of
+    CVar x:xs -> case lookupSubst x substs of
         -- (2) or (4), we simply continue
         Just varVal -> IM.lookup varVal m >>= \next -> intersectInTrie var substs next xs
         -- (1) or (3)
@@ -287,14 +293,14 @@ intersectInTrie !var !substs (MkIntTrie trieKeys m) = \case
             if all (isVarDifferentFrom x) xs
               then trieKeys
               else IM.foldrWithKey (\k ls (!acc) ->
-               case intersectInTrie var (IM.insert x k substs) ls xs of
+               case intersectInTrie var (insertSubstVar x k substs) ls xs of
                    Nothing -> acc
                    Just _  -> k `IS.insert` acc
                          ) mempty m
           -- (3)
           -- else IS.unions $ IM.elems $ IM.mapMaybeWithKey (\k ls -> intersectInTrie var (IM.insert x k substs) ls xs) m
           else IM.foldrWithKey (\k ls (!acc) ->
-            case intersectInTrie var (IM.insert x k substs) ls xs of
+            case intersectInTrie var (insertSubstVar x k substs) ls xs of
                 Nothing -> acc
                 Just rs -> rs <> acc) mempty m
     where
@@ -304,3 +310,36 @@ intersectInTrie !var !substs (MkIntTrie trieKeys m) = \case
       isVarDifferentFrom _ (CClassId _) = False
       isVarDifferentFrom x (CVar     y) = x /= y
       {-# INLINE isVarDifferentFrom #-}
+
+--------------------------------------------------------------------------------
+-- * Subst
+--------------------------------------------------------------------------------
+
+-- | Mapping from 'Var' to 'ClassId'. In a 'Subst' there is only one
+-- substitution for each variable
+newtype Subst = Subst (IM.IntMap ClassId)
+
+-- | Insert a 'Var' in a 'Subst'
+insertSubstVar :: Var -> ClassId -> Subst -> Subst
+insertSubstVar (MatchVar k) v (Subst s) = Subst (IM.insert k v s)
+
+-- | Make a singleton 'Var' in a 'Subst'
+singleSubstVar :: Var -> ClassId -> Subst
+singleSubstVar (MatchVar k) v = Subst (IM.singleton k v)
+
+-- | Lookup a 'Var' in a 'Subst'
+lookupSubst :: Var -> Subst -> Maybe ClassId
+lookupSubst (MatchVar k) (Subst s) = IM.lookup k s
+
+-- | An empty substitution
+emptySubst :: Subst
+emptySubst = Subst IM.empty
+
+-- | Is the 'Subst' empty?
+nullSubst :: Subst -> Bool
+nullSubst (Subst s) = IM.null s
+
+sizeSubst :: Subst -> Int
+sizeSubst (Subst s) = IM.size s
+
+

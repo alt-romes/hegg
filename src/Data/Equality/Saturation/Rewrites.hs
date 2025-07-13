@@ -49,7 +49,7 @@ infixl 2 :|
 --      Just class_id ->
 --          egr^._class class_id._data /= Just 0
 -- @
-type RewriteCondition anl lang = Subst -> EGraph anl lang -> Bool
+type RewriteCondition anl lang = VarsState -> Subst -> EGraph anl lang -> Bool
 
 
 instance (∀ a. Show a => Show (lang a)) => Show (Rewrite anl lang) where

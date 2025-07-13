@@ -16,7 +16,6 @@ import Test.Tasty.QuickCheck as QC hiding (classes)
 
 import Control.Monad
 
-import qualified Data.Containers.ListUtils as LU
 import qualified Data.Foldable as F
 import qualified Data.List   as L
 import qualified Data.IntSet as IS
@@ -50,7 +49,7 @@ patFoldAllClasses expr i =
         _   -> False
     where
         eg :: EGraph () l
-        eg = snd $ equalitySaturation expr [VariablePattern 1:=fromInteger i] (error "Cost function shouldn't be used" :: CostFunction l Int)
+        eg = snd $ equalitySaturation expr [VariablePattern "1":=fromInteger i] (error "Cost function shouldn't be used" :: CostFunction l Int)
 
 -- | Test 'compileToQuery'.
 --
@@ -60,14 +59,14 @@ patFoldAllClasses expr i =
 -- The number of atoms should also match the number of non variable patterns
 -- since we should create an additional atom (with a new bound variable) for each. 
 testCompileToQuery :: Traversable lang => Pattern lang -> Bool
-testCompileToQuery p = case fst $ compileToQuery p of
-                         -- Handle special case for selectAll queries...
-                         SelectAllQuery x -> [x] == vars p && numNonVarPatterns p == 0
-                         q@(Query _ atoms)
-                           | _:xs <- queryHeadVars q ->
-                               L.sort xs == L.sort (vars p)
-                                 && length atoms == numNonVarPatterns p
-                           | otherwise -> False
+testCompileToQuery p = case compileToQuery p of
+     -- Handle special case for selectAll queries...
+     ((SelectAllQuery x, _), vss) -> [x] == userPatVars vss && numNonVarPatterns p == 0
+     ((q@(Query _ atoms), _), vss)
+       | _:xs <- queryHeadVars q ->
+           L.sort xs == L.sort (userPatVars vss)
+             && length atoms == numNonVarPatterns p
+       | otherwise -> False
     where
         numNonVarPatterns :: Foldable lang => Pattern lang -> Int
         numNonVarPatterns (VariablePattern _) = 0
@@ -77,18 +76,14 @@ testCompileToQuery p = case fst $ compileToQuery p of
         queryHeadVars (SelectAllQuery x) = [x]
         queryHeadVars (Query qv _) = qv
 
-        -- | Return distinct variables in a pattern
-        vars :: Foldable lang => Pattern lang -> [Var]
-        vars (VariablePattern x) = [x]
-        vars (NonVariablePattern p') = LU.nubInt $ join $ map vars $ F.toList p'
-
 -- | If we match a singleton variable pattern against an e-graph, we should get
 -- a match on all e-classes in the e-graph
-ematchSingletonVar :: Language lang => Var -> EGraph () lang -> Bool
+ematchSingletonVar :: Language lang => String -> EGraph () lang -> Bool
 ematchSingletonVar v eg =
     let
         db = eGraphToDatabase eg
-        matches = IS.fromList $ map matchClassId $ ematch db (VariablePattern v)
+        (q, _) = compileToQuery (VariablePattern v)
+        matches = IS.fromList $ map matchClassId $ ematch db q
         eclasses = IM.keysSet (classes eg)
     in
         matches == eclasses 
@@ -181,7 +176,7 @@ instance Arbitrary (Fix Expr) where
 instance Arbitrary (Pattern SimpleExpr) where
     arbitrary = sized p'
       where
-        p' 0 = VariablePattern <$> oneof (return <$> [1..16])
+        p' 0 = VariablePattern <$> arbitrary
         p' n = NonVariablePattern <$> resize (n `div` 2) arbitrary
 
 newtype Name = Name { un :: String }

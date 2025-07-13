@@ -118,7 +118,7 @@ test-suite hegg-test
     hs-source-dirs:   test
     main-is:          Test.hs
     other-modules:    Invariants, Sym, Lambda, SimpleSym,
-                      T1, T2, T3
+                      T1, T2, T3, T32
 
     other-extensions: OverloadedStrings
     build-depends:    base,

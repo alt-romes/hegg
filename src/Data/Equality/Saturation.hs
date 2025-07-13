@@ -46,7 +46,6 @@ module Data.Equality.Saturation
 
 import qualified Data.IntMap.Strict as IM
 
-import Data.Bifunctor
 import Control.Monad
 
 import Data.Equality.Utils
@@ -123,7 +122,9 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
       -- Read-only phase, invariants are preserved
       -- With backoff scheduler
       -- ROMES:TODO parMap with chunks
-      let (!matches, newStats) = mconcat (fmap (\(rw_id,rw) -> first (map (rw,)) $ matchWithScheduler db i stats rw_id rw) (zip [1..] rewrites))
+      let (!matches, newStats) = mconcat (fmap (\(rw_id,rw) ->
+            let (ms, ss, vss) = matchWithScheduler db i stats rw_id rw
+             in (map (\m -> (rw,m,vss)) ms, ss)) (zip [1..] rewrites))
 
       -- Write-only phase, temporarily break invariants
       forM_ matches applyMatchesRhs
@@ -141,61 +142,64 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
                 && IM.size afterClasses == IM.size beforeClasses)
           (runEqualitySaturation' (i+1) newStats)
 
-  matchWithScheduler :: Database l -> Int -> IM.IntMap (Stat schd) -> Int -> Rewrite a l -> ([Match], IM.IntMap (Stat schd))
+  matchWithScheduler :: Database l -> Int -> IM.IntMap (Stat schd) -> Int -> Rewrite a l
+                     -> ([Match], IM.IntMap (Stat schd), VarsState {- the vars mapping resulting from compiling the query -})
   matchWithScheduler db i stats rw_id = \case
       rw  :| _ -> matchWithScheduler db i stats rw_id rw
       lhs := _ -> do
+          let (lhs_query, varsState) = compileToQuery lhs
+
           case IM.lookup rw_id stats of
             -- If it's banned until some iteration, don't match this rule
             -- against anything.
-            Just s | isBanned @schd i s -> ([], stats)
+            Just s | isBanned @schd i s -> ([], stats, varsState)
 
             -- Otherwise, match and update stats
             x -> do
 
                 -- Match pattern
-                let matches' = ematch db lhs -- Add rewrite to the e-match substitutions
+                let matches' = ematch db lhs_query -- Add rewrite to the e-match substitutions
 
                 -- Backoff scheduler: update stats
                 let newStats = updateStats schd i rw_id x stats matches'
 
-                (matches', newStats)
+                (matches', newStats, varsState)
 
-  applyMatchesRhs :: (Rewrite a l, Match) -> EGraphM a l ()
+  applyMatchesRhs :: (Rewrite a l, Match, VarsState) -> EGraphM a l ()
   applyMatchesRhs =
       \case
-          (rw :| cond, m@(Match subst _)) -> do
+          (rw :| cond, m@(Match subst _), vss) -> do
               -- If the rewrite condition is satisfied, applyMatchesRhs on the rewrite rule.
               egr <- get
-              when (cond subst egr) $
-                 applyMatchesRhs (rw, m)
+              when (cond vss subst egr) $
+                 applyMatchesRhs (rw, m, vss)
 
-          (_ := VariablePattern v, Match subst eclass) -> do
+          (_ := VariablePattern v, Match subst eclass, vss) -> do
               -- rhs is equal to a variable, simply merge class where lhs
               -- pattern was found (@eclass@) and the eclass the pattern
               -- variable matched (@lookup v subst@)
-              case IM.lookup v subst of
+              case lookupSubst (findVarName vss v) subst of
                 Nothing -> error "impossible: couldn't find v in subst"
                 Just n  -> do
                     _ <- merge n eclass
                     return ()
 
-          (_ := NonVariablePattern rhs, Match subst eclass) -> do
+          (_ := NonVariablePattern rhs, Match subst eclass, vss) -> do
               -- rhs is (at the top level) a non-variable pattern, so substitute
               -- all pattern variables in the pattern and create a new e-node (and
               -- e-class that represents it), then merge the e-class of the
               -- substituted rhs with the class that matched the left hand side
-              eclass' <- reprPat subst rhs
+              eclass' <- reprPat vss subst rhs
               _ <- merge eclass eclass'
               return ()
 
   -- | Represent a pattern in the e-graph a pattern given substitions
-  reprPat :: Subst -> l (Pattern l) -> EGraphM a l ClassId
-  reprPat subst = add . Node <=< traverse \case
+  reprPat :: VarsState -> Subst -> l (Pattern l) -> EGraphM a l ClassId
+  reprPat vss subst = add . Node <=< traverse \case
       VariablePattern v ->
-          case IM.lookup v subst of
+          case lookupSubst (findVarName vss v) subst of
               Nothing -> error "impossible: couldn't find v in subst?"
               Just i  -> return i
-      NonVariablePattern p -> reprPat subst p
+      NonVariablePattern p -> reprPat vss subst p
 {-# INLINEABLE runEqualitySaturation #-}
 

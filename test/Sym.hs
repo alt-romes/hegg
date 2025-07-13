@@ -14,7 +14,6 @@ import GHC.Generics
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
 import Data.String
 import Data.Maybe (isJust)
@@ -148,28 +147,29 @@ evalConstant = \case
     Sym _ -> Nothing
     Const x -> Just x
     
-unsafeGetSubst :: Pattern Expr -> Subst -> ClassId
-unsafeGetSubst (NonVariablePattern _) _ = error "unsafeGetSubst: NonVariablePattern; expecting VariablePattern"
-unsafeGetSubst (VariablePattern v) subst = case IM.lookup v subst of
+unsafeGetSubst :: Pattern Expr -> VarsState -> Subst -> ClassId
+unsafeGetSubst (NonVariablePattern _) _ _ = error "unsafeGetSubst: NonVariablePattern; expecting VariablePattern"
+unsafeGetSubst (VariablePattern v) vss subst = case lookupSubst (findVarName vss v) subst of
       Nothing -> error "Searching for non existent bound var in conditional"
       Just class_id -> class_id
 
+-- | TODO: This condition is incorrect. See #35
 is_not_zero :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
-is_not_zero v subst egr =
-    egr^._class (unsafeGetSubst v subst)._data /= Just 0
+is_not_zero v vss subst egr =
+    egr^._class (unsafeGetSubst v vss subst)._data /= Just 0
 
 is_sym :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
-is_sym v subst egr =
-    any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class (unsafeGetSubst v subst)._nodes)
+is_sym v vss subst egr =
+    any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class (unsafeGetSubst v vss subst)._nodes)
 
 is_const :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
-is_const v subst egr =
-    isJust (egr^._class (unsafeGetSubst v subst)._data)
+is_const v vss subst egr =
+    isJust (egr^._class (unsafeGetSubst v vss subst)._data)
 
 is_const_or_distinct_var :: Pattern Expr -> Pattern Expr -> RewriteCondition (Maybe Double) Expr
-is_const_or_distinct_var v w subst egr =
-    let v' = unsafeGetSubst v subst
-        w' = unsafeGetSubst w subst
+is_const_or_distinct_var v w vss subst egr =
+    let v' = unsafeGetSubst v vss subst
+        w' = unsafeGetSubst w vss subst
      in (eClassId (egr^._class v') /= eClassId (egr^._class w'))
         && (isJust (egr^._class v'._data)
             || any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class v'._nodes))

@@ -28,6 +28,7 @@ module Data.Equality.Matching.Database
     -- * Subst
   , Subst
   , lookupSubst
+  , findSubst
   , nullSubst
   , sizeSubst
   ) where
@@ -331,6 +332,10 @@ singleSubstVar (MatchVar k) v = Subst (IM.singleton k v)
 -- | Lookup a 'Var' in a 'Subst'
 lookupSubst :: Var -> Subst -> Maybe ClassId
 lookupSubst (MatchVar k) (Subst s) = IM.lookup k s
+
+-- | Lookup a 'Var' in a 'Subst'
+findSubst :: Var -> Subst -> ClassId
+findSubst (MatchVar k) (Subst s) = s IM.! k
 
 -- | An empty substitution
 emptySubst :: Subst

@@ -65,11 +65,10 @@ ematch db (q, root) =
         --
         -- If the substitution is empty there is no match
         f :: Subst -> Maybe Match
-        f s = if nullSubst s
-                then Nothing
-                else case lookupSubst root s of
-                  Nothing -> error "how is root not in map?"
-                  Just found -> pure (Match s found)
+        f s | nullSubst s
+            = Nothing
+            | let found = findSubst root s
+            = pure (Match s found)
 
      in mapMaybe f (genericJoin db q)
 

@@ -1,0 +1,30 @@
+on: [push]
+name: test
+jobs:
+  runhaskell10:
+    name: Test GHC 9.10
+    runs-on: ubuntu-latest # or macOS-latest, or windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.10.2'
+      - run: cabal test
+  runhaskell8:
+    name: Test GHC 9.8
+    runs-on: ubuntu-latest # or macOS-latest, or windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.8.4'
+      - run: cabal test
+  runhaskell6:
+    name: Test GHC 9.6
+    runs-on: ubuntu-latest # or macOS-latest, or windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.6.7'
+      - run: cabal test

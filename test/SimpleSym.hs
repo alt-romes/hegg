@@ -15,6 +15,7 @@ import Data.Equality.Saturation
 import Data.Equality.Analysis
 import Data.Equality.Graph
 import Data.Equality.Graph.Lens
+import Data.Equality.Saturation.Scheduler
 
 data SymExpr a = Const Double
                | Symbol String
@@ -61,7 +62,9 @@ rewrites =
   ]
 
 rewrite :: Fix SymExpr -> Fix SymExpr
-rewrite e = fst (equalitySaturation e rewrites cost)
+-- With traces:
+-- rewrite e = fst (equalitySaturation' (TracingScheduler defaultBackoffScheduler) e rewrites cost)
+rewrite e = fst (equalitySaturation' (TracingScheduler defaultBackoffScheduler) e rewrites cost)
 
 e1 :: Fix SymExpr
 e1 = Fix (Fix (Fix (Symbol "x") :*: Fix (Const 2)) :/: Fix (Const 2)) -- (x*2)/2

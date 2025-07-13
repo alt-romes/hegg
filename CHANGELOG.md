@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.6.0.0 -- 2024-07-13
+
+* Fix a soundness bug that would cause equality saturation to be broken when
+  `VariablePattern` was used explicitly with low numbers such as 1,2,3...
+  This bug could also be triggered in the unlikely case when the hash of the
+  given IsString variable instance collided with the Var Ids internally
+  associated to NonVariablePatterns. Fixes #20 and #32.
+
 ## 0.5.0.0 -- 2023-10-31
 
 * Change `'modifyA'` to instead operate over e-graphs, instead of being

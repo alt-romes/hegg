@@ -1,3 +1,4 @@
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE BangPatterns #-}
@@ -28,9 +29,12 @@ module Data.Equality.Matching.Database
     -- * Subst
   , Subst
   , lookupSubst
+  , findSubst
   , nullSubst
   , sizeSubst
   ) where
+
+import GHC.Exts (Int(..))
 
 import Data.List (sortBy)
 import Data.Function (on)
@@ -49,6 +53,7 @@ import Data.Equality.Graph.Classes.Id
 import Data.Equality.Graph.Nodes
 import Data.Equality.Language
 import Data.Coerce
+import qualified Data.Equality.Utils.IntToIntMap as IIM
 
 -- | A variable in a query is identified by an 'Int'.
 -- This is much more efficient than using e.g. a 'String'.
@@ -318,29 +323,34 @@ intersectInTrie !var !substs (MkIntTrie trieKeys m) = \case
 
 -- | Mapping from 'Var' to 'ClassId'. In a 'Subst' there is only one
 -- substitution for each variable
-newtype Subst = Subst (IM.IntMap ClassId)
+data Subst = Subst IIM.IntToIntMap
 
 -- | Insert a 'Var' in a 'Subst'
 insertSubstVar :: Var -> ClassId -> Subst -> Subst
-insertSubstVar (MatchVar k) v (Subst s) = Subst (IM.insert k v s)
+insertSubstVar (MatchVar (I# k)) (I# v) (Subst s) = Subst (IIM.insert k v s)
 
 -- | Make a singleton 'Var' in a 'Subst'
 singleSubstVar :: Var -> ClassId -> Subst
-singleSubstVar (MatchVar k) v = Subst (IM.singleton k v)
+singleSubstVar (MatchVar (I# k)) (I# v) = Subst (IIM.insert k v IIM.Nil)
 
 -- | Lookup a 'Var' in a 'Subst'
 lookupSubst :: Var -> Subst -> Maybe ClassId
-lookupSubst (MatchVar k) (Subst s) = IM.lookup k s
+lookupSubst (MatchVar (I# k)) (Subst s) = IIM.lookup k s
+
+findSubst :: Var -> Subst -> ClassId
+findSubst (MatchVar (I# k)) (Subst s) = I# (IIM.find k s)
 
 -- | An empty substitution
 emptySubst :: Subst
-emptySubst = Subst IM.empty
+emptySubst = Subst IIM.Nil
 
 -- | Is the 'Subst' empty?
 nullSubst :: Subst -> Bool
-nullSubst (Subst s) = IM.null s
+nullSubst (Subst IIM.Nil) = True
+nullSubst (Subst _)       = False
 
+-- | O(n) unfortunately
 sizeSubst :: Subst -> Int
-sizeSubst (Subst s) = IM.size s
+sizeSubst (Subst s) = IIM.size s
 
 

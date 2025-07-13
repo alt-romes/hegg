@@ -15,10 +15,11 @@
 module Data.Equality.Utils.IntToIntMap
   ( IntToIntMap(Nil)
   , Key, Val
-  , find, insert, (!)
+  , find, lookup, insert, (!), size
   , unliftedFoldr
   ) where
 
+import Prelude hiding (lookup)
 import GHC.Exts
 import Data.Bits
 
@@ -47,6 +48,11 @@ type Val         = Int#
 find :: Key -> IntToIntMap -> Val
 find (int2Word# -> k) = find' k
 {-# INLINE find #-}
+
+-- | Lookup the 'Val' for a 'Key' in an 'IntToIntMap'
+lookup :: Key -> IntToIntMap -> Maybe Int
+lookup (int2Word# -> k) = lookup' k
+{-# INLINE lookup #-}
 
 -- | Insert a 'Val' at a 'Key' in an 'IntToIntMap'
 insert :: Key -> Val -> IntToIntMap -> IntToIntMap
@@ -78,6 +84,24 @@ find' k (Bin _p m l r)
   | otherwise = find' k r
 find' k (Tip kx x) | isTrue# (k `eqWord#` kx) = x
 find' _ _ = error ("IntMap.!: key ___ is not an element of the map")
+
+lookup' :: InternalKey -> IntToIntMap -> Maybe Int
+lookup' k = go
+  where
+    go (Bin _p m l r)
+      | zero k m  = go l
+      | otherwise = go r
+    go (Tip kx x)
+      | isTrue# (k `eqWord#` kx) = Just (I# x)
+      | otherwise = Nothing
+    go Nil = Nothing
+
+size :: IntToIntMap -> Int
+size m = I# (go 0# m)
+  where
+    go acc (Bin _ _ l r) = go (go acc l) r
+    go acc (Tip _ _) = 1# +# acc
+    go acc Nil = acc
 
 -- * Other stuff taken from IntMap
 

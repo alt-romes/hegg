@@ -37,9 +37,10 @@ import Data.Function (on)
 import Data.Maybe (mapMaybe)
 import Control.Monad
 
-#if MIN_VERSION_base(4,20,0)
-import Data.Foldable as F (toList, length)
+#if !MIN_VERSION_base(4,20,0)
+import Data.Foldable (foldl')
 #endif
+import qualified Data.Foldable as F (toList, length)
 import qualified Data.Map.Strict    as M
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
@@ -180,7 +181,7 @@ orderedVarsInQuery (Query _ atoms) = coerce . IS.toList . IS.fromAscList . coerc
     where
 
         f :: Foldable lang => [ClassIdOrVar] -> Atom lang -> [ClassIdOrVar]
-        f s (Atom v (toList -> l)) = v:(l <> s)
+        f s (Atom v (F.toList -> l)) = v:(l <> s)
         {-# INLINE f #-}
 
         -- First, prioritize variables that occur in many relations; second,
@@ -220,7 +221,7 @@ intersectAtoms !var (DB db) (a:atoms) = foldr (\x xs -> (f x) `IS.intersection` 
 
         -- If needed relation does exist, find intersection in it
         -- Add list of found intersections to existing
-        Just r  -> case intersectInTrie var emptySubst r (v:toList l) of
+        Just r  -> case intersectInTrie var emptySubst r (v:F.toList l) of
                      Nothing ->  error "intersectInTrie should return valid substitution for variable query"
                      Just xs -> xs
 

@@ -126,7 +126,10 @@ instance ((forall a. Show a => Show (l a)), Scheduler l s) => Scheduler l (Traci
   newtype Stat l (TracingScheduler s) = TracingStat (Stat l s)
 
   updateStats (TracingScheduler sch) i rw_id rw currentStat stats matches =
-    Debug.trace ("Rule matched: " ++ show rw) $ coerce $
+    (if length matches > 0 then
+      Debug.trace ("Rule matched: " ++ show rw) $
+      Debug.trace (" Num matches: " ++ show (length matches))
+     else id) $ coerce $
     updateStats @l @s sch i rw_id rw (coerce currentStat) (coerce stats) matches
 
   isBanned i (TracingStat s) = isBanned @l @s i s

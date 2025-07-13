@@ -149,7 +149,9 @@ evalConstant = \case
     
 unsafeGetSubst :: Pattern Expr -> VarsState -> Subst -> ClassId
 unsafeGetSubst (NonVariablePattern _) _ _ = error "unsafeGetSubst: NonVariablePattern; expecting VariablePattern"
-unsafeGetSubst (VariablePattern v) vss subst = findSubst (findVarName vss v) subst
+unsafeGetSubst (VariablePattern v) vss subst = case lookupSubst (findVarName vss v) subst of
+      Nothing -> error "Searching for non existent bound var in conditional"
+      Just class_id -> class_id
 
 -- | TODO: This condition is incorrect. See #35
 is_not_zero :: Pattern Expr -> RewriteCondition (Maybe Double) Expr

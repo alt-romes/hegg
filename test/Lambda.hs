@@ -112,7 +112,9 @@ instance Num (Fix Lambda) where
 
 unsafeGetSubst :: Pattern Lambda -> VarsState -> D.Subst -> ClassId
 unsafeGetSubst (NonVariablePattern _) _ _ = error "unsafeGetSubst: NonVariablePattern; expecting VariablePattern"
-unsafeGetSubst (VariablePattern v) vss subst = findSubst (findVarName vss v) subst
+unsafeGetSubst (VariablePattern v) vss subst = case lookupSubst (findVarName vss v) subst of
+      Nothing -> error "Searching for non existent bound var in conditional"
+      Just class_id -> class_id
 
 isConst :: Pattern Lambda -> RewriteCondition LA Lambda
 isConst v vss subst egr = isJust $ snd $ egr^._class (unsafeGetSubst v vss subst)._data

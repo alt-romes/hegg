@@ -178,9 +178,11 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
               -- rhs is equal to a variable, simply merge class where lhs
               -- pattern was found (@eclass@) and the eclass the pattern
               -- variable matched (@lookup v subst@)
-              let n = findSubst (findVarName vss v) subst
-              _ <- merge n eclass
-              return ()
+              case lookupSubst (findVarName vss v) subst of
+                Nothing -> error "impossible: couldn't find v in subst"
+                Just n  -> do
+                    _ <- merge n eclass
+                    return ()
 
           (_ := NonVariablePattern rhs, Match subst eclass, vss) -> do
               -- rhs is (at the top level) a non-variable pattern, so substitute
@@ -194,7 +196,10 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
   -- | Represent a pattern in the e-graph a pattern given substitions
   reprPat :: VarsState -> Subst -> l (Pattern l) -> EGraphM a l ClassId
   reprPat vss subst = add . Node <=< traverse \case
-      VariablePattern v -> pure $ findSubst (findVarName vss v) subst
+      VariablePattern v ->
+          case lookupSubst (findVarName vss v) subst of
+              Nothing -> error "impossible: couldn't find v in subst?"
+              Just i  -> return i
       NonVariablePattern p -> reprPat vss subst p
 {-# INLINEABLE runEqualitySaturation #-}
 

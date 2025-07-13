@@ -7,12 +7,12 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE StandaloneDeriving #-}
 module Jacobi where
 
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import qualified Data.IntMap.Strict as IM
 import qualified Data.Set    as S
 import Data.String
 import Data.List (sort)
@@ -24,7 +24,6 @@ import Text.Show.Deriving
 
 import qualified Data.Foldable as F
 
-import Control.Applicative (liftA2)
 import Control.Monad (unless)
 
 import Data.Equality.Graph.Lens
@@ -36,6 +35,7 @@ import Data.Equality.Matching.Database
 import Data.Equality.Saturation
 import Data.Equality.Saturation.Scheduler
 import Numeric.GSL.Special(elljac_e)
+import Data.Function
 
 data Expr a = Sym   !String
             | Const !Double
@@ -69,41 +69,7 @@ deriveShow1 ''Expr
 instance IsString (Fix Expr) where
     fromString = Fix . Sym
 
--- TODO: There should be a way to do this with TH.
--- This Ord instance doesn't seem to get derived.
-instance Ord (Fix Expr) where
-    Fix (Sym v) `compare` e = case e of
-      Fix (Sym v') -> v `compare` v'
-      _ -> LT
-    Fix (Const x) `compare` e = case e of
-      Fix (Sym _) -> GT
-      Fix (Const y) -> x `compare` y
-      _ -> LT
-    Fix (Sum es) `compare` e = case e of
-      Fix (Sym _) -> GT
-      Fix (Const _) -> GT
-      Fix (Sum es') -> es `compare` es'
-      _ -> LT
-    Fix (Prod es) `compare` e = case e of
-      Fix (Sym _) -> GT
-      Fix (Const _) -> GT
-      Fix (Sum _) -> GT
-      Fix (Prod es') -> es `compare` es'
-      _ -> LT
-    Fix (UnOp o x) `compare` e = case e of
-      Fix (Sym _) -> GT
-      Fix (Const _) -> GT
-      Fix (Sum _) -> GT
-      Fix (Prod _) -> GT
-      Fix (UnOp o' y) -> (o, x) `compare` (o', y)
-      _ -> LT
-    Fix (BinOp o x y) `compare` e = case e of
-      Fix (Sym _) -> GT
-      Fix (Const _) -> GT
-      Fix (Sum _) -> GT
-      Fix (Prod _) -> GT
-      Fix (UnOp _ _) -> GT
-      Fix (BinOp o' x' y') -> (o, x, y) `compare` (o', x', y')
+deriving instance Ord (Fix Expr)
 
 instance Num (Fix Expr) where
     (+) a b = case (a, b) of
@@ -177,18 +143,15 @@ instance Analysis (Maybe Double) Expr where
         !_ <- unless (a == b || (a == 0 && b == (-0)) || (a == (-0) && b == 0)) (error "Merged non-equal constants!")
         return a
 
-    modifyA cl = case cl^._data of
-                 Nothing -> (cl, [])
-                 Just d -> ((_nodes %~ S.filter (F.null .unNode)) cl, [Fix (Const d)])
-
-    --         -- Add constant as e-node
-    --         new_c <- represent (Fix $ Const d)
-    --         _     <- GM.merge i new_c
-
-    --         -- Prune all except leaf e-nodes
-    --         modify (_class i._nodes %~ S.filter (F.null . unNode))
-
-
+    modifyA cl eg0 =
+      case eg0^._class cl._data of
+        Nothing -> eg0
+        Just d  ->
+              -- Add constant as e-node
+          let (new_c,eg1) = represent (Fix (Const d)) eg0
+              (rep, eg2)  = merge cl new_c eg1
+              -- Prune all except leaf e-nodes
+           in eg2 & _class rep._nodes %~ S.filter (F.null .unNode)
 
 evalConstant :: Expr (Maybe Double) -> Maybe Double
 evalConstant = \case
@@ -212,40 +175,40 @@ evalConstant = \case
     Sym _ -> Nothing
     Const x -> Just x
 
-unsafeGetSubst :: Pattern Expr -> Subst -> ClassId
-unsafeGetSubst (NonVariablePattern _) _ = error "unsafeGetSubst: NonVariablePattern; expecting VariablePattern"
-unsafeGetSubst (VariablePattern v) subst = case IM.lookup v subst of
+unsafeGetSubst :: Pattern Expr -> VarsState -> Subst -> ClassId
+unsafeGetSubst (NonVariablePattern _) _ _ = error "unsafeGetSubst: NonVariablePattern; expecting VariablePattern"
+unsafeGetSubst (VariablePattern v) vss subst = case lookupSubst (findVarName vss v) subst of
       Nothing -> error "Searching for non existent bound var in conditional"
       Just class_id -> class_id
 
 is_not_zero :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
-is_not_zero v subst egr =
-    egr^._class (unsafeGetSubst v subst)._data /= Just 0
+is_not_zero v vss subst egr =
+    egr^._class (unsafeGetSubst v vss subst)._data /= Just 0
 
 is_int :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
-is_int v subst egr =
-    case egr^._class (unsafeGetSubst v subst)._data of
+is_int v vss subst egr =
+    case egr^._class (unsafeGetSubst v vss subst)._data of
       Just x -> snd (properFraction x :: (Int, Double)) == 0
       Nothing -> False
 
 is_positive :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
-is_positive v subst egr =
-    case egr^._class (unsafeGetSubst v subst)._data of
+is_positive v vss subst egr =
+    case egr^._class (unsafeGetSubst v vss subst)._data of
       Just x -> x > 0
       Nothing -> False
 
 is_sym :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
-is_sym v subst egr =
-    any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class (unsafeGetSubst v subst)._nodes)
+is_sym v vss subst egr =
+    any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class (unsafeGetSubst v vss subst)._nodes)
 
 is_const :: Pattern Expr -> RewriteCondition (Maybe Double) Expr
-is_const v subst egr =
-    isJust (egr^._class (unsafeGetSubst v subst)._data)
+is_const v vss subst egr =
+    isJust (egr^._class (unsafeGetSubst v vss subst)._data)
 
 is_const_or_distinct_var :: Pattern Expr -> Pattern Expr -> RewriteCondition (Maybe Double) Expr
-is_const_or_distinct_var v w subst egr =
-    let v' = unsafeGetSubst v subst
-        w' = unsafeGetSubst w subst
+is_const_or_distinct_var v w vss subst egr =
+    let v' = unsafeGetSubst v vss subst
+        w' = unsafeGetSubst w vss subst
      in (eClassId (egr^._class v') /= eClassId (egr^._class w'))
         && (isJust (egr^._class v'._data)
             || any ((\case (Sym _) -> True; _ -> False) . unNode) (egr^._class v'._nodes))

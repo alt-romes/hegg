@@ -1,7 +1,6 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
@@ -101,17 +100,11 @@ newtype Database lang
 -- the residual relations should be computed in constant time, i.e., computing from the relation 𝑅(𝑥, 𝑦)
 -- the relation 𝑅(𝑣𝑥 , 𝑦) for some 𝑣𝑥 ∈ 𝑅(𝑥, 𝑦).𝑥 must take constant time. Both of these can be solved by
 -- using tries (sometimes called prefix or suffix trees) as an indexing data structure.
+-- TODO: Use unlifted datatypes
 data IntTrie = MkIntTrie
   { tkeys :: !IS.IntSet
   , trie :: !(IM.IntMap IntTrie)
   }
-
-
--- TODO use this somehow?
--- queryHeadVars :: Foldable lang => Query lang -> [Var]
--- queryHeadVars (SelectAllQuery x) = [x]
--- queryHeadVars (Query qv _) = qv
--- {-# INLINE queryHeadVars #-}
 
 -- | Run a conjunctive 'Query' on a 'Database'
 --
@@ -253,7 +246,7 @@ intersectInTrie :: Var -- ^ The variable whose domain we are looking for
                 -> Maybe IS.IntSet -- ^ The resulting domain for a valid substitution
 intersectInTrie !var !substs (MkIntTrie trieKeys m) = \case
 
-    [] -> pure []
+    [] -> pure IS.empty
 
     -- Looking for a class-id, so if it exists in map the intersection is
     -- valid and we simply continue the search for the domain

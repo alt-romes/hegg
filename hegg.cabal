@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               hegg
-version:            0.5.0.0
+version:            0.6.0.0
 Tested-With:        GHC ==9.10.1 || ==9.8.4 || ==9.6.7
 synopsis:           Fast equality saturation in Haskell
 

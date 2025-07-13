@@ -79,7 +79,7 @@ equalitySaturation = equalitySaturation' defaultBackoffScheduler
 --
 -- This variant takes all arguments instead of using defaults
 equalitySaturation' :: forall a l schd cost
-                    . (Analysis a l, Language l, Scheduler schd, Ord cost)
+                    . (Analysis a l, Language l, Scheduler l schd, Ord cost)
                     => schd                -- ^ Scheduler to use
                     -> Fix l               -- ^ Expression to run equality saturation on
                     -> [Rewrite a l]       -- ^ List of rewrite rules
@@ -101,7 +101,7 @@ equalitySaturation' schd expr rewrites cost = egraph $ do
 -- | Run equality saturation on an e-graph by non-destructively applying all
 -- given rewrite rules until saturation (using the given 'Scheduler')
 runEqualitySaturation :: forall a l schd
-                       . (Analysis a l, Language l, Scheduler schd)
+                       . (Analysis a l, Language l, Scheduler l schd)
                       => schd                -- ^ Scheduler to use
                       -> [Rewrite a l]       -- ^ List of rewrite rules
                       -> EGraphM a l ()
@@ -110,7 +110,7 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
   -- Take map each rewrite rule to stats on its usage so we can do
   -- backoff scheduling. Each rewrite rule is assigned an integer
   -- (corresponding to its position in the list of rewrite rules)
-  runEqualitySaturation' :: Int -> IM.IntMap (Stat schd) -> EGraphM a l ()
+  runEqualitySaturation' :: Int -> IM.IntMap (Stat l schd) -> EGraphM a l ()
   runEqualitySaturation' 30 _ = return () -- Stop after X iterations
   runEqualitySaturation' i stats = do
 
@@ -142,17 +142,17 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
                 && IM.size afterClasses == IM.size beforeClasses)
           (runEqualitySaturation' (i+1) newStats)
 
-  matchWithScheduler :: Database l -> Int -> IM.IntMap (Stat schd) -> Int -> Rewrite a l
-                     -> ([Match], IM.IntMap (Stat schd), VarsState {- the vars mapping resulting from compiling the query -})
-  matchWithScheduler db i stats rw_id = \case
-      rw  :| _ -> matchWithScheduler db i stats rw_id rw
+  matchWithScheduler :: Database l -> Int -> IM.IntMap (Stat l schd) -> Int -> Rewrite a l
+                     -> ([Match], IM.IntMap (Stat l schd), VarsState {- the vars mapping resulting from compiling the query -})
+  matchWithScheduler db i stats rw_id rw = case rw of
+      rw' :| _ -> matchWithScheduler db i stats rw_id rw'
       lhs := _ -> do
           let (lhs_query, varsState) = compileToQuery lhs
 
           case IM.lookup rw_id stats of
             -- If it's banned until some iteration, don't match this rule
             -- against anything.
-            Just s | isBanned @schd i s -> ([], stats, varsState)
+            Just s | isBanned @l @schd i s -> ([], stats, varsState)
 
             -- Otherwise, match and update stats
             x -> do
@@ -160,8 +160,8 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
                 -- Match pattern
                 let matches' = ematch db lhs_query -- Add rewrite to the e-match substitutions
 
-                -- Backoff scheduler: update stats
-                let newStats = updateStats schd i rw_id x stats matches'
+                -- Some scheduler: update stats
+                let newStats = updateStats schd i rw_id rw x stats matches'
 
                 (matches', newStats, varsState)
 

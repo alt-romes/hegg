@@ -289,6 +289,13 @@ the equality-graphs and other equality-things (such as e-matching) available.
 For example, using just the e-graphs from `Data.Equality.Graph` to improve GHC's
 pattern match checker (https://gitlab.haskell.org/ghc/ghc/-/issues/19272).
 
+## Debugging Rewrite Rules
+
+To debug rewrite rules when doing equality saturation, wrap the `Scheduler`
+with `TracingScheduler`. The tracing scheduler will use the underlying
+scheduler but log all the rules matched beforehand. Seeing all the rules which
+fire makes it easy to debug the set of rewrite rules, especially when it loops.
+
 ## Profiling
 
 Notes on profiling for development.

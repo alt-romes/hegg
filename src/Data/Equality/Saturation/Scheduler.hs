@@ -1,7 +1,13 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE AllowAmbiguousTypes #-} -- Scheduler
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-|
 
 Definition of 'Scheduler' as a way to control application of rewrite rules.
@@ -11,31 +17,39 @@ and is used by default in 'Data.Equality.Saturation.equalitySaturation'
 
 -}
 module Data.Equality.Saturation.Scheduler
-    ( Scheduler(..), BackoffScheduler(..), defaultBackoffScheduler
+    ( Scheduler(..)
+
+    , BackoffScheduler(..), defaultBackoffScheduler
+
+    , TracingScheduler(..)
     ) where
 
 import qualified Data.IntMap.Strict as IM
 import Data.Equality.Matching
 import Data.Equality.Matching.Database (sizeSubst)
+import Data.Equality.Saturation.Rewrites (Rewrite)
+import qualified Debug.Trace as Debug
+import Data.Coerce (coerce)
 
 -- | A 'Scheduler' determines whether a certain rewrite rule is banned from
 -- being used based on statistics it defines and collects on applied rewrite
 -- rules.
-class Scheduler s where
-    data Stat s
+class Scheduler l s where
+    data Stat l s
 
     -- | Scheduler: update stats
     updateStats :: s                  -- ^ The scheduler itself
                 -> Int                -- ^ Iteration we're in
                 -> Int                -- ^ Index of rewrite rule we're updating
-                -> Maybe (Stat s)     -- ^ Current stat for this rewrite rule (we already got it so no point in doing a lookup again)
-                -> IM.IntMap (Stat s) -- ^ The current stats map
+                -> Rewrite a l          -- ^ The rewrite rule that matched
+                -> Maybe (Stat l s)     -- ^ Current stat for this rewrite rule (we already got it so no point in doing a lookup again)
+                -> IM.IntMap (Stat l s) -- ^ The current stats map
                 -> [Match]            -- ^ The list of matches resulting from matching this rewrite rule
-                -> IM.IntMap (Stat s) -- ^ The updated map with new stats
+                -> IM.IntMap (Stat l s) -- ^ The updated map with new stats
 
     -- Decide whether to apply a matched rule based on its stats and current iteration
     isBanned :: Int -- ^ Iteration we're in
-             -> Stat s -- ^ Stats for the rewrite rule
+             -> Stat l s -- ^ Stats for the rewrite rule
              -> Bool -- ^ Whether the rule should be applied or not
 
 -- | A 'Scheduler' that implements exponentional rule backoff.
@@ -58,18 +72,18 @@ data BackoffScheduler = BackoffScheduler
 defaultBackoffScheduler :: BackoffScheduler
 defaultBackoffScheduler = BackoffScheduler 1000 10
 
-instance Scheduler BackoffScheduler where
-    data Stat BackoffScheduler =
+instance Scheduler l BackoffScheduler where
+    data Stat l BackoffScheduler =
       BSS { bannedUntil :: {-# UNPACK #-} !Int
           , timesBanned :: {-# UNPACK #-} !Int
           } deriving Show
 
-    updateStats bos i rw currentStat stats matches =
+    updateStats bos i rw_id _ currentStat stats matches =
 
         if total_len > threshold
 
           then
-            IM.alter updateBans rw stats
+            IM.alter updateBans rw_id stats
 
           else
             stats
@@ -93,3 +107,26 @@ instance Scheduler BackoffScheduler where
 
     isBanned i s = i < bannedUntil s
 
+--------------------------------------------------------------------------------
+-- * Tracing
+
+-- | A Scheduler wrapping another scheduler but additionally traces (with
+-- Debug.Trace) all rules which are applied.
+--
+-- This is helpful to debug loopy sets of rewrite rules
+--
+-- === Example
+-- @
+-- 'runEqualitySaturation' rewrites ('TracingScheduler' 'defaultBackoffScheduler')
+-- @
+newtype TracingScheduler a = TracingScheduler a
+
+-- | This instance wraps the underlying scheduler, making sure
+instance ((forall a. Show a => Show (l a)), Scheduler l s) => Scheduler l (TracingScheduler s) where
+  newtype Stat l (TracingScheduler s) = TracingStat (Stat l s)
+
+  updateStats (TracingScheduler sch) i rw_id rw currentStat stats matches =
+    Debug.trace ("Rule matched: " ++ show rw) $ coerce $
+    updateStats @l @s sch i rw_id rw (coerce currentStat) (coerce stats) matches
+
+  isBanned i (TracingStat s) = isBanned @l @s i s

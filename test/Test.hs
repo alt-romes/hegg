@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -15,23 +16,28 @@ import T32
 import qualified T1
 import qualified T2
 import qualified T3
+# ifdef VIZDOT
 import qualified VizDot
+# endif
 
 tests :: TestTree
-tests = testGroup "Tests"
-  [ symTests
-  , lambdaTests
-  , simpleSymTests
-  , invariants
-  , testCase "T1" (T1.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
-  , testCase "T2" (T2.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
-  , testCase "T3" (T3.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
-  , testT32
-  , testCase "e-graph visualization" VizDot.visualizeSaturatedEGraph
-  ]
+tests =testGroup "Tests"
+    [ symTests
+    , lambdaTests
+    , simpleSymTests
+    , invariants
+    , testCase "T1" (T1.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
+    , testCase "T2" (T2.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
+    , testCase "T3" (T3.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
+    , testT32
+# ifdef VIZDOT
+      , testCase "e-graph visualization" VizDot.visualizeSaturatedEGraph
+# endif
+    ]
 
 main :: IO ()
-main = defaultMain tests
+main = do
+   defaultMain tests
 
 -- main :: IO ()
 -- main = do

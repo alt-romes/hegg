@@ -1,14 +1,50 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
 
+{- | Module providing visualization of e-graph in [DOT](https://graphviz.org/doc/info/lang.html#subgraphs-and-clusters) format.
+
+  === __Example Usage__
+
+  @
+  import Data.Equality.Graph
+  import Data.Equality.Graph.Dot
+  import Data.Equality.Saturation (equalitySaturation)
+  import SimpleSym
+
+  eGraphSymExpr :: EGraph (Maybe Double) SymExpr
+  eGraphSymExpr = snd $ equalitySaturation e1 rewrites SimpleSym.cost
+
+  displaySymExpr :: ENode SymExpr -> Text
+  displaySymExpr (Node e) = case e of
+      Const x -> txt x
+      Symbol v -> txt v
+      _ :+: _ -> "+"
+      _ :*: _ -> "*"
+      _ :/: _ -> "/"
+
+  simpleSymViz :: DotGraph Text
+  simpleSymViz = toDotGraph' (Just txt) displaySymExpr eGraphSymExpr
+
+  visualizeSaturatedEGraph :: IO ()
+  visualizeSaturatedEGraph =
+      writeDotFile "SimpleSym.dot" $
+          toDotGraph' (Just txt) displaySymExpr eGraphSymExpr
+  @
+-}
 module Data.Equality.Graph.Dot (
-  module Data.Equality.Graph.Dot,
-  Text,
-  DotGraph,
+  -- * Generate and writing DOT Graph from an e-graph
+  toDotGraph,
+  toDotGraph',
+
+  -- ** GraphViz re-exports
   writeDotFile,
+  DotGraph (),
+
+  -- ** Text re-exports
+  Text (),
+
+  -- ** Helper function
+  txt,
 )
 where
 
@@ -34,28 +70,31 @@ import Data.Equality.Graph.Internal
 txt :: (Show a) => a -> Text
 txt = pack . show
 
-writeDemo :: (Language language, Show (ENode language), Show analysis) => EGraph analysis language -> IO ()
-writeDemo = writeDotFile "demo.gv" . toDotGraph
+{- | Visualize an e-graph as a GraphViz Dot file. The analysis are display is not shown and the e-node labels are rendered using the default `Show` instance.
 
-{- | Visualize an e-graph as a GraphViz Dot file. The analysis are display is not shown and the e-node label is displayed using the default `Show` instance.
-
-This is a default case for toDotGraph' where
-- `anlText` is `Nothing`
-- `eNodeText` is `txt`
+@toDotGraph = toDotGraph' Nothing txt@
 -}
-toDotGraph :: (Language language, Show (ENode language), Show analysis) => EGraph analysis language -> DotGraph Text
+toDotGraph ::
+  ( Language l
+  , Show (ENode l)
+  , Show analysis
+  ) =>
+  EGraph analysis l ->
+  DotGraph Text
 toDotGraph = toDotGraph' Nothing txt
 
-{- | Visualize an e-graph as a GraphViz Dot file.
-
-- `anlText`:  an optional function to set the display of `domain` for `Analysis` as Text. Use `Nothing` to disable the analysis display.
-- `eNodeText`: a function to set the display of e-nodes of the language as text. One can think of it as the text for the "constructors + its non-recursive arguments".
--}
+-- | Visualize an e-graph as a GraphViz Dot file with additional control on how analysis and e-node labeled are rendered as `Text`.
 toDotGraph' ::
-  (Language language) =>
+  (Language l) =>
+  -- | an optional function to set the display of `domain` for `Analysis` as Text. Use `Nothing` to hide the analysis.
   Maybe (anl -> Text) ->
-  (ENode language -> Text) ->
-  EGraph anl language ->
+  {- | a function specifying how e-node labels are generated as `Text`.
+
+  (e.g. one might want @Node (eID1 :+: eID2)@ to be rendered as @"+"@ ignoring the e-class IDs)
+  -}
+  (ENode l -> Text) ->
+  -- | the e-graph to visualize
+  EGraph anl l ->
   DotGraph Text
 toDotGraph' anlText eNodeText eg = digraph (Data.GraphViz.Types.Monadic.Str "egraph") $ do
   globallAttrs
@@ -87,10 +126,8 @@ toDotGraph' anlText eNodeText eg = digraph (Data.GraphViz.Types.Monadic.Str "egr
       , FontSize 9
       , NodeSep 0.05
       , RankSep [0.6]
-      , -- , ColorScheme $ Brewer $ BScheme Set3 12
-        OutputOrder EdgesFirst
+      , OutputOrder EdgesFirst
       , styles [dashed, rounded, filled]
-      -- , fillColor $ BrewerColor $ BC
       ]
     edgeAttrs
       [ ArrowSize 0.5
@@ -119,11 +156,13 @@ drawOutEdges eg classId eNodes = forM_ (zip (S.toList eNodes) [1 ..]) $
           , TailPort $ LabelledPort (PN $ txt arg_i) $ Just South
           ]
 
-{- | Each e-node with text `t` of arity `n` is drawn as a table with n cols and 2 rows. The first row contain a single cell spanning n cols and displaying the  e-node text `t`. The second row contains "empty" cells having zero heights functioning as anchor point (used in each edge's TailPort attribute). This eliminates the need to use edge labels as a mean to understand positional arguments.
-- `t` text used to display the e-node
-- `n` arity of the enode
--}
-hiddenTable :: Text -> Int -> HTML.Table
+-- | Each e-node with text `t` of arity `n` is drawn as a table with n cols and 2 rows. The first row contain a single cell spanning n cols and displaying the  e-node text `t`. The second row contains "empty" cells having zero heights functioning as anchor point (used in each edge's TailPort attribute). This eliminates the need to use edge labels as a mean to understand positional arguments.
+hiddenTable ::
+  -- | text used to display the e-node
+  Text ->
+  -- | arity of the enode
+  Int ->
+  HTML.Table
 hiddenTable t arity =
   HTML.HTable
     { tableFontAttrs = Nothing

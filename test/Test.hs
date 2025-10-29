@@ -15,6 +15,7 @@ import T32
 import qualified T1
 import qualified T2
 import qualified T3
+import qualified VizDot
 
 tests :: TestTree
 tests = testGroup "Tests"
@@ -26,6 +27,7 @@ tests = testGroup "Tests"
   , testCase "T2" (T2.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
   , testCase "T3" (T3.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
   , testT32
+  , testCase "e-graph visualization" VizDot.visualizeSaturatedEGraph
   ]
 
 main :: IO ()

@@ -15,6 +15,7 @@ jobs:
         with:
           ghc-version: '9.10.2'
       - run: cabal test
+      - run: cabal test -f+vizdot
   runhaskell8:
     name: Test GHC 9.8
     runs-on: ubuntu-latest # or macOS-latest, or windows-latest

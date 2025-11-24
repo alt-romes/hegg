@@ -13,6 +13,7 @@ import Lambda
 import SimpleSym
 import T32
 
+import qualified Computed
 import qualified T1
 import qualified T2
 import qualified T3
@@ -30,6 +31,7 @@ tests =testGroup "Tests"
     , T45.testT45
     , invariants
     , T51.testConditionalBan
+    , testCase "Computed" Computed.main
     , testCase "T1" (T1.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
     , testCase "T2" (T2.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
     , testCase "T3" (T3.main `catch` (\(e :: SomeException) -> assertFailure (show e)))

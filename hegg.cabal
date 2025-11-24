@@ -117,7 +117,7 @@ test-suite hegg-test
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          Test.hs
-    other-modules:    Invariants, Sym, Lambda, SimpleSym,
+    other-modules:    Computed, Invariants, Sym, Lambda, SimpleSym,
                       T1, T2, T3, T32, T45, T51
     if flag(vizdot)
         other-modules: VizDot

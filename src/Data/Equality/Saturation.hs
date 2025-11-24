@@ -45,6 +45,7 @@ module Data.Equality.Saturation
     ) where
 
 import qualified Data.IntMap.Strict as IM
+import qualified Data.Map.Strict as M
 
 import Control.Monad
 
@@ -168,7 +169,10 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
       -- Accumulate conditions while recursing through conditional rewrites
       go :: [RewriteCondition a l] -> Rewrite a l -> ([Match], IM.IntMap (Stat l schd), VarsState)
       go conds (rw' :| cond) = go (cond:conds) rw'
-      go conds (lhs := _) = do
+      go conds (lhs :=> _) = doPattern conds lhs
+      go conds (lhs := _) = doPattern conds lhs
+
+      doPattern conds lhs = do
           let (lhs_query, varsState) = compileToQuery lhs
 
           case IM.lookup rw_id stats of
@@ -225,11 +229,38 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
               _ <- merge eclass eclass'
               return ()
 
-  -- | Represent a pattern in the e-graph a pattern given substitions
+          (_ :=> f, Match subst eclass, vss) -> do
+              egr <- get
+              let matchCtx = buildMatchContext vss subst egr
+              case f matchCtx of
+                Just rhs -> do
+                  eclass' <- reprExpr rhs
+                  _ <- merge eclass eclass'
+                  return ()
+                Nothing ->
+                  return ()
+
+  -- | Build the match context mapping variable names to their matched class info
+  buildMatchContext :: VarsState -> Subst -> G.EGraph a l -> M.Map String (MatchInfo a l)
+  buildMatchContext vss subst egr =
+      M.mapWithKey lookupInfo (varNames vss)
+    where
+      lookupInfo :: String -> Var -> MatchInfo a l
+      lookupInfo _name var =
+          let classId = findSubst var subst
+              canonId = G.find classId egr
+              eclass  = egr ^. _class canonId
+          in MatchInfo (eclass ^. _data) (eclass ^. _nodes)
+
+  -- | Represent a pattern in the e-graph given substitutions
   reprPat :: VarsState -> Subst -> l (Pattern l) -> EGraphM a l ClassId
   reprPat vss subst = add . Node <=< traverse \case
       VariablePattern v -> pure $
           findSubst (findVarName vss v) subst
       NonVariablePattern p -> reprPat vss subst p
+
+  -- | Represent an expression (Fix l) in the e-graph
+  reprExpr :: Fix l -> EGraphM a l ClassId
+  reprExpr (Fix e) = add . Node =<< traverse reprExpr e
 {-# INLINEABLE runEqualitySaturation #-}
 

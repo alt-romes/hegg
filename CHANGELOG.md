@@ -19,6 +19,12 @@
   as a GraphViz DOT graph. The format is reminiscent of the output produced by
   the `egglog` library.
 
+* The library now supports a new variant of `Rewrite`: computed rewrites
+  (spelled `:=>`). This allows the user to rewrite a given pattern
+  to a right-hand-side computed by a Haskell function of the matching
+  substitution and `EGraph`.
+
+
 ## 0.6.0.0 -- 2024-07-13
 
 * Fix a soundness bug that would cause equality saturation to be broken when

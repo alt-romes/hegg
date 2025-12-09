@@ -77,18 +77,30 @@ library
                       Data.Equality.Graph.Nodes,
                       Data.Equality.Graph.Lens,
                       Data.Equality.Graph.Monad,
+                      Data.Equality.Graph.Indexed,
+                      Data.Equality.Graph.Monad.Indexed,
                       Data.Equality.Matching,
                       Data.Equality.Matching.Database,
                       Data.Equality.Matching.Pattern,
+                      Data.Equality.Matching.Pattern.Indexed,
+                      Data.Equality.Matching.Indexed,
                       Data.Equality.Saturation,
                       Data.Equality.Extraction,
+                      Data.Equality.Extraction.Indexed,
                       Data.Equality.Language,
+                      Data.Equality.Language.Indexed,
                       Data.Equality.Analysis,
+                      Data.Equality.Analysis.Indexed,
                       Data.Equality.Analysis.Monadic,
                       Data.Equality.Saturation.Scheduler,
                       Data.Equality.Saturation.Rewrites,
+                      Data.Equality.Saturation.Rewrites.Indexed,
+                      Data.Equality.Saturation.Indexed,
                       Data.Equality.Utils,
-                      Data.Equality.Utils.SizedList
+                      Data.Equality.Utils.SizedList,
+                      Data.Equality.Utils.Singleton,
+                      Data.Equality.Utils.HList,
+                      Data.Equality.Utils.Untyped
     if impl(ghc >= 9.2)
         exposed-modules: Data.Equality.Utils.IntToIntMap
 
@@ -118,7 +130,7 @@ test-suite hegg-test
     hs-source-dirs:   test
     main-is:          Test.hs
     other-modules:    Invariants, Sym, Lambda, SimpleSym,
-                      T1, T2, T3, T32
+                      T1, T2, T3, T32, Singleton, Indexed, SymExpr
     if flag(vizdot)
         other-modules: VizDot
         cpp-options:  -DVIZDOT

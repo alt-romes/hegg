@@ -100,7 +100,7 @@ class Eq domain => Analysis domain (l :: Type -> Type) where
 
 -- | The simplest analysis that defines the domain to be () and does nothing
 -- otherwise
-instance forall l. Analysis () l where
+instance {-# INCOHERENT #-} forall l. Analysis () l where
   makeA _ = ()
   joinA = (<>)
 
@@ -126,7 +126,7 @@ instance forall l. Analysis () l where
 --
 -- Note: there are weaker (or at least different) criteria for this instance to
 -- be well behaved.
-instance (Language l, Analysis a l, Analysis b l) => Analysis (a, b) l where
+instance {-# INCOHERENT #-} (Language l, Analysis a l, Analysis b l) => Analysis (a, b) l where
 
   makeA :: l (a, b) -> (a, b)
   makeA g = (makeA @a (fst <$> g), makeA @b (snd <$> g))

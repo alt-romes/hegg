@@ -105,8 +105,8 @@ toDotGraph' anlText eNodeText eg = digraph (Data.GraphViz.Types.Monadic.Str "egr
         -- add analysis text to e-class if anlText is available
         _ <- case anlText of
           Nothing -> return ()
-          Just mkAnlText -> graphAttrs [toLabel $ mkAnlText analysis]
-        forM_ (zip (S.toList nodes) [1 ..]) $ \(n, i) -> do
+          Just mkAnlText -> graphAttrs [toLabel $ "class " <> txt class_id <> ": " <> mkAnlText analysis]
+        forM_ (zip (S.toList nodes) [1 :: Integer ..]) $ \(n, i) -> do
           -- draw e-node (assign Dot node ID, assign label)
           let n' = canonicalize n eg
           node

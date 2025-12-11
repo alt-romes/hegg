@@ -3,9 +3,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE MultiWayIf #-}
 {-|
   Given an input program 𝑝, equality saturation constructs an e-graph 𝐸 that
   represents a large set of programs equivalent to 𝑝, and then extracts the
@@ -138,9 +138,18 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
       -- ROMES:TODO: Actual Timeout... not just iteration timeout
       -- ROMES:TODO Better saturation (see Runner)
       -- Apply rewrites until saturated or ROMES:TODO: timeout
-      unless (G.sizeNM afterMemo == G.sizeNM beforeMemo
-                && IM.size afterClasses == IM.size beforeClasses)
-          (runEqualitySaturation' (i+1) newStats)
+      let saturated = G.sizeNM afterMemo == G.sizeNM beforeMemo
+            && IM.size afterClasses == IM.size beforeClasses
+      let haveBannedRules = not (IM.null newStats) && any (isBanned @l @schd i) newStats
+      if
+          -- If we reached a fixed point but have banned rules, reset them and
+          -- try once more
+         | saturated && haveBannedRules ->
+             runEqualitySaturation' (i+1) mempty  -- Reset stats to unban all rules
+          -- We have reached true saturation. We are done.
+         | saturated -> return ()
+          -- There's more to be done.
+         | otherwise -> runEqualitySaturation' (i+1) newStats
 
   matchWithScheduler :: Database l -> Int -> IM.IntMap (Stat l schd) -> Int -> Rewrite a l
                      -> ([Match], IM.IntMap (Stat l schd), VarsState {- the vars mapping resulting from compiling the query -})

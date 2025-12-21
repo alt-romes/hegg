@@ -277,7 +277,8 @@ rewrites =
 We can now run equality saturation on our expression!
 
 ```hs
-let expr = fst (equalitySaturation e1 rewrites cost)
+{-# LANGUAGE TypeApplications #-}
+let expr = fst (equalitySaturation @(Maybe Double) e1 rewrites cost)
 ```
 And upon printing we'd see `expr = Symbol "x"`!
 

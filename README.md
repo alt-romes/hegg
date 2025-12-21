@@ -57,6 +57,9 @@ it automatically through deriving), and write an `Analysis` instance for it (see
 next section).
 
 ```hs
+-- {-# LANGUAGE DeriveFunctor #-}
+-- {-# LANGUAGE DeriveFoldable #-}
+-- {-# LANGUAGE DeriveTraversable #-}
 data SymExpr a = Const Double
                | Symbol String
                | a :+: a
@@ -75,6 +78,7 @@ If we now wanted to represent an expression, we'd write it in its
 fixed-point form
 
 ```hs
+-- import Data.Equality.Saturation
 e1 :: Fix SymExpr
 e1 = Fix (Fix (Fix (Symbol "x") :*: Fix (Const 2)) :/: (Fix (Const 2))) -- (x*2)/2
 ```
@@ -99,7 +103,10 @@ each e-class, where `Nothing` indicates the e-class does not currently have a
 constant value and `Just i` means the e-class has constant value `i`.
 
 ```hs
-instance Analysis (Maybe Double) SymExpr
+-- {-# LANGUAGE MultiParamTypeClasses #-}
+-- import Data.Equality.Analysis
+
+instance Analysis (Maybe Double) SymExpr where
   makeA = ...
   joinA = ...
   modifyA = ...
@@ -117,6 +124,7 @@ We want to associate constant data to the e-class, so we must find if the
 e-node has a constant value or otherwise return `Nothing`:
 
 ```hs
+-- {-# LANGUAGE LambdaCase #-}
 makeA :: SymExpr (Maybe Double) -> Maybe Double
 makeA = \case
   Const x -> Just x
@@ -152,6 +160,7 @@ it, we want to create a new e-class with that constant value and merge it to
 this e-class.
 
 ```hs
+-- import Data.Equality.Graph
 -- import Data.Equality.Graph.Lens ((^.), _class, _data)
 modifyA :: ClassId -> EGraph (Maybe Double) SymExpr -> EGraph (Maybe Double) SymExpr
 modifyA c egr
@@ -190,7 +199,7 @@ Equality saturation is defined as the function
 ```hs
 equalitySaturation :: forall l. Language l
                    => Fix l             -- ^ Expression to run equality saturation on
-                   -> [Rewrite l]       -- ^ List of rewrite rules
+                   -> [Rewrite anl l]    -- ^ List of rewrite rules
                    -> CostFunction l    -- ^ Cost function to extract the best equivalent representation
                    -> (Fix l, EGraph l) -- ^ Best equivalent expression and resulting e-graph
 ```
@@ -255,7 +264,8 @@ constructed with `VariablePattern`.
 We can then write the following very specific set of rewrite rules to simplify
 our simple symbolic expressions.
 ```hs
-rewrites :: [Rewrite SymExpr]
+-- import Data.Equality.Matching
+rewrites :: [Rewrite anl SymExpr]
 rewrites =
   [ pat (pat ("a" :*: "b") :/: "c") := pat ("a" :*: pat ("b" :/: "c"))
   , pat ("x" :/: "x")               := pat (Const 1)

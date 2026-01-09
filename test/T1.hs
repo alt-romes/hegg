@@ -92,8 +92,8 @@ instance Floating (Pattern TreeF) where
   l ** r      = undefined
   logBase l r = undefined
 
-cost :: CostFunction TreeF Int
-cost = \case
+cost :: CostFunction anl TreeF Int
+cost = costOnly $ \case
   ConstF _ -> 5
   VarF _ -> 1
   AddF c1 c2 -> c1 + c2 + 2

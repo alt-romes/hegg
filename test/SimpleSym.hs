@@ -46,8 +46,8 @@ instance Analysis (Maybe Double) SymExpr where
           let (c', eg') = represent (Fix (Const i)) eg
            in snd $ merge c c' eg'
 
-cost :: CostFunction SymExpr Int
-cost = \case
+cost :: CostFunction anl SymExpr Int
+cost = costOnly $ \case
   Const  _ -> 1
   Symbol _ -> 1
   c1 :+: c2 -> c1 + c2 + 2

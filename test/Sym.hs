@@ -74,8 +74,8 @@ instance Fractional (Fix Expr) where
     (/) a b = Fix (BinOp Div a b)
     fromRational = Fix . Const . fromRational
 
-symCost :: CostFunction Expr Int
-symCost = \case
+symCost :: CostFunction anl Expr Int
+symCost = costOnly $ \case
     BinOp Pow e1 e2 -> e1 + e2 + 6
     BinOp Div e1 e2 -> e1 + e2 + 5
     BinOp Sub e1 e2 -> e1 + e2 + 4

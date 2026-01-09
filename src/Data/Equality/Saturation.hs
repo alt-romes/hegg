@@ -67,7 +67,7 @@ import Data.Equality.Saturation.Scheduler
 -- | Equality saturation with defaults
 equalitySaturation :: forall a l cost
                     . (Analysis a l, Language l, Ord cost)
-                   => Fix l               -- ^ Expression to run equality saturation on
+                   => Fix l                 -- ^ Expression to run equality saturation on
                    -> [Rewrite a l]         -- ^ List of rewrite rules
                    -> CostFunction a l cost -- ^ Cost function to extract the best equivalent representation
                    -> (Fix l, EGraph a l)   -- ^ Best equivalent expression and resulting e-graph
@@ -80,9 +80,9 @@ equalitySaturation = equalitySaturation' defaultBackoffScheduler
 -- This variant takes all arguments instead of using defaults
 equalitySaturation' :: forall a l schd cost
                     . (Analysis a l, Language l, Scheduler l schd, Ord cost)
-                    => schd                -- ^ Scheduler to use
-                    -> Fix l               -- ^ Expression to run equality saturation on
-                    -> [Rewrite a l]       -- ^ List of rewrite rules
+                    => schd                  -- ^ Scheduler to use
+                    -> Fix l                 -- ^ Expression to run equality saturation on
+                    -> [Rewrite a l]         -- ^ List of rewrite rules
                     -> CostFunction a l cost -- ^ Cost function to extract the best equivalent representation
                     -> (Fix l, EGraph a l)   -- ^ Best equivalent expression and resulting e-graph
 equalitySaturation' schd expr rewrites cost = egraph $ do
@@ -131,7 +131,7 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
 
       -- Restore the invariants once per iteration
       rebuild
-      
+
       (afterMemo, afterClasses) <- gets (\g -> (g^._memo, classes g))
 
       -- ROMES:TODO: Node limit...

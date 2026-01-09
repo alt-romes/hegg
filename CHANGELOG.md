@@ -14,6 +14,11 @@
     :: (l cost -> cost) -> CostFunction anl l cost
   ```
 
+* The library now exposes `Data.Equality.Graph.Dot` (when the `+vizdot` flag
+  is enabled), providing an easy way of exporting the equivalence classes
+  as a GraphViz DOT graph. The format is reminiscent of the output produced by
+  the `egglog` library.
+
 ## 0.6.0.0 -- 2024-07-13
 
 * Fix a soundness bug that would cause equality saturation to be broken when

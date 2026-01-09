@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+* `CostFunction`s now have access to the analysis of the node being considered
+  as well as the costs of its children:
+  ```haskell
+  type CostFunction anl l cost = anl -> l (anl, cost) -> cost
+  ```
+  Users who don't care about analysis can lift their analysis into this new
+  type using
+  ```haskell
+  Data.Equality.Extraction.costOnly
+    :: (l cost -> cost) -> CostFunction anl l cost
+  ```
+
 ## 0.6.0.0 -- 2024-07-13
 
 * Fix a soundness bug that would cause equality saturation to be broken when

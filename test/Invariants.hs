@@ -49,7 +49,7 @@ patFoldAllClasses expr i =
         _   -> False
     where
         eg :: EGraph () l
-        eg = snd $ equalitySaturation expr [VariablePattern "1":=fromInteger i] (error "Cost function shouldn't be used" :: CostFunction l Int)
+        eg = snd $ equalitySaturation expr [VariablePattern "1":=fromInteger i] (error "Cost function shouldn't be used" :: CostFunction () l Int)
 
 -- | Test 'compileToQuery'.
 --
@@ -122,7 +122,7 @@ hashConsInvariant eg =
 benchSaturate :: forall l. Language l
               => [Rewrite () l] -> (l Int -> Int) -> Fix l -> Bool
 benchSaturate rws cost expr =
-    equalitySaturation expr rws cost `seq` True
+    equalitySaturation expr rws (costOnly cost) `seq` True
 
 
 -- ROMES:TODO: Property: Extract expression after equality saturation is always better or equal to the original expression

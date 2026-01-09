@@ -34,7 +34,7 @@ module Data.Equality.Saturation
       -- ** Writing cost functions
       --
       -- | 'CostFunction' re-exported from 'Data.Equality.Extraction' since they are required to do equality saturation
-    , CostFunction --, depthCost
+    , CostFunction, costOnly --, depthCost
 
       -- ** Writing expressions
       -- 
@@ -69,7 +69,7 @@ equalitySaturation :: forall a l cost
                     . (Analysis a l, Language l, Ord cost)
                    => Fix l               -- ^ Expression to run equality saturation on
                    -> [Rewrite a l]         -- ^ List of rewrite rules
-                   -> CostFunction l cost -- ^ Cost function to extract the best equivalent representation
+                   -> CostFunction a l cost -- ^ Cost function to extract the best equivalent representation
                    -> (Fix l, EGraph a l)   -- ^ Best equivalent expression and resulting e-graph
 equalitySaturation = equalitySaturation' defaultBackoffScheduler
 
@@ -83,7 +83,7 @@ equalitySaturation' :: forall a l schd cost
                     => schd                -- ^ Scheduler to use
                     -> Fix l               -- ^ Expression to run equality saturation on
                     -> [Rewrite a l]       -- ^ List of rewrite rules
-                    -> CostFunction l cost -- ^ Cost function to extract the best equivalent representation
+                    -> CostFunction a l cost -- ^ Cost function to extract the best equivalent representation
                     -> (Fix l, EGraph a l)   -- ^ Best equivalent expression and resulting e-graph
 equalitySaturation' schd expr rewrites cost = egraph $ do
 

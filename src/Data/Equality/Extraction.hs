@@ -16,6 +16,7 @@ module Data.Equality.Extraction
 
   -- * Cost
   , CostFunction
+  , costOnly
   , depthCost
   ) where
 
@@ -42,11 +43,11 @@ import Data.Equality.Graph
 -- For a real example you might want to check out the source code of 'Data.Equality.Saturation.equalitySaturation''
 extractBest :: forall anl lang cost
              . (Language lang, Ord cost)
-            => EGraph anl lang        -- ^ The e-graph out of which we are extracting an expression
-            -> CostFunction lang cost -- ^ The cost function to define /best/
-            -> ClassId                -- ^ The e-class from which we'll extract the expression
-            -> Fix lang               -- ^ The resulting /best/ expression, in its fixed point form.
-extractBest egr cost (flip find egr -> i) = 
+            => EGraph anl lang            -- ^ The e-graph out of which we are extracting an expression
+            -> CostFunction anl lang cost -- ^ The cost function to define /best/
+            -> ClassId                    -- ^ The e-class from which we'll extract the expression
+            -> Fix lang                   -- ^ The resulting /best/ expression, in its fixed point form.
+extractBest egr cost (flip find egr -> i) =
 
     -- Use `egg`s strategy of find costs for all possible classes and then just
     -- picking up the best from the target e-class.  In practice this shouldn't
@@ -68,11 +69,11 @@ extractBest egr cost (flip find egr -> i) =
 
           {-# INLINE f #-}
           f :: (Bool, ClassIdMap (CostWithExpr lang cost)) -> Int -> EClass anl lang -> (Bool, ClassIdMap (CostWithExpr lang cost))
-          f acc@(_, beingUpdated) i' EClass{eClassNodes = nodes} =
+          f acc@(_, beingUpdated) i' EClass{eClassNodes = nodes, eClassData = anl} =
                 let
                     currentCost = IM.lookup i' beingUpdated
 
-                    newCost = S.foldl' (\c n -> case (c, nodeTotalCost beingUpdated n) of
+                    newCost = S.foldl' (\c n -> case (c, nodeTotalCost anl beingUpdated n) of
                                                   (Nothing, Nothing) -> Nothing
                                                   (Nothing, Just nc) -> Just nc
                                                   (Just oc, Nothing) -> Just oc
@@ -99,10 +100,16 @@ extractBest egr cost (flip find egr -> i) =
     -- For a node to have a cost, all its (canonical) sub-classes have a cost and
     -- an associated better expression. We return the constructed best expression
     -- with its cost
-    nodeTotalCost :: Traversable lang => ClassIdMap (CostWithExpr lang cost) -> ENode lang -> Maybe (CostWithExpr lang cost)
-    nodeTotalCost m (Node n) = do
-        expr <- traverse ((`IM.lookup` m) . flip find egr) n
-        return $ CostWithExpr (cost (fst . unCWE <$> expr), Fix $ snd . unCWE <$> expr)
+    nodeTotalCost :: Traversable lang => anl -> ClassIdMap (CostWithExpr lang cost) -> ENode lang -> Maybe (CostWithExpr lang cost)
+    nodeTotalCost anl m (Node n) = do
+        expr <- traverse lookupChildInfo n
+        return $ CostWithExpr (cost anl (fst <$> expr), Fix $ snd <$> expr)
+      where
+        lookupChildInfo cid = do
+          let cid' = find cid egr
+          CostWithExpr (c, e) <- IM.lookup cid' m
+          let childAnl = eClassData (classes egr IM.! cid')
+          return ((childAnl, c), e)
     {-# INLINE nodeTotalCost #-}
 {-# INLINABLE extractBest #-}
 
@@ -116,20 +123,33 @@ extractBest egr cost (flip find egr -> i) =
 --
 -- === Example
 -- @
--- symCost :: Expr Int -> Int
--- symCost = \case
+-- -- Cost function ignoring analysis (using costOnly helper)
+-- symCost :: CostFunction anl Expr Int
+-- symCost = costOnly $ \\case
 --     BinOp Integral e1 e2 -> e1 + e2 + 20000
 --     BinOp Diff e1 e2 -> e1 + e2 + 500
 --     BinOp x e1 e2 -> e1 + e2 + 3
 --     UnOp x e1 -> e1 + 30
 --     Sym _ -> 1
 --     Const _ -> 1
+--
+-- -- Cost function using analysis of current node and children
+-- analysisCost :: CostFunction MyAnalysis Expr Int
+-- analysisCost myAnl = \\case
+--     BinOp x (anl1, c1) (anl2, c2) -> c1 + c2 + someFunc myAnl anl1 anl2
+--     ...
 -- @
-type CostFunction l cost = l cost -> cost
+type CostFunction anl l cost = anl -> l (anl, cost) -> cost
+
+-- | Lift a cost function that only cares about costs (ignoring analysis data)
+-- to a full 'CostFunction'.
+costOnly :: Functor l => (l cost -> cost) -> CostFunction anl l cost
+costOnly f _ = f . fmap snd
+{-# INLINE costOnly #-}
 
 -- | Simple cost function: the deeper the expression, the bigger the cost
-depthCost :: Language l => CostFunction l Int
-depthCost = (+1) . sum
+depthCost :: Language l => CostFunction anl l Int
+depthCost _ = (+1) . sum . fmap snd
 {-# INLINE depthCost #-}
 
 -- | Find the current best node and its cost in an equivalence class given only the class and the current extraction

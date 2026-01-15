@@ -138,13 +138,19 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
       -- ROMES:TODO: Actual Timeout... not just iteration timeout
       -- ROMES:TODO Better saturation (see Runner)
       -- Apply rewrites until saturated or ROMES:TODO: timeout
-      let saturated = G.sizeNM afterMemo == G.sizeNM beforeMemo
-            && IM.size afterClasses == IM.size beforeClasses
-      let haveBannedRules = not (IM.null newStats) && any (isBanned @l @schd i) newStats
+      let structChanged = G.sizeNM afterMemo /= G.sizeNM beforeMemo
+                       || IM.size afterClasses /= IM.size beforeClasses
+          saturated = not structChanged
+          -- Only consider retrying if no rules matched at all (likely because
+          -- they're all banned). If rules matched but didn't add new structure,
+          -- unbanning more rules probably won't help.
+          noRulesMatched = null matches
+          haveBannedRules = not (IM.null newStats) && any (isBanned @l @schd i) newStats
       if
-          -- If we reached a fixed point but have banned rules, reset them and
-          -- try once more
-         | saturated && haveBannedRules ->
+          -- If we saturated because no rules matched and we have banned rules,
+          -- unban them and try once more. This handles the case where all
+          -- applicable rules got banned before they could finish their work.
+         | saturated && noRulesMatched && haveBannedRules ->
              runEqualitySaturation' (i+1) mempty  -- Reset stats to unban all rules
           -- We have reached true saturation. We are done.
          | saturated -> return ()

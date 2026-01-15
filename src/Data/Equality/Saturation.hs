@@ -123,7 +123,7 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
       -- With backoff scheduler
       -- ROMES:TODO parMap with chunks
       let (!matches, newStats) = mconcat (fmap (\(rw_id,rw) ->
-            let (ms, ss, vss) = matchWithScheduler db i stats rw_id rw
+            let (ms, ss, vss) = matchWithScheduler egr db i stats rw_id rw
              in (map (\m -> (rw,m,vss)) ms, ss)) (zip [1..] rewrites))
 
       -- Write-only phase, temporarily break invariants
@@ -157,11 +157,18 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
           -- There's more to be done.
          | otherwise -> runEqualitySaturation' (i+1) newStats
 
-  matchWithScheduler :: Database l -> Int -> IM.IntMap (Stat l schd) -> Int -> Rewrite a l
+  -- | Match a rewrite rule against the e-graph database.
+  -- For conditional rewrites, we accumulate all conditions and filter matches
+  -- by them BEFORE updating scheduler stats. This ensures the backoff scheduler
+  -- only counts matches that would actually result in rewrites being applied.
+  matchWithScheduler :: G.EGraph a l -> Database l -> Int -> IM.IntMap (Stat l schd) -> Int -> Rewrite a l
                      -> ([Match], IM.IntMap (Stat l schd), VarsState {- the vars mapping resulting from compiling the query -})
-  matchWithScheduler db i stats rw_id rw = case rw of
-      rw' :| _ -> matchWithScheduler db i stats rw_id rw'
-      lhs := _ -> do
+  matchWithScheduler egr db i stats rw_id rw = go [] rw
+    where
+      -- Accumulate conditions while recursing through conditional rewrites
+      go :: [RewriteCondition a l] -> Rewrite a l -> ([Match], IM.IntMap (Stat l schd), VarsState)
+      go conds (rw' :| cond) = go (cond:conds) rw'
+      go conds (lhs := _) = do
           let (lhs_query, varsState) = compileToQuery lhs
 
           case IM.lookup rw_id stats of
@@ -175,10 +182,22 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
                 -- Match pattern
                 let matches' = ematch db lhs_query -- Add rewrite to the e-match substitutions
 
-                -- Some scheduler: update stats
-                let newStats = updateStats schd i rw_id rw x stats matches'
+                -- Filter by all accumulated conditions BEFORE updating stats.
+                -- This is critical: the backoff scheduler should only count
+                -- matches where conditions actually pass, not all structural matches.
+                let filteredMatches = case conds of
+                      [] -> matches'  -- No conditions, use all matches
+                      _  -> filter (matchSatisfiesConditions varsState conds) matches'
 
-                (matches', newStats, varsState)
+                -- Some scheduler: update stats on FILTERED matches
+                let newStats = updateStats schd i rw_id rw x stats filteredMatches
+
+                (filteredMatches, newStats, varsState)
+
+      -- Check if a match satisfies ALL accumulated conditions
+      matchSatisfiesConditions :: VarsState -> [RewriteCondition a l] -> Match -> Bool
+      matchSatisfiesConditions vss conds (Match subst _) =
+          all (\cond -> cond vss subst egr) conds
 
   applyMatchesRhs :: (Rewrite a l, Match, VarsState) -> EGraphM a l ()
   applyMatchesRhs =

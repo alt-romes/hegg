@@ -13,11 +13,15 @@ import Data.Equality.Utils
 import Data.Equality.Matching
 import Data.Equality.Saturation
 import Data.Equality.Saturation.Scheduler
+import Data.Equality.Graph (Language(..))
 
 data SymExpr a = Const Double
                | Symbol String
                | a :+: a
                deriving (Functor, Foldable, Traversable, Eq, Ord, Show)
+
+instance Language SymExpr
+
 infix 6 :+:
 
 -- | Test that banned rules get retried when no other rules can match (#45).

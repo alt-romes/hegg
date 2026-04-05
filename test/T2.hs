@@ -11,6 +11,7 @@ import Test.Tasty.HUnit
 import Data.Equality.Matching
 import Data.Equality.Extraction
 import Data.Equality.Saturation
+import Data.Equality.Graph (Language(..))
 
 data Lang a = And a a
             | Or a a
@@ -18,6 +19,8 @@ data Lang a = And a a
             | ToElim a
             | Sym Int
             deriving (Functor, Foldable, Traversable, Eq, Ord, Show)
+
+instance Language Lang
 
 x, y :: Pattern Lang
 x = "x"

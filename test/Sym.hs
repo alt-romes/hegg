@@ -43,6 +43,9 @@ data Expr a = Sym   !String
                      , Functor, Foldable, Traversable
                      , Generic
                      )
+
+instance Language Expr
+
 data BOp = Add
          | Sub
          | Mul

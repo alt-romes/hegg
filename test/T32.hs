@@ -21,6 +21,9 @@ import Data.Equality.Graph.Monad
 data SymExpr a = Symbol String
                | a :+: a
                deriving (Functor, Foldable, Traversable, Eq, Ord, Show)
+
+instance Language SymExpr
+
 infix 6 :+:
 
 -- This test tests that using "VariablePattern 1, VariablePattern 2,

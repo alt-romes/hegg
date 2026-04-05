@@ -33,6 +33,9 @@ data Expr a = Const Int
             | Special         -- The node that the condition checks for
             | a :+: a
             deriving (Functor, Foldable, Traversable, Eq, Ord, Show)
+
+instance Language Expr
+
 infix 6 :+:
 
 cost :: CostFunction anl Expr Int

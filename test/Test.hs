@@ -19,6 +19,7 @@ import qualified T2
 import qualified T3
 import qualified T45
 import qualified T51
+import qualified AC
 # ifdef VIZDOT
 import qualified VizDot
 # endif
@@ -36,6 +37,7 @@ tests =testGroup "Tests"
     , testCase "T2" (T2.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
     , testCase "T3" (T3.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
     , testT32
+    , AC.acTests
 # ifdef VIZDOT
       , testCase "e-graph visualization" VizDot.visualizeSaturatedEGraph
 # endif

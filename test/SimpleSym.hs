@@ -23,6 +23,9 @@ data SymExpr a = Const Double
                | a :*: a
                | a :/: a
                deriving (Functor, Foldable, Traversable, Eq, Ord, Show)
+
+instance Language SymExpr
+
 infix 6 :+:
 infix 7 :*:, :/:
 

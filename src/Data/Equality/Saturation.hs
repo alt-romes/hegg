@@ -24,7 +24,7 @@
 module Data.Equality.Saturation
     (
       -- * Equality saturation
-      equalitySaturation, equalitySaturation', runEqualitySaturation
+      equalitySaturation, equalitySaturation', runEqualitySaturation, runEqualitySaturationN
 
       -- * Re-exports for equality saturation
 
@@ -106,13 +106,21 @@ runEqualitySaturation :: forall a l schd
                       => schd                -- ^ Scheduler to use
                       -> [Rewrite a l]       -- ^ List of rewrite rules
                       -> EGraphM a l ()
-runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- Start at iteration 0
+runEqualitySaturation = runEqualitySaturationN 30
 
-  -- Take map each rewrite rule to stats on its usage so we can do
-  -- backoff scheduling. Each rewrite rule is assigned an integer
-  -- (corresponding to its position in the list of rewrite rules)
+-- | Like 'runEqualitySaturation' but with a configurable iteration limit.
+-- TODO: mchavinda - this should be the job of the scheduler but we implement this to unblock
+-- symbolic-regression.
+runEqualitySaturationN :: forall a l schd
+                        . (Analysis a l, Language l, Scheduler l schd)
+                       => Int                 -- ^ Maximum number of iterations
+                       -> schd                -- ^ Scheduler to use
+                       -> [Rewrite a l]       -- ^ List of rewrite rules
+                       -> EGraphM a l ()
+runEqualitySaturationN maxIter schd rewrites = runEqualitySaturation' 0 mempty where
+
   runEqualitySaturation' :: Int -> IM.IntMap (Stat l schd) -> EGraphM a l ()
-  runEqualitySaturation' 30 _ = return () -- Stop after X iterations
+  runEqualitySaturation' i _ | i >= maxIter = return ()
   runEqualitySaturation' i stats = do
 
       egr <- get
@@ -262,5 +270,5 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
   -- | Represent an expression (Fix l) in the e-graph
   reprExpr :: Fix l -> EGraphM a l ClassId
   reprExpr (Fix e) = add . Node =<< traverse reprExpr e
-{-# INLINEABLE runEqualitySaturation #-}
+{-# INLINEABLE runEqualitySaturationN #-}
 

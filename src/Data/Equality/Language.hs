@@ -6,7 +6,6 @@
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DefaultSignatures #-}
 {-|
 
 Defines 'Language', which is the required constraint on /expressions/ that are

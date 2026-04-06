@@ -12,6 +12,7 @@ module Data.Equality.Graph.Monad
     egraph
   , represent
   , add
+  , addWithNorm
   , merge
   , rebuild
   , EG.canonicalize
@@ -75,6 +76,14 @@ represent = cata $ sequence >=> add . Node
 add :: (Analysis anl l, Language l) => ENode l -> EGraphM anl l ClassId
 add = StateT . fmap pure . EG.add
 {-# INLINE add #-}
+
+-- | Like 'add' but with a custom context-aware normalization function.
+-- See 'EG.addWithNorm' for details.
+addWithNorm :: (Analysis anl l, Language l)
+            => (l ClassId -> EGraph anl l -> (l ClassId, EGraph anl l))
+            -> ENode l -> EGraphM anl l ClassId
+addWithNorm normCtx = StateT . fmap pure . EG.addWithNorm normCtx
+{-# INLINE addWithNorm #-}
 
 -- | Merge two e-classes by id
 --

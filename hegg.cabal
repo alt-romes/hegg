@@ -76,6 +76,7 @@ library
                       Data.Equality.Graph.Classes.Id,
                       Data.Equality.Graph.Nodes,
                       Data.Equality.Graph.Lens,
+                      Data.Equality.Graph.Poly,
                       Data.Equality.Graph.Monad,
                       Data.Equality.Matching,
                       Data.Equality.Matching.Database,

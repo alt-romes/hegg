@@ -47,12 +47,18 @@ import Prelude hiding (lookup)
 
 import Data.Function
 import Data.Foldable (foldlM)
+import Data.List (foldl')
 import Data.Bifunctor
 import Data.Containers.ListUtils
 
 import Control.Monad
 import Control.Monad.Trans.Class
-import Control.Monad.Trans.State
+-- Strict StateT: the lazy variant let `>>=` continuations accumulate as
+-- thunk chains during long-running rebuild / saturation runs. Switching
+-- here doesn't change semantics for any caller because every consumer of
+-- this module's state-monad helpers expects `s >>= k` to evaluate `s`
+-- before `k`.
+import Control.Monad.Trans.State.Strict
 import Control.Exception (assert)
 
 import qualified Data.IntMap.Strict as IM
@@ -261,13 +267,18 @@ rebuild (EGraph uf cls mm wl awl) =
   -- empty worklists
   -- repair deduplicated e-classes
   let
-    emptiedEgr = EGraph uf cls mm mempty mempty
+    !emptiedEgr = EGraph uf cls mm mempty mempty
 
-    wl'   = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> wl
-    egr'  = foldr repair emptiedEgr wl'
+    !wl'   = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> wl
+    -- Strict left fold so per-worklist-entry repairs don't accumulate
+    -- as a deferred chain of EGraph updates. The previous foldr left a
+    -- thunk chain in let-bindings that survived across saturation
+    -- iterations and rebuild recursion, contributing significantly to
+    -- STG-stack growth in long-running GP loops.
+    !egr'  = foldl' (flip repair) emptiedEgr wl'
 
-    awl'  = nubIntOn fst $ first (`find` egr') <$> awl
-    egr'' = foldr repairAnal egr' awl'
+    !awl'  = nubIntOn fst $ first (`find` egr') <$> awl
+    !egr'' = foldl' (flip repairAnal) egr' awl'
   in
   -- Loop until worklist is completely empty
   if null (worklist egr'') && null (analysisWorklist egr'')
@@ -480,15 +491,17 @@ rebuildM :: forall a l m. (AM.AnalysisM m a l, Language l) => EGraph a l -> m (E
 rebuildM (EGraph uf cls mm wl awl) = do
   -- Canonical implementation is rebuild, this is just the monadic variant of it
   let
-    emptiedEgr = EGraph uf cls mm mempty mempty
+    !emptiedEgr = EGraph uf cls mm mempty mempty
 
-    wl' = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> wl
+    !wl' = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> wl
 
-  egr'  <- foldlM (flip repairM) emptiedEgr wl'
+  -- Force the intermediate egraph after each fold so per-worklist-entry
+  -- monadic repairs don't accumulate as continuation closures.
+  !egr'  <- foldlM (flip repairM) emptiedEgr wl'
 
-  let awl' = nubIntOn fst $ first (`find` egr') <$> awl
+  let !awl' = nubIntOn fst $ first (`find` egr') <$> awl
 
-  egr'' <- foldlM (flip repairAnalM) egr' awl'
+  !egr'' <- foldlM (flip repairAnalM) egr' awl'
 
   if null (worklist egr'') && null (analysisWorklist egr'')
      then return egr''

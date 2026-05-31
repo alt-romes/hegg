@@ -131,7 +131,7 @@ runEqualitySaturationN maxIter schd rewrites = runEqualitySaturation' 0 mempty w
       -- Read-only phase, invariants are preserved
       -- With backoff scheduler
       -- ROMES:TODO parMap with chunks
-      let (!matches, newStats) = mconcat (fmap (\(rw_id,rw) ->
+      let (!matches, !newStats) = mconcat (fmap (\(rw_id,rw) ->
             let (ms, ss, vss) = matchWithScheduler egr db i stats rw_id rw
              in (map (\m -> (rw,m,vss)) ms, ss)) (zip [1..] rewrites))
 
@@ -141,7 +141,10 @@ runEqualitySaturationN maxIter schd rewrites = runEqualitySaturation' 0 mempty w
       -- Restore the invariants once per iteration
       rebuild
 
-      (afterMemo, afterClasses) <- gets (\g -> (g^._memo, classes g))
+      -- Force the post-rebuild e-graph snapshot so that the structural
+      -- comparison below evaluates immediately rather than as a thunk
+      -- chain stretched across this iteration's recursive call.
+      !(afterMemo, afterClasses) <- gets (\g -> (g^._memo, classes g))
 
       -- ROMES:TODO: Node limit...
       -- ROMES:TODO: Actual Timeout... not just iteration timeout
@@ -155,6 +158,11 @@ runEqualitySaturationN maxIter schd rewrites = runEqualitySaturation' 0 mempty w
           -- unbanning more rules probably won't help.
           noRulesMatched = null matches
           haveBannedRules = not (IM.null newStats) && any (isBanned @l @schd i) newStats
+      -- Force the e-graph state to fully evaluate before recursing into
+      -- the next iteration. Without this the apply-match + rebuild
+      -- updates accumulate as deferred state mutations across iterations,
+      -- producing the STG-stack growth observed in long-running GP loops.
+      modify (\s -> s `seq` s)
       if
           -- If we saturated because no rules matched and we have banned rules,
           -- unban them and try once more. This handles the case where all

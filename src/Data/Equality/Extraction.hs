@@ -14,6 +14,7 @@ import qualified Data.IntSet as IS
 import qualified Data.IntMap.Strict as IM
 
 import Control.Applicative ((<|>))
+import Data.Foldable (foldl')
 import Data.Equality.Graph.Internal (EGraph(classes))
 import Data.Equality.Utils
 import Data.Equality.Graph

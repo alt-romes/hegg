@@ -45,6 +45,8 @@ data Lambda a
              , Functor, Foldable, Traversable
              )
 
+instance Language Lambda
+
 evalL :: Lambda (Maybe (Lambda ())) -> Maybe (Lambda ())
 evalL = \case
     Bool n -> Just (Bool n)

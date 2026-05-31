@@ -8,6 +8,7 @@ module Computed where
 import Prelude hiding (not)
 
 import Test.Tasty.HUnit
+import Data.Equality.Graph (Language(..))
 import Data.Equality.Graph.Nodes (ENode(..))
 import Data.Equality.Matching (Pattern, pat)
 import Data.Equality.Extraction
@@ -20,6 +21,8 @@ import qualified Data.Set as S
 data Lang a = Add a a
             | Lit Int
             deriving (Functor, Foldable, Traversable, Eq, Ord, Show)
+
+instance Language Lang
 
 x, y :: Pattern Lang
 x = "x"

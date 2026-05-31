@@ -20,6 +20,8 @@ data Lang a = And a a
             | Sym Int
             deriving (Functor, Foldable, Traversable, Eq, Ord, Show)
 
+instance Language Lang
+
 main :: IO ()
 main = do
   let _ = EGM.egraph @Lang @() $ do

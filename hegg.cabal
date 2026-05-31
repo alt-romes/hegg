@@ -76,6 +76,7 @@ library
                       Data.Equality.Graph.Classes.Id,
                       Data.Equality.Graph.Nodes,
                       Data.Equality.Graph.Lens,
+                      Data.Equality.Graph.Poly,
                       Data.Equality.Graph.Monad,
                       Data.Equality.Matching,
                       Data.Equality.Matching.Database,
@@ -109,6 +110,13 @@ library
     hs-source-dirs:   src
     default-language: Haskell2010
 
+executable multiset-example
+    default-language: Haskell2010
+    hs-source-dirs:   examples
+    main-is:          Multiset.hs
+    build-depends:    base, hegg, containers
+    ghc-options:      -Wall
+
 test-suite hegg-test
     ghc-options:      -Wall
                       -- -finfo-table-map -fdistinct-constructor-tables
@@ -117,7 +125,7 @@ test-suite hegg-test
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          Test.hs
-    other-modules:    Computed, Invariants, Sym, Lambda, SimpleSym,
+    other-modules:    AC, Computed, Invariants, Sym, Lambda, SimpleSym,
                       T1, T2, T3, T32, T45, T51
     if flag(vizdot)
         other-modules: VizDot
@@ -134,7 +142,7 @@ test-suite hegg-test
 benchmark hegg-bench
   default-language: Haskell2010
   hs-source-dirs: test
-  other-modules:  Invariants, Sym, Lambda, SimpleSym
+  other-modules:  AC, Invariants, Sym, Lambda, SimpleSym
   main-is:        Bench.hs
   type:           exitcode-stdio-1.0
   build-depends:  base, hegg,

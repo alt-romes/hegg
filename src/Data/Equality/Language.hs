@@ -20,16 +20,23 @@ data Expr a = Sym String
             deriving ( Eq, Ord, Functor
                      , Foldable, Traversable)
 
-instance Eq1 Expr  where
-    ...
-instance Ord1 Expr where
-    ...
+instance Language Expr
+
+-- For a language with associative-commutative operators, override
+-- 'normalizeNode' to sort children:
+--
+-- @
+-- data ACExpr a = Var String | Add [a] | Mul [a]
+--   deriving (Eq, Ord, Functor, Foldable, Traversable)
+--
+-- instance Language ACExpr where
+--     normalizeNode (Add xs) = Add (sort xs)
+--     normalizeNode (Mul xs) = Mul (sort xs)
+--     normalizeNode other    = other
+-- @
 
 instance Analysis Expr where
     ...
-
--- meaning we satisfy all other constraints and Expr is! a language
-instance Language Expr
 
 @
 -}
@@ -45,7 +52,24 @@ import Data.Kind
 -- e-graphs), note that it must satisfy the other class constraints. In
 -- particular an 'Data.Equality.Analysis.Analysis' must be defined for the
 -- language.
+--
+-- For languages with associative-commutative operators, override
+-- 'normalizeNode' to sort children of those operators. This gives multiset
+-- canonicalization through the standard @Ord@-based memo map, avoiding the
+-- need for commutativity\/associativity rewrite rules (which cause e-graph
+-- size blowup).
 type Language :: (Type -> Type) -> Constraint
-class (∀ a. Ord a => Ord (l a), Traversable l) => Language l
-instance (∀ a. Ord a => Ord (l a), Traversable l) => Language l
+class (∀ a. Ord a => Ord (l a), Traversable l) => Language l where
+
+    -- | Normalize an e-node after canonicalization. Called after children are
+    -- remapped to canonical class IDs via @fmap find@. Use this to sort
+    -- children of associative-commutative operators, giving multiset
+    -- equality through the standard @Ord@-based memo map.
+    --
+    -- Must be idempotent: @normalizeNode . normalizeNode = normalizeNode@
+    --
+    -- Default: identity (no normalization).
+    normalizeNode :: Ord a => l a -> l a
+    normalizeNode = id
+    {-# INLINE normalizeNode #-}
 

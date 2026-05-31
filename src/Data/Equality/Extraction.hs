@@ -1,162 +1,112 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE MonoLocalBinds #-}
-{-|
-   Given an e-graph representing expressions of our language, we might want to
-   extract, out of all expressions represented by some equivalence class, /the best/
-   expression (according to a 'CostFunction') represented by that class
-
-   The function 'extractBest' allows us to do exactly that: get the best
-   expression represented in an e-class of an e-graph given a 'CostFunction'
- -}
+{-# LANGUAGE BangPatterns #-}
 module Data.Equality.Extraction
-  (
-  -- * Extraction
-    extractBest
-
-  -- * Cost
+  ( extractBest
   , CostFunction
   , costOnly
   , depthCost
   ) where
 
 import qualified Data.Set as S
+import qualified Data.IntSet as IS
 import qualified Data.IntMap.Strict as IM
 
+import Control.Applicative ((<|>))
+import Data.Foldable (foldl')
 import Data.Equality.Graph.Internal (EGraph(classes))
 import Data.Equality.Utils
 import Data.Equality.Graph
 
--- vvvv and necessarily all the best sub-expressions from children equilalence classes
+{-|
 
--- | Extract the /best/ expression from an equivalence class according to a
--- 'CostFunction'
---
--- @
--- (i, egr) = ...
---    i <- represent expr
---            ...
---
--- bestExpr = extractBest egr 'depthCost' i
--- @
---
--- For a real example you might want to check out the source code of 'Data.Equality.Saturation.equalitySaturation''
+Extraction of the /best/ expression from an e-class according to a
+'CostFunction'.
+
+Uses a two-phase approach:
+
+1. __Reachability__: walk down from the target class to find all classes
+  that could contribute to the extracted expression.
+2. __Fixed-point costing__: run the iterative DP only over the reachable
+  subset, skipping the (often much larger) set of unreachable classes.
+
+ -}
 extractBest :: forall anl lang cost
              . (Language lang, Ord cost)
-            => EGraph anl lang            -- ^ The e-graph out of which we are extracting an expression
-            -> CostFunction anl lang cost -- ^ The cost function to define /best/
-            -> ClassId                    -- ^ The e-class from which we'll extract the expression
-            -> Fix lang                   -- ^ The resulting /best/ expression, in its fixed point form.
-extractBest egr cost (flip find egr -> i) =
-
-    -- Use `egg`s strategy of find costs for all possible classes and then just
-    -- picking up the best from the target e-class.  In practice this shouldn't
-    -- find the cost of unused nodes because the "topmost" e-class will be the
-    -- target, and all sub-classes must be calculated?
-    let allCosts = findCosts (classes egr) mempty
-
-     in case findBest i allCosts of
-        Just (CostWithExpr (_,n)) -> n
-        Nothing    -> error $ "Couldn't find a best node for e-class " <> show i
-
+            => EGraph anl lang
+            -> CostFunction anl lang cost
+            -> ClassId
+            -> Fix lang
+extractBest egr cost (flip find egr -> root) =
+    let !reachable = reachableFrom root IS.empty
+        !reachableCls = IM.restrictKeys cls reachable
+        !allCosts = findCosts reachableCls IM.empty
+    in case IM.lookup root allCosts of
+         Just (CostWithExpr (_, e)) -> e
+         Nothing -> error $ "extractBest: couldn't extract e-class " <> show root
   where
+    !cls = classes egr
 
-    -- | Find the lowest cost of all e-classes in an e-graph in an extraction
-    findCosts :: ClassIdMap (EClass anl lang) -> ClassIdMap (CostWithExpr lang cost) -> ClassIdMap (CostWithExpr lang cost)
+    reachableFrom :: ClassId -> IS.IntSet -> IS.IntSet
+    reachableFrom (flip find egr -> cid) !visited
+        | IS.member cid visited = visited
+        | otherwise = case IM.lookup cid cls of
+            Nothing -> visited
+            Just EClass{eClassNodes = nodes} ->
+                let !visited' = IS.insert cid visited
+                in S.foldl' (\v (Node n) -> foldl' (flip reachableFrom) v n)
+                            visited' nodes
+
+    -- Fixed-point iteration over a (small) subset of classes
+    findCosts :: ClassIdMap (EClass anl lang)
+              -> ClassIdMap (CostWithExpr lang cost)
+              -> ClassIdMap (CostWithExpr lang cost)
     findCosts eclasses current =
-
-      let (modified, updated) = IM.foldlWithKey f (False, current) eclasses
-
-          {-# INLINE f #-}
-          f :: (Bool, ClassIdMap (CostWithExpr lang cost)) -> Int -> EClass anl lang -> (Bool, ClassIdMap (CostWithExpr lang cost))
-          f acc@(_, beingUpdated) i' EClass{eClassNodes = nodes, eClassData = anl} =
-                let
-                    currentCost = IM.lookup i' beingUpdated
-
-                    newCost = S.foldl' (\c n -> case (c, nodeTotalCost anl beingUpdated n) of
-                                                  (Nothing, Nothing) -> Nothing
-                                                  (Nothing, Just nc) -> Just nc
-                                                  (Just oc, Nothing) -> Just oc
-                                                  (Just oc, Just nc) -> Just (oc `min` nc)
-                                       ) Nothing nodes
-                    -- Current cost + get lowest cost and corresponding node of an e-class if possible
-                 in case (currentCost, newCost) of
-
-                    (Nothing, Just new) -> (True, IM.insert i' new beingUpdated)
-
-                    (Just (CostWithExpr old), Just (CostWithExpr new))
-                      | fst new < fst old -> (True, IM.insert i' (CostWithExpr new) beingUpdated)
-
-                    _ -> acc
-
-        -- If any class was modified, loop
-       in if modified
-            then findCosts eclasses updated
-            else updated
-
-    -- | Get the total cost of a node in an e-graph if possible at this stage of
-    -- the extraction
-    --
-    -- For a node to have a cost, all its (canonical) sub-classes have a cost and
-    -- an associated better expression. We return the constructed best expression
-    -- with its cost
-    nodeTotalCost :: Traversable lang => anl -> ClassIdMap (CostWithExpr lang cost) -> ENode lang -> Maybe (CostWithExpr lang cost)
-    nodeTotalCost anl m (Node n) = do
-        expr <- traverse lookupChildInfo n
-        return $ CostWithExpr (cost anl (fst <$> expr), Fix $ snd <$> expr)
+        let (!modified, !updated) = IM.foldlWithKey' f (False, current) eclasses
+        in if modified then findCosts eclasses updated else updated
       where
-        lookupChildInfo cid = do
-          let cid' = find cid egr
-          CostWithExpr (c, e) <- IM.lookup cid' m
-          let childAnl = eClassData (classes egr IM.! cid')
-          return ((childAnl, c), e)
+        {-# INLINE f #-}
+        f (!changed, !m) i' EClass{eClassNodes = nodes, eClassData = anl} =
+            let !newCost = S.foldl' (\c n -> minMaybe c (nodeTotalCost anl m n)) Nothing nodes
+            in case (IM.lookup i' m, newCost) of
+                 (Nothing, Just new) -> (True, IM.insert i' new m)
+                 (Just (CostWithExpr old), Just (CostWithExpr new))
+                   | fst new < fst old -> (True, IM.insert i' (CostWithExpr new) m)
+                 _ -> (changed, m)
+
+    nodeTotalCost :: anl -> ClassIdMap (CostWithExpr lang cost)
+                  -> ENode lang -> Maybe (CostWithExpr lang cost)
+    nodeTotalCost anl m (Node n) = do
+        expr <- traverse lookupChild n
+        return $! CostWithExpr { unCWE = (cost anl (fst <$> expr), Fix { unFix = snd <$> expr }) }
+      where
+        lookupChild cid = do
+            let !cid' = find cid egr
+            (!c, !e) <- unCWE <$> IM.lookup cid' m
+            let !childAnl = eClassData (cls IM.! cid')
+            return ((childAnl, c), e)
     {-# INLINE nodeTotalCost #-}
+
+    minMaybe :: Ord a => Maybe a -> Maybe a -> Maybe a
+    minMaybe (Just a) (Just b) = Just (min a b)
+    minMaybe a b = a <|> b
+    {-# INLINE minMaybe #-}
 {-# INLINABLE extractBest #-}
 
--- | A cost function is used to attribute a cost to representations in the
--- e-graph and to extract the best one.
---
--- The cost function is polymorphic over the type used for the cost, however
--- @cost@ must instance 'Ord' in order for the defined 'CostFunction' to
--- fulfill its purpose. That's why we have an @Ord cost@ constraint in
--- 'Data.Equality.Saturation.equalitySaturation' and 'extractBest'
---
--- === Example
--- @
--- -- Cost function ignoring analysis (using costOnly helper)
--- symCost :: CostFunction anl Expr Int
--- symCost = costOnly $ \\case
---     BinOp Integral e1 e2 -> e1 + e2 + 20000
---     BinOp Diff e1 e2 -> e1 + e2 + 500
---     BinOp x e1 e2 -> e1 + e2 + 3
---     UnOp x e1 -> e1 + 30
---     Sym _ -> 1
---     Const _ -> 1
---
--- -- Cost function using analysis of current node and children
--- analysisCost :: CostFunction MyAnalysis Expr Int
--- analysisCost myAnl = \\case
---     BinOp x (anl1, c1) (anl2, c2) -> c1 + c2 + someFunc myAnl anl1 anl2
---     ...
--- @
+-- | A cost function attributes a cost to e-node representations in the
+-- e-graph.  @cost@ must instance 'Ord'.
 type CostFunction anl l cost = anl -> l (anl, cost) -> cost
 
--- | Lift a cost function that only cares about costs (ignoring analysis data)
--- to a full 'CostFunction'.
+-- | Lift a cost function that ignores analysis data.
 costOnly :: Functor l => (l cost -> cost) -> CostFunction anl l cost
 costOnly f _ = f . fmap snd
 {-# INLINE costOnly #-}
 
--- | Simple cost function: the deeper the expression, the bigger the cost
+-- | Simple depth cost.
 depthCost :: Language l => CostFunction anl l Int
 depthCost _ = (+1) . sum . fmap snd
 {-# INLINE depthCost #-}
-
--- | Find the current best node and its cost in an equivalence class given only the class and the current extraction
--- This is not necessarily the best node in the e-graph, only the best in the current extraction state
-findBest :: ClassId -> ClassIdMap (CostWithExpr lang a) -> Maybe (CostWithExpr lang a)
-findBest = IM.lookup
-{-# INLINE findBest #-}
 
 newtype CostWithExpr lang a = CostWithExpr { unCWE :: (a, Fix lang) }
 
@@ -167,4 +117,3 @@ instance Eq a => Eq (CostWithExpr lang a) where
 instance Ord a => Ord (CostWithExpr lang a) where
   compare (CostWithExpr (a,_)) (CostWithExpr (b,_)) = a `compare` b
   {-# INLINE compare #-}
-

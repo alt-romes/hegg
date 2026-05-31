@@ -22,6 +22,8 @@ data TreeF a = VarF Int
              | LogF a
                deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
+instance Language TreeF
+
 instance Num (Fix TreeF) where
   l + r = Fix $ AddF l r
   l - r = Fix $ SubF l r

@@ -37,6 +37,8 @@ type role SimpleExpr nominal
 newtype SimpleExpr l = SE (Expr l)
     deriving (Functor, Foldable, Traversable, Show, Eq, Ord)
 
+instance Language SimpleExpr
+
 -- | When a rewrite of type "x":=c where x is a pattern variable and c is a
 -- constant is used in equality saturation of any expression, all e-classes
 -- should be merged into a single one, since all classes are equal to c and

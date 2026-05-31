@@ -6,7 +6,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TupleSections #-}
-{-# OPTIONS_GHC -ddump-to-file -ddump-simpl #-}
 {-|
    An e-graph efficiently represents a congruence relation over many expressions.
 
@@ -18,7 +17,7 @@ module Data.Equality.Graph
       EGraph
 
       -- ** E-graph transformations
-    , represent, add, merge, rebuild
+    , represent, add, addWithNorm, merge, rebuild
     -- , repair, repairAnal
 
       -- ** Querying
@@ -48,12 +47,18 @@ import Prelude hiding (lookup)
 
 import Data.Function
 import Data.Foldable (foldlM)
+import Data.List (foldl')
 import Data.Bifunctor
 import Data.Containers.ListUtils
 
 import Control.Monad
 import Control.Monad.Trans.Class
-import Control.Monad.Trans.State
+-- Strict StateT: the lazy variant let `>>=` continuations accumulate as
+-- thunk chains during long-running rebuild / saturation runs. Switching
+-- here doesn't change semantics for any caller because every consumer of
+-- this module's state-monad helpers expects `s >>= k` to evaluate `s`
+-- before `k`.
+import Control.Monad.Trans.State.Strict
 import Control.Exception (assert)
 
 import qualified Data.IntMap.Strict as IM
@@ -83,28 +88,47 @@ import Data.Equality.Utils
 represent :: forall a l. (Analysis a l, Language l) => Fix l -> EGraph a l -> (ClassId, EGraph a l)
 represent = cata (flip $ \e -> uncurry add . first Node . (`runState` e) . traverse (gets >=> \(x,e') -> x <$ put e'))
 
+-- | Default context-aware normalization: identity (no additional transform).
+-- The node is already canonicalized and normalized by 'canonicalize' before
+-- this is called; override via 'addWithNorm' for context-aware transforms.
+defaultNormalizeInContext :: l ClassId -> EGraph a l -> (l ClassId, EGraph a l)
+defaultNormalizeInContext node eg = (node, eg)
+{-# INLINE defaultNormalizeInContext #-}
+
 -- | Add an e-node to the e-graph
 --
 -- If the e-node is already represented in this e-graph, the class-id of the
 -- class it's already represented in will be returned.
 add :: forall a l. (Analysis a l, Language l) => ENode l -> EGraph a l -> (ClassId, EGraph a l)
-add uncanon_e egr =
-    let !new_en = canonicalize uncanon_e egr
+add = addWithNorm defaultNormalizeInContext
+{-# INLINE add #-}
 
-     in case lookupNM new_en (memo egr) of
-      Just canon_enode_id -> (find canon_enode_id egr, egr)
+-- | Like 'add' but with a custom context-aware normalization function.
+-- The callback runs after 'canonicalize' (which already applies @normalizeNode@
+-- and @fmap find@) and can inspect the e-graph to create intermediate nodes
+-- (e.g., flattening AC chains, eliminating Sub\/Div).
+-- @normalizeNode@ is re-applied after the callback to ensure the memo invariant.
+-- Must not call 'merge' — only create new nodes via 'add'.
+addWithNorm :: forall a l. (Analysis a l, Language l)
+            => (l ClassId -> EGraph a l -> (l ClassId, EGraph a l))
+            -> ENode l -> EGraph a l -> (ClassId, EGraph a l)
+addWithNorm normCtx uncanon_e egr =
+    let !canon_en = canonicalize uncanon_e egr
+        !(norm_node, egr') = normCtx (unNode canon_en) egr
+        !new_en = Node (normalizeNode norm_node)
+
+     in case lookupNM new_en (memo egr') of
+      Just canon_enode_id -> (find canon_enode_id egr', egr')
       Nothing ->
 
         let
 
             -- Make new equivalence class with a new id in the union-find
-            (new_eclass_id, new_uf) = makeNewSet (unionFind egr)
+            (new_eclass_id, new_uf) = makeNewSet (unionFind egr')
 
             -- New singleton e-class stores the e-node and its analysis data
-            new_eclass = EClass new_eclass_id (S.singleton new_en) (makeA @a ((\i -> egr^._class i._data @a) <$> unNode new_en)) mempty
+            new_eclass = EClass new_eclass_id (S.singleton new_en) (makeA @a ((\i -> egr'^._class i._data @a) <$> unNode new_en)) mempty
 
-            -- TODO:Performance: All updates can be done to the map first? Parallelize?
-            --
             -- Update e-classes by going through all e-node children and adding
             -- to the e-class parents the new e-node and its e-class id
             --
@@ -112,7 +136,7 @@ add uncanon_e egr =
             new_parents      = ((new_eclass_id, new_en) |:)
             new_classes      = IM.insert new_eclass_id new_eclass $
                                     foldr  (IM.adjust (_parents %~ new_parents))
-                                           (classes egr)
+                                           (classes egr')
                                            (unNode new_en)
 
             -- TODO: From egg: Is this needed?
@@ -140,13 +164,13 @@ add uncanon_e egr =
             -- something else?
             --
             -- So in the end, we do need to addToWorklist to get correct results
-            new_worklist     = (new_eclass_id, new_en):worklist egr
+            new_worklist     = (new_eclass_id, new_en):worklist egr'
 
             -- Add the e-node's e-class id at the e-node's id
-            new_memo         = insertNM new_en new_eclass_id (memo egr)
+            new_memo         = insertNM new_en new_eclass_id (memo egr')
 
          in ( new_eclass_id
-            , egr { unionFind = new_uf
+            , egr' { unionFind = new_uf
                   , classes   = new_classes
                   , worklist  = new_worklist
                   , memo      = new_memo
@@ -154,7 +178,7 @@ add uncanon_e egr =
                   -- Modify created node according to analysis
                   & modifyA new_eclass_id
             )
-{-# INLINABLE add #-}
+{-# INLINABLE addWithNorm #-}
 
 -- | Merge 2 e-classes by id
 merge :: forall a l. (Analysis a l, Language l) => ClassId -> ClassId -> EGraph a l -> (ClassId, EGraph a l)
@@ -243,13 +267,18 @@ rebuild (EGraph uf cls mm wl awl) =
   -- empty worklists
   -- repair deduplicated e-classes
   let
-    emptiedEgr = EGraph uf cls mm mempty mempty
+    !emptiedEgr = EGraph uf cls mm mempty mempty
 
-    wl'   = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> wl
-    egr'  = foldr repair emptiedEgr wl'
+    !wl'   = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> wl
+    -- Strict left fold so per-worklist-entry repairs don't accumulate
+    -- as a deferred chain of EGraph updates. The previous foldr left a
+    -- thunk chain in let-bindings that survived across saturation
+    -- iterations and rebuild recursion, contributing significantly to
+    -- STG-stack growth in long-running GP loops.
+    !egr'  = foldl' (flip repair) emptiedEgr wl'
 
-    awl'  = nubIntOn fst $ first (`find` egr') <$> awl
-    egr'' = foldr repairAnal egr' awl'
+    !awl'  = nubIntOn fst $ first (`find` egr') <$> awl
+    !egr'' = foldl' (flip repairAnal) egr' awl'
   in
   -- Loop until worklist is completely empty
   if null (worklist egr'') && null (analysisWorklist egr'')
@@ -294,13 +323,14 @@ repairAnal (repair_id, node) egr =
 -- | Canonicalize an e-node
 --
 -- Two e-nodes are equal when their canonical form is equal. Canonicalization
--- makes the list of e-class ids the e-node holds a list of canonical ids.
+-- makes the list of e-class ids the e-node holds a list of canonical ids and
+-- applies 'normalizeNode' (e.g. sorting children of AC operators).
 -- Meaning two seemingly different e-nodes might be equal when we figure out
 -- that their e-class ids are represented by the same e-class canonical ids
 --
--- canonicalize(𝑓(𝑎,𝑏,𝑐,...)) = 𝑓((find 𝑎), (find 𝑏), (find 𝑐),...)
-canonicalize :: Functor l => ENode l -> EGraph a l -> ENode l
-canonicalize (Node enode) eg = Node $ fmap (`find` eg) enode
+-- canonicalize(𝑓(𝑎,𝑏,𝑐,...)) = normalizeNode(𝑓((find 𝑎), (find 𝑏), (find 𝑐),...))
+canonicalize :: Language l => ENode l -> EGraph a l -> ENode l
+canonicalize (Node enode) eg = Node $ normalizeNode $ fmap (`find` eg) enode
 {-# INLINE canonicalize #-}
 
 -- | Find the canonical representation of an e-class id in the e-graph
@@ -461,15 +491,17 @@ rebuildM :: forall a l m. (AM.AnalysisM m a l, Language l) => EGraph a l -> m (E
 rebuildM (EGraph uf cls mm wl awl) = do
   -- Canonical implementation is rebuild, this is just the monadic variant of it
   let
-    emptiedEgr = EGraph uf cls mm mempty mempty
+    !emptiedEgr = EGraph uf cls mm mempty mempty
 
-    wl' = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> wl
+    !wl' = nubOrd $ bimap (`find` emptiedEgr) (`canonicalize` emptiedEgr) <$> wl
 
-  egr'  <- foldlM (flip repairM) emptiedEgr wl'
+  -- Force the intermediate egraph after each fold so per-worklist-entry
+  -- monadic repairs don't accumulate as continuation closures.
+  !egr'  <- foldlM (flip repairM) emptiedEgr wl'
 
-  let awl' = nubIntOn fst $ first (`find` egr') <$> awl
+  let !awl' = nubIntOn fst $ first (`find` egr') <$> awl
 
-  egr'' <- foldlM (flip repairAnalM) egr' awl'
+  !egr'' <- foldlM (flip repairAnalM) egr' awl'
 
   if null (worklist egr'') && null (analysisWorklist egr'')
      then return egr''

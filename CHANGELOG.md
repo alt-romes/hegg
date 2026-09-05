@@ -24,6 +24,16 @@
   to a right-hand-side computed by a Haskell function of the matching
   substitution and `EGraph`.
 
+* Add `ComputePattern lhs build` for computed RHS patterns that preserve LHS
+  captures. The existing expression-returning `:=>` and `RewriteFun` API remains
+  available.
+* Export `PatternRewriteFun`, `rewriteLhs`, and `rewriteRhs`, including from
+  `Data.Equality.Saturation`, for custom saturation runners. Reject unbound
+  RHS variables before insertion.
+* Include class nodes and analysis in fixed-point detection, so count-stable
+  changes can enable another rewrite round.
+* Add a symbolic constant-combination example and computed-rewrite contract
+  tests to the existing test suite.
 
 ## 0.6.0.0 -- 2024-07-13
 

@@ -29,7 +29,7 @@ module Data.Equality.Saturation
       -- * Re-exports for equality saturation
 
       -- ** Writing rewrite rules
-    , Rewrite(..), RewriteCondition
+    , Rewrite(..), RewriteCondition, PatternRewriteFun, rewriteLhs, rewriteRhs
 
       -- ** Writing cost functions
       --
@@ -45,7 +45,6 @@ module Data.Equality.Saturation
     ) where
 
 import qualified Data.IntMap.Strict as IM
-import qualified Data.Map.Strict as M
 
 import Control.Monad
 
@@ -101,12 +100,18 @@ equalitySaturation' schd expr rewrites cost = egraph $ do
 
 -- | Run equality saturation on an e-graph by non-destructively applying all
 -- given rewrite rules until saturation (using the given 'Scheduler')
+--
+-- Rebuild after each round of applications.
+-- A fixed point requires unchanged class nodes and analysis as well as stable
+-- node/class counts. Execution is bounded to 30 rounds. A computed builder
+-- returning 'Nothing' may be called again as rounds continue, subject to the
+-- scheduler's bans and the iteration limit.
 runEqualitySaturation :: forall a l schd
                        . (Analysis a l, Language l, Scheduler l schd)
                       => schd                -- ^ Scheduler to use
                       -> [Rewrite a l]       -- ^ List of rewrite rules
                       -> EGraphM a l ()
-runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- Start at iteration 0
+runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where
 
   -- Take map each rewrite rule to stats on its usage so we can do
   -- backoff scheduling. Each rewrite rule is assigned an integer
@@ -142,6 +147,9 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
       let structChanged = G.sizeNM afterMemo /= G.sizeNM beforeMemo
                        || IM.size afterClasses /= IM.size beforeClasses
           saturated = not structChanged
+                   -- Builders may become applicable after analysis changes
+                   -- or pruning replaces nodes without changing either count.
+                   && IM.isSubmapOfBy sameClass beforeClasses afterClasses
           -- Only consider retrying if no rules matched at all (likely because
           -- they're all banned). If rules matched but didn't add new structure,
           -- unbanning more rules probably won't help.
@@ -158,6 +166,10 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
           -- There's more to be done.
          | otherwise -> runEqualitySaturation' (i+1) newStats
 
+  sameClass :: EClass a l -> EClass a l -> Bool
+  sameClass before after = eClassData before == eClassData after
+                       && eClassNodes before == eClassNodes after
+
   -- | Match a rewrite rule against the e-graph database.
   -- For conditional rewrites, we accumulate all conditions and filter matches
   -- by them BEFORE updating scheduler stats. This ensures the backoff scheduler
@@ -169,8 +181,7 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
       -- Accumulate conditions while recursing through conditional rewrites
       go :: [RewriteCondition a l] -> Rewrite a l -> ([Match], IM.IntMap (Stat l schd), VarsState)
       go conds (rw' :| cond) = go (cond:conds) rw'
-      go conds (lhs :=> _) = doPattern conds lhs
-      go conds (lhs := _) = doPattern conds lhs
+      go conds base = doPattern conds (rewriteLhs base)
 
       doPattern conds lhs = do
           let (lhs_query, varsState) = compileToQuery lhs
@@ -204,63 +215,18 @@ runEqualitySaturation schd rewrites = runEqualitySaturation' 0 mempty where -- S
           all (\cond -> cond vss subst egr) conds
 
   applyMatchesRhs :: (Rewrite a l, Match, VarsState) -> EGraphM a l ()
-  applyMatchesRhs =
-      \case
-          (rw :| cond, m@(Match subst _), vss) -> do
-              -- If the rewrite condition is satisfied, applyMatchesRhs on the rewrite rule.
-              egr <- get
-              when (cond vss subst egr) $
-                 applyMatchesRhs (rw, m, vss)
+  applyMatchesRhs (rw, Match subst eclass, vss) = do
+      egr <- get
+      forM_ (rewriteRhs rw vss subst egr) $ \rhs -> do
+          eclass' <- reprPat vss subst rhs
+          -- Preserve the representative choice of static variable RHSs.
+          void $ case rhs of
+              VariablePattern _ -> merge eclass' eclass
+              NonVariablePattern _ -> merge eclass eclass'
 
-          (_ := VariablePattern v, Match subst eclass, vss) -> do
-              -- rhs is equal to a variable, simply merge class where lhs
-              -- pattern was found (@eclass@) and the eclass the pattern
-              -- variable matched (@lookup v subst@)
-              let n = findSubst (findVarName vss v) subst
-              _ <- merge n eclass
-              return ()
-
-          (_ := NonVariablePattern rhs, Match subst eclass, vss) -> do
-              -- rhs is (at the top level) a non-variable pattern, so substitute
-              -- all pattern variables in the pattern and create a new e-node (and
-              -- e-class that represents it), then merge the e-class of the
-              -- substituted rhs with the class that matched the left hand side
-              eclass' <- reprPat vss subst rhs
-              _ <- merge eclass eclass'
-              return ()
-
-          (_ :=> f, Match subst eclass, vss) -> do
-              egr <- get
-              let matchCtx = buildMatchContext vss subst egr
-              case f matchCtx of
-                Just rhs -> do
-                  eclass' <- reprExpr rhs
-                  _ <- merge eclass eclass'
-                  return ()
-                Nothing ->
-                  return ()
-
-  -- | Build the match context mapping variable names to their matched class info
-  buildMatchContext :: VarsState -> Subst -> G.EGraph a l -> M.Map String (MatchInfo a l)
-  buildMatchContext vss subst egr =
-      M.mapWithKey lookupInfo (varNames vss)
-    where
-      lookupInfo :: String -> Var -> MatchInfo a l
-      lookupInfo _name var =
-          let classId = findSubst var subst
-              canonId = G.find classId egr
-              eclass  = egr ^. _class canonId
-          in MatchInfo (eclass ^. _data) (eclass ^. _nodes)
-
-  -- | Represent a pattern in the e-graph given substitutions
-  reprPat :: VarsState -> Subst -> l (Pattern l) -> EGraphM a l ClassId
-  reprPat vss subst = add . Node <=< traverse \case
-      VariablePattern v -> pure $
-          findSubst (findVarName vss v) subst
-      NonVariablePattern p -> reprPat vss subst p
-
-  -- | Represent an expression (Fix l) in the e-graph
-  reprExpr :: Fix l -> EGraphM a l ClassId
-  reprExpr (Fix e) = add . Node =<< traverse reprExpr e
+  -- | Static and computed replacements share capture resolution and insertion.
+  reprPat :: VarsState -> Subst -> Pattern l -> EGraphM a l ClassId
+  reprPat vss subst = \case
+      VariablePattern v -> gets $ G.find (findSubst (findVarName vss v) subst)
+      NonVariablePattern p -> add . Node =<< traverse (reprPat vss subst) p
 {-# INLINEABLE runEqualitySaturation #-}
-

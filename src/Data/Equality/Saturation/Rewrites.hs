@@ -12,15 +12,20 @@ module Data.Equality.Saturation.Rewrites
     , RewriteCondition
     , RewriteFun
     , MatchInfo(..)
+    , PatternRewriteFun
+    , rewriteLhs
+    , rewriteRhs
     ) where
 
 import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Set (Set)
 
 import Data.Equality.Graph
+import Data.Equality.Graph.Lens
 import Data.Equality.Matching
 import Data.Equality.Matching.Database
-import Data.Equality.Utils (Fix)
+import Data.Equality.Utils (Fix, cata)
 
 -- | A rewrite rule that might have conditions for being applied
 --
@@ -80,6 +85,9 @@ data Rewrite anl lang
     -- The 'MatchInfo' interface ensures computed rewrites can only inspect
     -- the matched e-classes, not arbitrary e-graph structure. This makes it
     -- easier to write confluent rewrites.
+    | ComputePattern !(Pattern lang) !(PatternRewriteFun anl lang)
+    -- ^ Compute a replacement pattern from a match and an inspection graph.
+    -- RHS variables reuse LHS captures. See 'PatternRewriteFun'.
     | !(Rewrite anl lang) :| !(RewriteCondition anl lang)
     -- ^ Conditional Rewrite
 infix 3 :=
@@ -129,8 +137,80 @@ data MatchInfo anl lang = MatchInfo
 -- node values), not on incidental details like iteration order over sets.
 type RewriteFun anl lang = Map String (MatchInfo anl lang) -> Maybe (Fix lang)
 
+-- | Compute a replacement pattern from one match and a read-only graph.
+-- Return 'Nothing' when the available evidence does not justify the rewrite.
+-- Return 'Just' a pattern to insert and equate with the matched root. Variables
+-- in that pattern reuse the corresponding LHS captures; all must be bound on
+-- the LHS. Language payloads (such as integer constants) can be computed freely.
+--
+-- The standard runner supplies its current graph immediately before applying
+-- the match, just as for application-time 'RewriteCondition' checks. Earlier
+-- applications in the same round may have merged classes; use
+-- 'Data.Equality.Graph.find' or the canonicalizing '_class' lens when
+-- inspecting IDs from the substitution. Parent analysis and congruence may
+-- still await the end-of-round rebuild. Custom runners choose their own
+-- inspection graph via 'rewriteRhs', for example an analysis snapshot.
+--
+-- Refusal cannot mutate the graph. A successful result must be equivalent to
+-- the LHS under the proven facts: subsequent graph growth cannot undo an
+-- equality. Builders should be deterministic and idempotent for unchanged
+-- evidence. Repeatedly inventing fresh terms can exhaust the iteration limit.
+-- Refusals are not cached and may be retried as saturation continues, subject
+-- to the scheduler and the standard runner's 30-round limit.
+--
+-- For example, rewrite @(x + a) + b@ to @x + (a + b)@ when analysis proves
+-- integer values for @a@ and @b@. The builder computes their sum while keeping
+-- @x@ as a capture, without extracting or copying its expression.
+type PatternRewriteFun anl lang = VarsState -> Subst -> EGraph anl lang -> Maybe (Pattern lang)
+
+-- | The search pattern, independent of conditions or RHS construction.
+rewriteLhs :: Rewrite anl lang -> Pattern lang
+rewriteLhs (lhs := _) = lhs
+rewriteLhs (lhs :=> _) = lhs
+rewriteLhs (ComputePattern lhs _) = lhs
+rewriteLhs (rw :| _) = rewriteLhs rw
+
+-- | Evaluate conditions and construct a replacement without changing a graph.
+-- Conditions are checked from the outside in, as during application in the
+-- standard runner, and a failed condition prevents evaluation of the builder.
+-- Expression-producing 'RewriteFun' results are converted to closed patterns.
+--
+-- The variable map and substitution must come from matching 'rewriteLhs'. The
+-- supplied graph must contain those classes. An unbound RHS variable is a
+-- malformed rule, reported as an error before any RHS nodes are inserted;
+-- 'Nothing' is reserved for non-applicability.
+--
+-- Custom runners can inspect a snapshot here, then resolve the returned
+-- pattern's captures against their current graph and perform their own
+-- insertion and root merge. This keeps capture resolution and insertion under
+-- the caller's control.
+rewriteRhs :: Traversable lang
+           => Rewrite anl lang -> VarsState -> Subst -> EGraph anl lang
+           -> Maybe (Pattern lang)
+rewriteRhs rw vss subst egr = do
+    rhs <- go rw
+    check rhs `seq` pure rhs
+  where
+    go (_ := rhs) = Just rhs
+    go (_ :=> build) = cata pat <$> build (M.map lookupInfo (varNames vss))
+    go (ComputePattern _ build) = build vss subst egr
+    go (inner :| cond)
+      | cond vss subst egr = go inner
+      | otherwise = Nothing
+
+    lookupInfo var =
+      let eclass = egr ^. _class (findSubst var subst)
+      in MatchInfo (eclass ^. _data) (eclass ^. _nodes)
+
+    check (VariablePattern v) =
+      case M.lookup v (varNames vss) >>= (`lookupSubst` subst) of
+        Just _ -> ()
+        Nothing -> error $ "rewriteRhs: unbound RHS variable " <> show v
+    check (NonVariablePattern p) = foldr (seq . check) () p
+
 
 instance (∀ a. Show a => Show (lang a)) => Show (Rewrite anl lang) where
   show (rw :| _) = show rw <> " :| <cond>"
   show (lhs := rhs) = show lhs <> " := " <> show rhs
   show (lhs :=> _) = show lhs <> " :=> <fun>"
+  show (ComputePattern lhs _) = "ComputePattern (" <> show lhs <> ") <fun>"

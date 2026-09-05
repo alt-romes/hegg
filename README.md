@@ -300,6 +300,53 @@ the equality-graphs and other equality-things (such as e-matching) available.
 For example, using just the e-graphs from `Data.Equality.Graph` to improve GHC's
 pattern match checker (https://gitlab.haskell.org/ghc/ghc/-/issues/19272).
 
+## Computed rewrites
+
+Computed rewrites construct a replacement from a particular match. The existing
+`lhs :=> build` form uses `RewriteFun`: its builder receives a map of variable
+names to `MatchInfo` and returns an optional expression (`Fix l`).
+
+Use `ComputePattern lhs build` to construct a replacement that retains matched
+e-classes as children. Its builder has the same read-only inputs as a rewrite
+condition and returns an optional **pattern**:
+
+```haskell
+type PatternRewriteFun a l =
+    VarsState -> Subst -> EGraph a l -> Maybe (Pattern l)
+```
+
+`Nothing` declines the match without inserting anything. `Just rhs` inserts
+the pattern and equates it with the matched root. RHS variables reuse the
+LHS captures. Computed rewrites compose with `:|` conditions and ordinary `:=`
+rules.
+
+For integer expressions, this rule combines known constants in `(x + a) + b`
+while keeping `x` as a capture:
+
+```haskell
+combineConstants :: Rewrite (Maybe Integer) Expr
+combineConstants = ComputePattern (pat $ Add (pat $ Add "x" "a") "b") $ \vars subst graph -> do
+    let value name = graph ^. _class (findSubst (findVarName vars name) subst) . _data
+    a <- value "a"
+    b <- value "b"
+    pure $ pat $ Add "x" (pat $ Number $ a + b)
+```
+
+For example, `(x + 2) + 3` becomes `x + 5` without knowing the value of `x`.
+The builder refuses if either constant is unknown. The complete language,
+analysis, and executable example are in [ComputedRewrites.hs](test/ComputedRewrites.hs).
+
+The standard runner checks guards during matching and again before application,
+then evaluates builders against its current graph. Structural or analysis
+changes can enable another round; retries remain subject to the existing
+scheduler policy and 30-round limit. `rewriteLhs` and `rewriteRhs` support custom
+runners that need their own inspection graph or capture insertion policy. See the
+[contract and custom runner integration notes](doc/computed-rewrites.md).
+
+For analysis-wide constant materialization, the existing `Analysis.modifyA`
+hook remains sufficient; computed rewrites are useful when construction
+depends on a particular pattern match.
+
 ## Debugging Rewrite Rules
 
 To debug rewrite rules when doing equality saturation, wrap the `Scheduler`
@@ -327,4 +374,3 @@ open hegg-test.eventlog.html
 ```
 cabal test hegg-test --enable-coverage --enable-library-coverage
 ```
-

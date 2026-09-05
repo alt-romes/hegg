@@ -12,6 +12,7 @@ import Sym
 import Lambda
 import SimpleSym
 import T32
+import ComputedRewrites
 
 import qualified Computed
 import qualified T1
@@ -36,6 +37,7 @@ tests =testGroup "Tests"
     , testCase "T2" (T2.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
     , testCase "T3" (T3.main `catch` (\(e :: SomeException) -> assertFailure (show e)))
     , testT32
+    , computedRewriteTests
 # ifdef VIZDOT
       , testCase "e-graph visualization" VizDot.visualizeSaturatedEGraph
 # endif
